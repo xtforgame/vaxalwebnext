@@ -62,7 +62,7 @@
 ## 4. 技術規格 (Tech Stack)
 *   **Framework**: Next.js 14+ (App Router)
 *   **Language**: TypeScript
-*   **Styling**: Tailwind CSS (Utility-first)
+*   **Styling**: Vanilla CSS / CSS Modules
 *   **Animation**: Framer Motion (用於 Scroll Reveal 與 UI 演示動畫)
 *   **Icons**: Lucide React
 *   **Deployment**: Vercel (Recommended) / Docker (Provided)
@@ -72,7 +72,7 @@
 ## 5. 開發階段規劃 (Development Phases)
 
 ### Phase 1: Foundation (基建)
-*   專案初始化 (Next.js + Tailwind)。
+*   專案初始化 (Next.js)。
 *   Design System 建置 (Colors, Typography, Reusable Components)。
 *   共用元件開發 (Navbar, Footer, Button, SectionWrapper)。
 

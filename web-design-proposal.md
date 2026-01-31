@@ -88,7 +88,7 @@
 ## 4. 技術執行規格 (Technical Spec)
 
 *   **Frontend**: Next.js 14 (App Router).
-*   **Styling**: Tailwind CSS.
+*   **Styling**: Vanilla CSS / CSS Modules.
 *   **Animation**: Framer Motion.
 *   **Deployment**: Vercel.
 
