@@ -48,10 +48,22 @@
 
 ---
 
-## 3. 顧問筆記與轉化方向 (Consultant Notes)
-*   **隱藏的商業模式**：表面推產品，實際賺顧問費 (75% 營收)。這很聰明，因為產品降低了「顧問服務」通常給人「虛無飄渺」的恐懼感。
-*   **敘事挑戰**：Step 2 & 3 (BrevFlow/SoloistBoard) 概念較深，直接講產品名會嚇跑小白客戶。
+## 3. 關鍵案例策略 (Studio Doe & VXL EC)
+**定位：Infrastructure Validity (基礎建設的信任錨點)**
+
+*   **不作為主推產品**：VXL EC 架構太過龐大且專精 (Enterprise E-commerce)，不適合當作大眾化 SaaS 推廣。
+*   **作為實力證言 (Proof of Competence)**：
+    *   **高併發驗證**：支撐年收數億等級、每秒破百訂單的搶票情境 -> 證明我們的系統架構是穩固的 (Battle-tested)。
+    *   **AI 落地基礎**：證明我們的 AI 不是跑在沙盒裡的玩具，而是能整合進這種高複雜度、高動態的商業環境中。
+    *   **顧問實力**：長期陪伴 Studio Doe 成長，證明我們具備「營運級」的顧問經驗，而不只是「接案後跑路」的技術外包。
+*   **首頁策略**：**輕描淡寫 (Subtle Authority)**。只在 Trust Bar 或 Hero Case 區塊放一個 Logo 或一句話，不佔用 Step 1-2-3 的核心動線。
+*   **內頁策略**：設立專門的 Case Study 頁面，詳細講述「如何用穩固架構支撐 AI 轉型」，滿足想深究技術實力的潛在客戶。
+
+---
+
+## 4. 顧問筆記與轉化方向 (Consultant Notes)
+*   **敘事挑戰**：Step 2 & 3 概念較深。
 *   **簡化策略**：
-    *   Step 1 = **Connect** (連結你的痛點)
-    *   Step 2 = **Automate** (自動化你的工作流)
-    *   Step 3 = **Scale** (規模化你的 AI 團隊)
+    *   Step 1 = **Connect** (試點啟動 / Pilot) - 視覺：Ryko Chat
+    *   Step 2 = **Automate** (工作流串接 / Workflow) - 視覺：BrevFlow Graph
+    *   Step 3 = **Scale** (智能治理 / Governance) - 視覺：SoloistBoard Kanban
