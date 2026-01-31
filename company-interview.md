@@ -62,7 +62,24 @@
 
 ---
 
-## 4. 網站架構策略 (Sitemap Strategy)
+## 4. 品牌核心論述 (Brand Manifesto) - **NEW**
+
+### The Antagonist (我們反對什麼？)
+*   **反對 AI 泡沫 (Anti-Bubble)**：不賣展示用的 Demo，不賣未來的大餅。
+*   **反對資料綁架 (Anti-Lock-in)**：
+    *   我們提供 AI 對話紀錄導出服務。
+    *   客戶留下是因為**信賴**，而不是因為**依賴** (資料被鎖死)。
+    *   即使不合作，客戶也能帶走屬於他們的資產。
+*   **務實主義 (Pragmatism)**：每個階段都要有可量化的實質改善 (Quantifiable Results)。
+
+### The Ultimate Proof (Dogfooding)
+*   **Missing External Case? No Problem.**
+    *   **核心論述**：Ryko, BrevFlow, SoloistBoard 這些複雜系統，正是我們使用 **Ryko + Vibe Coding** 自己開發出來的。
+    *   **意義**：我們是自己產品的最大使用者 (Dogfooding)。我們靠這套 AI 工作流，以極少人數完成了三個大型 SaaS 的開發與測試。這就是 AI 賦能的最佳鐵證。
+
+---
+
+## 5. 網站架構策略 (Sitemap Strategy)
 *   **首頁 (Home)**: 聚焦 Step 1-2-3 三部曲與核心價值。
 *   **產品頁 (Products)**: **獨立頁面** (Ryko, BrevFlow, SoloistBoard, FormalDoc)。每個頁面都有自己的 "Step 1-2-3" 介紹。
 *   **案例 (Case Study)**: Studio Doe 專頁。
