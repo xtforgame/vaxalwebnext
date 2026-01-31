@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  web:
+    container_name: nextjs_web
+    # 如果已有 CI/CD 推送 Image 到私有庫，請改用 image: <your-registry>/<image>
+    # 這裡演示直接在 Server 上 Build (適合初期)
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - NODE_ENV=production
+      # 私有環境如果有 API，通常建議在此注入，而非打包進 Image
+      # - NEXT_PUBLIC_API_URL=https://api.your-private-domain.com
+    ports:
+      - "3000:3000"
+    # 如果有用到 sharp 做圖片優化，建議掛載 cache 避免重複運算 (Optional)
+    # volumes:
+    #   - ./.next/cache:/app/.next/cache
