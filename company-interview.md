@@ -28,42 +28,44 @@
 ## 2. 獲客與服務三部曲 (The 3-Step Engagement Strategy)
 這是網站在 "How it works" 區塊的核心敘事。目標是降低客戶門檻，建立長遠信任。
 
-### Step 1: 痛點突圍 (Beachhead / The Pilot)
-*   **核心行為**：針對客戶一個明確痛點，開發 MCP/Skill 並串接 Ryko Agent。
-*   **商業邏輯**：**不收開發費 (Free Pilot)**。
-*   **目標**：讓客戶「無痛」開始使用。確保他們真的有感且持續使用 (Stickiness)。
-*   **關鍵字**：無風險 (Risk-free)、立即見效 (Instant Value)、核心場景 (Core Pain-point)。
+### Step 1: 痛點突圍 (Pilot / Connect)
+*   **場景**：客戶有明確痛點，我們開發 MCP/Skill 串接 Ryko Agent。
+*   **策略**：**無痛啟動 (Risk-free)**。我們感同身受中小企業的壓力，因此提供最低門檻的入門。
+*   **價值**：建立信任 (Trust Building)。先讓客戶有感，再談後續。
 
-### Step 2: 全域串聯 (Integration & Expansion)
-*   **核心行為**：透過 **BrevFlow** 串接更多企業數據 (DB, File System) 與工作流。
-*   **商業邏輯**：開始收費 (SaaS / 權限管理 / 協作機制)。
-*   **目標**：從「單點工具」擴展為「自動化流水線」。
-*   **場景**：跨部門/跨專業的複雜任務自動化。
+### Step 2: 全域串聯 (Automate / Expansion)
+*   **場景**：開始製作多個 MCP 串接 DB/File System，使用 **BrevFlow** 串聯。
+*   **策略**：權限管理與付費機制導入。
+*   **價值**：從單點工具變成企業神經系統。
 
-### Step 3: 智能治理 (AI Governance)
-*   **核心行為**：導入 **SoloistBoard**。
-*   **商業邏輯**：規模化維運。
-*   **目標**：由 AI 主動治理專案，可控、可稽核。
-*   **價值**：企業級的 AI 管理 (Enterprise AI Management)。
+### Step 3: 智能治理 (Scale / Governance)
+*   **場景**：導入 **SoloistBoard**。
+*   **策略**：由 AI 主動治理。
+*   **價值**：企業級規模化維運。
 
 ---
 
-## 3. 關鍵案例策略 (Studio Doe & VXL EC)
-**定位：Infrastructure Validity (基礎建設的信任錨點)**
+## 3. 關鍵案例與夥伴 (Case & Partners)
+### Trust Anchors
+*   **Studio Doe**: 證明高併發與營運級顧問實力。
+*   **八維智能 (Eight Dimension Smart)**: AI 技術共享夥伴。
+*   **宇鯨智能 (Cosmic Whale)**: AI 技術共享夥伴。
 
-*   **不作為主推產品**：VXL EC 架構太過龐大且專精 (Enterprise E-commerce)，不適合當作大眾化 SaaS 推廣。
-*   **作為實力證言 (Proof of Competence)**：
-    *   **高併發驗證**：支撐年收數億等級、每秒破百訂單的搶票情境 -> 證明我們的系統架構是穩固的 (Battle-tested)。
-    *   **AI 落地基礎**：證明我們的 AI 不是跑在沙盒裡的玩具，而是能整合進這種高複雜度、高動態的商業環境中。
-    *   **顧問實力**：長期陪伴 Studio Doe 成長，證明我們具備「營運級」的顧問經驗，而不只是「接案後跑路」的技術外包。
-*   **首頁策略**：**輕描淡寫 (Subtle Authority)**。只在 Trust Bar 或 Hero Case 區塊放一個 Logo 或一句話，不佔用 Step 1-2-3 的核心動線。
-*   **內頁策略**：設立專門的 Case Study 頁面，詳細講述「如何用穩固架構支撐 AI 轉型」，滿足想深究技術實力的潛在客戶。
+### Team DNA (About Us)
+*   **Core Team**: **Rick Chen, Marson Mao, Jack Lin** (台大/清大校友)。
+*   **Background**: 兼具「大企業歷練」與「新創彈性」。
+*   **Philosophy**:
+    *   **感同身受 (Empathy)**: 清楚從小公司變大公司會遇到的坑。
+    *   **深度合作 (Deep Partnership)**: 不做旁觀的顧問或一次性外包，而是陪跑的夥伴。
+    *   **價值優先 (Value over Price)**。
+*   **Why Now**: 結合 AI/Vibe Coding 高產能，讓我們能在保持小團隊靈活性的同時，交付大企業級的成果。
 
 ---
 
-## 4. 顧問筆記與轉化方向 (Consultant Notes)
-*   **敘事挑戰**：Step 2 & 3 概念較深。
-*   **簡化策略**：
-    *   Step 1 = **Connect** (試點啟動 / Pilot) - 視覺：Ryko Chat
-    *   Step 2 = **Automate** (工作流串接 / Workflow) - 視覺：BrevFlow Graph
-    *   Step 3 = **Scale** (智能治理 / Governance) - 視覺：SoloistBoard Kanban
+## 4. 網站架構策略 (Sitemap Strategy)
+*   **首頁 (Home)**: 聚焦 Step 1-2-3 三部曲與核心價值。
+*   **產品頁 (Products)**: **獨立頁面** (Ryko, BrevFlow, SoloistBoard, FormalDoc)。每個頁面都有自己的 "Step 1-2-3" 介紹。
+*   **案例 (Case Study)**: Studio Doe 專頁。
+*   **關於 (About)**: 創辦人故事、核心理念。
+*   **職涯 (Careers)**: 招募 BD & Sales (目前為 Placeholder/TODO)。
+*   **聯絡 (Contact)**: 諮詢表單。
