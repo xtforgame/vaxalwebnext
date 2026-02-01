@@ -1,17 +1,21 @@
+/* ============================================
+   Trust Bar - Soft UI Evolution
+   ============================================ */
+
 .trustBar {
-  padding-top: 0;
-  padding-bottom: 60px;
+  padding: var(--space-16) 0 var(--space-20);
+  background-color: var(--bg-white);
 }
 
 .title {
   text-align: center;
-  font-size: 0.875rem;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--muted-text);
-  margin-bottom: 40px;
-  margin-top: 60px;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-10);
 }
 
 .logoGrid {
@@ -19,27 +23,37 @@
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 80px; /* More spacing */
-  opacity: 1;
+  gap: var(--space-16);
 }
 
 .logoItem {
+  font-family: var(--font-heading);
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--foreground);
-  opacity: 0.25; /* Lighter logos */
+  color: var(--text-primary);
+  opacity: 0.2;
   filter: grayscale(1);
-  transition: all 0.3s ease;
+  transition: all var(--transition-slow);
   cursor: default;
+  letter-spacing: -0.01em;
 }
 
 .logoItem:hover {
   filter: grayscale(0);
-  opacity: 1;
+  opacity: 0.8;
 }
 
+/* ============ Responsive ============ */
 @media (max-width: 768px) {
+  .trustBar {
+    padding: var(--space-12) 0 var(--space-16);
+  }
+
   .logoGrid {
-    gap: 30px;
+    gap: var(--space-8) var(--space-10);
+  }
+
+  .logoItem {
+    font-size: 1.0625rem;
   }
 }

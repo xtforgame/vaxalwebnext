@@ -1,92 +1,140 @@
+/* ============================================
+   Products Page - Soft UI Evolution
+   ============================================ */
+
 .container {
   min-height: 100vh;
+  background-color: var(--bg-base);
 }
 
+/* ============ Hero ============ */
 .hero {
-  padding: 160px 0 80px;
-  background-color: var(--background);
-  border-bottom: 1px solid var(--border-color);
+  padding: calc(var(--header-height) + var(--space-16)) 0 var(--space-16);
+  background-color: var(--bg-white);
+  border-bottom: 1px solid var(--border-light);
 }
 
 .title {
-  font-size: 4rem;
+  font-family: var(--font-heading);
+  font-size: clamp(3rem, 6vw, 4.5rem);
+  font-weight: 800;
   letter-spacing: -0.04em;
-  margin-bottom: 24px;
+  color: var(--text-primary);
+  margin-bottom: var(--space-6);
+  line-height: 1.05;
 }
 
 .subtitle {
   font-size: 1.25rem;
-  color: var(--muted-text);
-  max-width: 600px;
-  line-height: 1.6;
+  color: var(--text-body);
+  max-width: 560px;
+  line-height: 1.65;
 }
 
+/* ============ Grid Section ============ */
 .gridSection {
-  padding: 100px 0;
-  background-color: var(--bg-section-grey);
+  padding: var(--space-20) 0 var(--space-24);
+  background-color: var(--bg-surface);
 }
 
 .productGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 32px;
+  gap: var(--space-8);
 }
 
+/* ============ Product Card ============ */
 .productCard {
-  background-color: var(--surface-elevated);
-  padding: 60px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-color);
+  background: var(--bg-white);
+  padding: var(--space-12);
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--transition-base);
 }
 
 .productCard:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 30px 60px -12px rgba(0,0,0,0.1);
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-2xl);
+  border-color: var(--color-accent-light);
+}
+
+.cardHeader {
+  margin-bottom: var(--space-6);
 }
 
 .productTag {
+  display: inline-block;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--accent-blue);
-  margin-bottom: 12px;
-  display: block;
+  color: var(--color-accent);
+  background: var(--color-accent-light);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  margin-bottom: var(--space-4);
 }
 
 .productName {
+  font-family: var(--font-heading);
   font-size: 2rem;
-  margin-bottom: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
 }
 
 .productDesc {
-  color: var(--muted-text);
-  line-height: 1.8;
-  margin-bottom: 40px;
+  color: var(--text-body);
+  line-height: 1.75;
+  margin-bottom: var(--space-8);
   flex-grow: 1;
+  font-size: 1rem;
+}
+
+.cardFooter {
+  margin-top: auto;
 }
 
 .link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   font-weight: 600;
-  color: var(--foreground);
-  transition: color 0.2s;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  transition: all var(--transition-base);
 }
 
 .link:hover {
-  color: var(--accent-blue);
+  color: var(--color-accent);
+  gap: var(--space-3);
 }
 
+/* ============ Responsive ============ */
 @media (max-width: 991px) {
   .hero {
-    padding: 80px 0 60px;
+    padding: calc(var(--header-height) + var(--space-10)) 0 var(--space-12);
   }
+
   .productGrid {
     grid-template-columns: 1fr;
+    gap: var(--space-6);
   }
+
   .productCard {
-    padding: 40px;
+    padding: var(--space-8);
+  }
+}
+
+@media (max-width: 640px) {
+  .productName {
+    font-size: 1.5rem;
+  }
+
+  .productCard {
+    padding: var(--space-6);
   }
 }

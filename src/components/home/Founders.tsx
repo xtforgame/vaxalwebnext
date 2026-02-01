@@ -26,30 +26,29 @@ const FOUNDERS = [
 
 export default function Founders() {
   return (
-    <SectionWrapper className={styles.foundersSection} id="about">
+    <SectionWrapper background="grey" id="team">
       <div className={styles.header}>
         <h2 className={styles.title}>The Team DNA</h2>
         <p className={styles.subtitle}>
-          我們由來自各個軟體新創公司的成員組成。結合了大企業的嚴謹歷練與新創公司的極致彈性。
+          我們是一群來自台大、清大的校友，團隊成員更來自頂尖軟體企業與創新實驗室。我們融合了大公司的嚴謹品質控管與小團隊的極速敏捷開發。
         </p>
       </div>
-      
+
       <div className={styles.grid}>
         {FOUNDERS.map((founder) => (
           <div key={founder.name} className={styles.founderCard}>
-            <div className={styles.avatarPlaceholder}>Logo</div>
+            <div className={styles.avatarPlaceholder}>Vaxal</div>
             <h3 className={styles.founderName}>{founder.name}</h3>
             <p className={styles.founderRole}>{founder.role}</p>
             <p className={styles.founderBio}>{founder.bio}</p>
           </div>
         ))}
       </div>
-      
+
       <div className={styles.philosophyBox}>
-        <h3 className={styles.philosophyTitle}>我們的哲學：Value {'>'} Price</h3>
+        <h3 className={styles.philosophyTitle}>Our Philosophy: Value {'>'} Price</h3>
         <p className={styles.philosophyText}>
-          我們不只是旁觀的顧問，而是陪跑的夥伴。我們重視價值創造而非工時計算。
-          在 AI 時代，我們用最高效的方法 (Vibe Coding)，為客戶交付最具競爭力的成果。
+          我們不是在旁觀看的顧問，而是與你並肩奔跑的戰友。我們堅持價值優先於價格，在 AI 時代，用最高效的方式為客戶交付最具競爭力的成果。
         </p>
       </div>
     </SectionWrapper>

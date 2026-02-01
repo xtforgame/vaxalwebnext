@@ -1,72 +1,144 @@
+/* ============================================
+   Soft UI Button Styles
+   ============================================ */
+
 .button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-md);
+  gap: var(--space-2);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-body);
   font-weight: 600;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: -0.01em;
+  transition: all var(--transition-base);
   cursor: pointer;
-  border: 1px solid transparent;
+  border: 2px solid transparent;
   outline: none;
-  font-family: inherit;
+  white-space: nowrap;
+  user-select: none;
 }
 
 .button:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
-/* Variants */
+/* ============ Primary Button ============ */
 .primary {
-  background-color: var(--accent-blue);
+  background-color: var(--color-accent);
   color: #FFFFFF;
-  box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.2);
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-btn-primary);
 }
 
 .primary:hover:not(:disabled) {
-  background-color: var(--accent-blue-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px 0 rgba(37, 99, 235, 0.25);
+  background-color: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-btn-primary-hover);
 }
 
+.primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-btn-primary);
+}
+
+/* ============ Secondary Button ============ */
 .secondary {
-  background-color: var(--secondary-grey);
-  color: var(--foreground);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--bg-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .secondary:hover:not(:disabled) {
-  filter: brightness(0.95);
+  background-color: var(--border-light);
+  border-color: var(--border-light);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
+.secondary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* ============ Outline Button ============ */
 .outline {
   background-color: transparent;
-  border-color: var(--border-color);
-  color: var(--foreground);
+  color: var(--text-primary);
+  border-color: var(--border-light);
 }
 
 .outline:hover:not(:disabled) {
-  background-color: var(--secondary-grey);
+  background-color: var(--bg-base);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  transform: translateY(-1px);
 }
 
-/* Sizes */
+.outline:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* ============ Ghost Button (subtle) ============ */
+.ghost {
+  background-color: transparent;
+  color: var(--text-body);
+  border-color: transparent;
+}
+
+.ghost:hover:not(:disabled) {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+/* ============ Size Variants ============ */
 .sm {
-  height: 36px;
-  padding: 0 16px;
+  height: 38px;
+  padding: 0 var(--space-4);
   font-size: 0.875rem;
+  border-radius: var(--radius-md);
 }
 
 .md {
   height: 48px;
-  padding: 0 24px;
+  padding: 0 var(--space-6);
   font-size: 1rem;
 }
 
 .lg {
   height: 56px;
-  padding: 0 32px;
-  font-size: 1.125rem;
+  padding: 0 var(--space-8);
+  font-size: 1.0625rem;
 }
 
+/* ============ Full Width ============ */
 .fullWidth {
   width: 100%;
+}
+
+/* ============ Focus States ============ */
+.button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ============ Button with Icon ============ */
+.button svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.sm svg {
+  width: 16px;
+  height: 16px;
+}
+
+.lg svg {
+  width: 20px;
+  height: 20px;
 }

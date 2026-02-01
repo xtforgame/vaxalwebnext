@@ -1,9 +1,13 @@
+/* ============================================
+   Section Wrapper - Soft UI
+   ============================================ */
+
 .section {
   width: 100%;
   position: relative;
-  overflow: hidden;
 }
 
+/* ============ Padding Variants ============ */
 .padding-default {
   padding: var(--section-spacing) 0;
 }
@@ -20,17 +24,57 @@
   padding-bottom: var(--section-spacing);
 }
 
+.padding-sm {
+  padding: var(--section-spacing-sm) 0;
+}
+
+/* ============ Background Variants ============ */
 .background-white {
-  background-color: var(--bg-section-white);
+  background-color: var(--bg-white);
 }
 
 .background-grey {
-  background-color: var(--bg-section-grey);
+  background-color: var(--bg-surface);
 }
 
+.background-base {
+  background-color: var(--bg-base);
+}
+
+.background-dark {
+  background-color: var(--deep-section-bg);
+  color: var(--deep-section-text);
+}
+
+.background-transparent {
+  background-color: transparent;
+}
+
+/* ============ Container ============ */
 .container {
   width: 100%;
   max-width: var(--container-width);
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 var(--space-6);
+}
+
+/* ============ Responsive ============ */
+@media (max-width: 991px) {
+  .padding-default {
+    padding: var(--section-spacing-sm) 0;
+  }
+
+  .padding-top {
+    padding-top: var(--section-spacing-sm);
+  }
+
+  .padding-bottom {
+    padding-bottom: var(--section-spacing-sm);
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 var(--space-5);
+  }
 }

@@ -1,9 +1,14 @@
+/* ============================================
+   Navbar - Soft UI Evolution
+   ============================================ */
+
 .header {
   height: var(--header-height);
   width: 100%;
-  border-bottom: 1px solid var(--border-color);
-  background-color: var(--header-bg);
-  backdrop-filter: blur(12px);
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-light);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -18,102 +23,206 @@
   width: 100%;
   max-width: var(--container-width);
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 var(--space-6);
 }
 
+/* ============ Logo ============ */
 .logo {
+  font-family: var(--font-heading);
   font-weight: 700;
-  font-size: 1.5rem;
+  font-size: 1.375rem;
   letter-spacing: -0.02em;
-  color: var(--foreground);
-  z-index: 102; /* Ensure logo stays above drawer */
+  color: var(--text-primary);
+  z-index: 102;
+  transition: opacity var(--transition-base);
 }
 
-/* Desktop Navigation */
+.logo:hover {
+  opacity: 0.8;
+  color: var(--text-primary);
+}
+
+/* ============ Desktop Navigation ============ */
 .navLinks {
   display: flex;
-  gap: 32px;
+  gap: var(--space-8);
   align-items: center;
 }
 
 .navLink {
-  font-size: 0.95rem;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
   font-weight: 500;
-  color: var(--muted-text);
-  transition: color 0.2s ease;
+  color: var(--text-body);
+  transition: color var(--transition-base);
+  position: relative;
+}
+
+.navLink::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--color-accent);
+  transition: width var(--transition-base);
+  border-radius: var(--radius-full);
 }
 
 .navLink:hover {
-  color: var(--accent-blue);
+  color: var(--color-accent);
 }
 
+.navLink:hover::after {
+  width: 100%;
+}
+
+/* ============ CTA Button ============ */
 .ctaButton {
-  background-color: var(--accent-blue);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-accent);
   color: #FFFFFF;
-  padding: 10px 20px;
-  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-body);
   font-weight: 600;
-  font-size: 0.9rem;
-  transition: background-color 0.2s ease;
+  font-size: 0.9375rem;
+  box-shadow: var(--shadow-btn-primary);
+  transition: all var(--transition-base);
 }
 
 .ctaButton:hover {
-  background-color: var(--accent-blue-hover);
+  background-color: var(--color-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-btn-primary-hover);
+  color: #FFFFFF;
 }
 
-/* Mobile Navigation */
+/* ============ Mobile Menu Button ============ */
 .mobileMenuBtn {
   display: none;
   background: none;
   border: none;
   cursor: pointer;
-  padding: 8px;
+  padding: var(--space-2);
   z-index: 102;
-  color: var(--foreground);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-base);
 }
 
+.mobileMenuBtn:hover {
+  background-color: var(--bg-surface);
+}
+
+/* ============ Mobile Drawer - Full Screen Overlay ============ */
 .drawer {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100vh;
-  background-color: var(--bg-section-white); /* Ensure solid background */
+  height: 100dvh;
+  background: var(--bg-white);
   z-index: 101;
-  padding: 100px 24px 40px;
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  transform: translateY(-100%);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateX(100%);
+  opacity: 0;
+  transition: transform var(--transition-slow) cubic-bezier(0.32, 0.72, 0, 1),
+              opacity var(--transition-slow);
+  pointer-events: none;
+  overflow-y: auto;
 }
 
 .drawer.open {
-  transform: translateY(0);
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
 }
 
+/* Drawer Content Area */
+.drawer::before {
+  content: '';
+  display: block;
+  height: var(--header-height);
+  flex-shrink: 0;
+}
+
+/* ============ Mobile Navigation Links ============ */
 .mobileNavLink {
-  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-heading);
+  font-size: 2rem;
   font-weight: 600;
-  color: var(--foreground);
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 16px;
+  color: var(--text-primary);
+  padding: var(--space-6) var(--space-6);
+  margin: 0 var(--space-4);
+  border-radius: var(--radius-xl);
+  transition: all var(--transition-base);
+  letter-spacing: -0.02em;
 }
 
+.mobileNavLink:hover {
+  background: var(--bg-surface);
+  color: var(--color-accent);
+}
+
+.mobileNavLink:active {
+  background: var(--color-accent-light);
+}
+
+/* ============ Mobile CTA ============ */
 .mobileCta {
-  margin-top: auto;
-  text-align: center;
-  width: 100%;
-  padding: 16px;
+  margin: auto var(--space-4) var(--space-10);
+  padding: var(--space-5) var(--space-8);
   font-size: 1.125rem;
+  border-radius: var(--radius-xl);
+  text-align: center;
+  justify-content: center;
 }
 
+/* ============ Responsive ============ */
 @media (max-width: 991px) {
   .navLinks {
     display: none;
   }
-  
+
   .mobileMenuBtn {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .navContainer {
+    padding: 0 var(--space-5);
+  }
+
+  .logo {
+    font-size: 1.25rem;
+  }
+
+  .mobileNavLink {
+    font-size: 1.75rem;
+    padding: var(--space-5) var(--space-5);
+    margin: 0 var(--space-3);
+  }
+
+  .mobileCta {
+    margin-left: var(--space-3);
+    margin-right: var(--space-3);
+  }
+}
+
+@media (max-width: 480px) {
+  .mobileNavLink {
+    font-size: 1.5rem;
+    padding: var(--space-4) var(--space-4);
   }
 }

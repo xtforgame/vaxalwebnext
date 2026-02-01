@@ -4,7 +4,7 @@ import styles from './CaseTeaser.module.css';
 
 export default function CaseTeaser() {
   return (
-    <SectionWrapper className={styles.caseSection} id="case-study">
+    <SectionWrapper background="dark" id="case-study">
       <div className={styles.content}>
         <div className={styles.textSide}>
           <span className={styles.tag}>Hero Case Study</span>
@@ -14,7 +14,7 @@ export default function CaseTeaser() {
           <p className={styles.description}>
             我們為 Studio Doe 打造了具備「高併發、極致穩定、深度模組化」的 EC 基建。在面對億級營收的流量高峰與複雜行銷場景下，依然保持零失誤的高效維運。
           </p>
-          
+
           <div className={styles.statsGrid}>
             <div className={styles.statItem}>
               <h4>100%</h4>
@@ -25,15 +25,17 @@ export default function CaseTeaser() {
               <p>Annual revenue supported</p>
             </div>
           </div>
-          
-          <Button variant="primary" size="lg" href="/case-study">
+
+          <Button size="lg" href="/case-study/studio-doe">
             Read Full Case Study
           </Button>
         </div>
-        
+
         <div className={styles.visualSide}>
-          [ Studio Doe Infrastructure Visualization ]<br />
-          Shows: Modules, Traffic Peaks, Managed Logic
+          <span className={styles.visualLabel}>
+            Studio Doe Infrastructure Visualization<br />
+            Modules | Traffic Peaks | Managed Logic
+          </span>
         </div>
       </div>
     </SectionWrapper>

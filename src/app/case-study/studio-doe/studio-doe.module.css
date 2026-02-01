@@ -1,125 +1,228 @@
+/* ============================================
+   Case Study: Studio Doe - Soft UI Evolution
+   ============================================ */
+
 .casePage {
-  background-color: var(--background);
+  background-color: var(--bg-base);
 }
 
+/* ============ Hero ============ */
 .hero {
-  padding: 160px 0 100px;
-  background-color: var(--dark-section-bg);
-  color: var(--dark-section-text);
+  padding: calc(var(--header-height) + var(--space-16)) 0 var(--space-20);
+  background-color: var(--deep-section-bg);
+  color: var(--deep-section-text);
   overflow: hidden;
 }
 
 .badge {
   display: inline-block;
-  padding: 6px 16px;
-  background-color: rgba(37, 99, 235, 0.2);
+  padding: var(--space-2) var(--space-4);
+  background: rgba(37, 99, 235, 0.15);
   color: #60A5FA;
-  border-radius: 100px;
-  font-size: 0.875rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8125rem;
   font-weight: 600;
-  margin-bottom: 32px;
+  margin-bottom: var(--space-8);
+  letter-spacing: 0.02em;
 }
 
 .title {
-  font-size: 4.5rem;
-  line-height: 1.1;
-  margin-bottom: 32px;
+  font-family: var(--font-heading);
+  font-size: clamp(2.75rem, 6vw, 4.5rem);
+  font-weight: 800;
+  line-height: 1.08;
+  color: var(--deep-section-text);
+  margin-bottom: var(--space-10);
   letter-spacing: -0.04em;
 }
 
 .meta {
   display: flex;
-  gap: 48px;
-  margin-top: 60px;
+  gap: var(--space-12);
+  flex-wrap: wrap;
 }
 
 .metaItem label {
   display: block;
-  font-size: 0.875rem;
-  color: var(--dark-section-muted);
+  font-size: 0.75rem;
+  color: var(--deep-section-muted);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
+  font-weight: 500;
 }
 
 .metaItem span {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 600;
+  color: var(--deep-section-text);
 }
 
+/* ============ Section ============ */
 .section {
-  padding: 120px 0;
+  padding: var(--section-spacing) 0;
 }
 
 .sectionTitle {
-  font-size: 2.5rem;
-  margin-bottom: 48px;
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-10);
+  letter-spacing: -0.02em;
 }
 
+/* ============ Content Grid ============ */
 .contentGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 80px;
+  gap: var(--space-20);
   align-items: start;
 }
 
 .textBlock p {
-  font-size: 1.125rem;
+  font-size: 1.0625rem;
   line-height: 1.8;
-  color: var(--muted-text);
-  margin-bottom: 24px;
+  color: var(--text-body);
+  margin-bottom: var(--space-6);
 }
 
+/* ============ Stats Grid ============ */
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  gap: var(--space-5);
 }
 
 .statCard {
-  padding: 32px;
-  background-color: var(--surface-elevated);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+  background: var(--bg-white);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-accent-light);
 }
 
 .statValue {
   display: block;
+  font-family: var(--font-heading);
   font-size: 2.5rem;
   font-weight: 700;
-  color: var(--accent-blue);
-  margin-bottom: 8px;
+  color: var(--color-accent);
+  margin-bottom: var(--space-2);
+  letter-spacing: -0.02em;
 }
 
 .statLabel {
   font-size: 0.875rem;
-  color: var(--muted-text);
+  color: var(--text-body);
+  line-height: 1.5;
 }
 
+/* ============ Solution Section ============ */
+.solutionSection {
+  background-color: var(--bg-surface);
+}
+
+.solutionIntro {
+  text-align: center;
+  max-width: 760px;
+  margin: 0 auto var(--space-12);
+  font-size: 1.0625rem;
+  color: var(--text-body);
+  line-height: 1.75;
+}
+
+/* ============ Full Visual ============ */
 .fullVisual {
   width: 100%;
-  height: 600px;
-  background-color: var(--secondary-grey);
-  border-radius: var(--radius-xl);
-  margin-top: 60px;
+  height: 520px;
+  background: var(--bg-white);
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--muted-text);
-  border: 1px solid var(--border-color);
-  font-style: italic;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
 }
 
+/* ============ Impact Section ============ */
+.impactSection {
+  background-color: var(--bg-white);
+}
+
+/* ============ Testimonial ============ */
+.testimonialCard {
+  padding: var(--space-10);
+  background: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-light);
+}
+
+.testimonialQuote {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-style: italic;
+  color: var(--text-primary);
+  border-left: 4px solid var(--color-accent);
+  padding-left: var(--space-6);
+  line-height: 1.65;
+  margin-bottom: var(--space-6);
+}
+
+.testimonialAuthor {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+}
+
+/* ============ Responsive ============ */
 @media (max-width: 991px) {
   .hero {
-    padding-top: 40px;
-    padding-bottom: 60px;
+    padding: calc(var(--header-height) + var(--space-8)) 0 var(--space-12);
   }
-  .title {
-    font-size: 3rem;
+
+  .meta {
+    gap: var(--space-8);
   }
+
+  .section {
+    padding: var(--section-spacing-sm) 0;
+  }
+
   .contentGrid {
     grid-template-columns: 1fr;
-    gap: 40px;
+    gap: var(--space-10);
+  }
+
+  .fullVisual {
+    height: 360px;
+  }
+}
+
+@media (max-width: 640px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .statCard {
+    padding: var(--space-6);
+  }
+
+  .statValue {
+    font-size: 2rem;
+  }
+
+  .fullVisual {
+    height: 280px;
   }
 }

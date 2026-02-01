@@ -1,39 +1,80 @@
+/* ============================================
+   CTA Section - Soft UI Evolution
+   ============================================ */
+
 .ctaSection {
   text-align: center;
-  padding: 120px 0;
-  background-color: var(--bg-section-white);
-  color: var(--foreground);
-  border-top: 1px solid var(--border-color);
+  background-color: var(--deep-section-bg);
+  color: var(--deep-section-text);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle gradient overlay */
+.ctaSection::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center top, rgba(37, 99, 235, 0.15) 0%, transparent 60%);
+  pointer-events: none;
 }
 
 .container {
-  max-width: 800px;
+  max-width: 720px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
+/* ============ Title ============ */
 .title {
-  font-size: 3rem;
-  margin-bottom: 24px;
+  font-family: var(--font-heading);
+  font-size: clamp(2.25rem, 5vw, 3.25rem);
+  font-weight: 700;
+  color: var(--deep-section-text);
+  margin-bottom: var(--space-5);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
 }
 
+/* ============ Subtitle ============ */
 .subtitle {
-  font-size: 1.25rem;
-  color: var(--muted-text);
-  margin-bottom: 48px;
+  font-size: 1.125rem;
+  color: var(--deep-section-muted);
+  margin-bottom: var(--space-10);
+  line-height: 1.7;
 }
 
+/* ============ Button Group ============ */
 .buttonGroup {
   display: flex;
-  gap: 20px;
+  gap: var(--space-4);
   justify-content: center;
+  flex-wrap: wrap;
 }
 
+/* Dark mode button overrides */
+.outlineBtn {
+  background: transparent !important;
+  color: var(--deep-section-text) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.outlineBtn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  color: #FFFFFF !important;
+}
+
+/* ============ Responsive ============ */
 @media (max-width: 640px) {
-  .title {
-    font-size: 2.25rem;
-  }
-  
   .buttonGroup {
     flex-direction: column;
+    align-items: center;
+  }
+
+  .buttonGroup > * {
+    width: 100%;
+    max-width: 320px;
   }
 }

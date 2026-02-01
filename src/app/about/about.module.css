@@ -1,70 +1,100 @@
+/* ============================================
+   About Page - Soft UI Evolution
+   ============================================ */
+
 .container {
   min-height: 100vh;
+  background-color: var(--bg-base);
 }
 
+/* ============ Hero ============ */
 .hero {
-  padding: 160px 0 100px;
-  background-color: var(--bg-section-white);
-  color: #0F172A; /* Force dark text */
+  padding: calc(var(--header-height) + var(--space-16)) 0 var(--space-20);
+  background-color: var(--bg-white);
 }
 
 .badge {
   display: inline-block;
-  padding: 4px 12px;
-  background-color: var(--accent-blue);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-accent);
   color: #FFFFFF;
   font-size: 0.75rem;
-  font-weight: 700;
-  border-radius: 100px;
-  margin-bottom: 24px;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  margin-bottom: var(--space-6);
+  letter-spacing: 0.02em;
 }
 
 .title {
-  font-size: 4rem;
-  line-height: 1.1;
-  margin-bottom: 32px;
+  font-family: var(--font-heading);
+  font-size: clamp(2.75rem, 6vw, 4.5rem);
+  font-weight: 800;
+  line-height: 1.08;
+  color: var(--text-primary);
+  margin-bottom: var(--space-8);
   letter-spacing: -0.04em;
 }
 
 .subtitle {
-  font-size: 1.5rem;
-  color: var(--deep-section-muted);
-  max-width: 700px;
-  line-height: 1.5;
+  font-size: 1.375rem;
+  color: var(--text-body);
+  max-width: 680px;
+  line-height: 1.6;
 }
 
+/* ============ Philosophy Section ============ */
 .philosophy {
-  padding: 120px 0;
-  background-color: var(--bg-section-grey);
+  padding: var(--section-spacing) 0;
+  background-color: var(--bg-surface);
 }
 
 .contentGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 80px;
+  gap: var(--space-20);
+  align-items: start;
 }
 
 .sectionTitle {
-  font-size: 2.5rem;
-  margin-bottom: 32px;
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-8);
+  letter-spacing: -0.02em;
 }
 
 .leadText {
+  font-family: var(--font-heading);
   font-size: 1.5rem;
-  font-weight: 500;
-  margin-bottom: 24px;
-  color: var(--foreground);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-6);
+  line-height: 1.4;
 }
 
+.bodyText {
+  font-size: 1.0625rem;
+  color: var(--text-body);
+  line-height: 1.75;
+}
+
+/* ============ Values Card ============ */
 .valuesCard {
-  padding: 48px;
-  background-color: var(--surface-elevated);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-color);
+  padding: var(--space-10);
+  background: var(--bg-white);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-md);
 }
 
 .valuesCard h3 {
-  margin-bottom: 24px;
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-6);
+  letter-spacing: -0.01em;
 }
 
 .valuesCard ul {
@@ -72,13 +102,35 @@
 }
 
 .valuesCard li {
-  margin-bottom: 16px;
-  line-height: 1.6;
+  margin-bottom: var(--space-4);
+  line-height: 1.65;
+  font-size: 0.9375rem;
+  color: var(--text-body);
+  padding-left: var(--space-5);
+  position: relative;
 }
 
+.valuesCard li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+}
+
+.valuesCard li strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ============ Team Section ============ */
 .team {
-  padding: 120px 0;
+  padding: var(--section-spacing) 0;
   text-align: center;
+  background-color: var(--bg-white);
 }
 
 .teamContent {
@@ -86,36 +138,105 @@
   margin: 0 auto;
 }
 
-.foundersRef {
-  margin-top: 40px;
-  font-weight: 600;
-  color: var(--accent-blue);
+.teamIntro {
+  font-size: 1.0625rem;
+  color: var(--text-body);
+  line-height: 1.75;
+  margin-bottom: var(--space-12);
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
+/* ============ Founders Grid ============ */
+.foundersGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-8);
+  text-align: center;
+}
+
+.founderCard {
+  background: var(--bg-surface);
+  padding: var(--space-8);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-light);
+  transition: all var(--transition-base);
+}
+
+.founderCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-accent-light);
+  background: var(--bg-white);
+}
+
+.avatarPlaceholder {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, var(--color-accent-light) 0%, var(--bg-white) 100%);
+  border-radius: var(--radius-full);
+  margin: 0 auto var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-accent);
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 2px solid var(--bg-white);
+  box-shadow: var(--shadow-md);
+}
+
+.founderName {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+  letter-spacing: -0.01em;
+}
+
+.founderRole {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: var(--space-4);
+}
+
+.founderBio {
+  font-size: 0.875rem;
+  color: var(--text-body);
+  line-height: 1.65;
+}
+
+/* ============ Responsive ============ */
 @media (max-width: 991px) {
+  .hero {
+    padding: calc(var(--header-height) + var(--space-10)) 0 var(--space-12);
+  }
+
   .contentGrid {
     grid-template-columns: 1fr;
-    gap: 40px;
+    gap: var(--space-10);
   }
-  
-  .hero {
-    padding: 80px 0 60px;
+
+  .philosophy,
+  .team {
+    padding: var(--section-spacing-sm) 0;
   }
-  
-  .philosophy, .team {
-    padding: 60px 0;
-  }
-  
+
   .foundersGrid {
     display: flex;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
-    gap: 24px;
-    padding-bottom: 24px;
-    padding-left: 20px;
-    padding-right: 20px;
-    margin-right: -20px;
-    margin-left: -20px;
+    gap: var(--space-5);
+    padding: var(--space-2) 0 var(--space-6);
+    margin: 0 calc(-1 * var(--space-5));
+    padding-left: var(--space-5);
+    padding-right: var(--space-5);
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
@@ -123,67 +244,21 @@
   .foundersGrid::-webkit-scrollbar {
     display: none;
   }
-  
+
   .founderCard {
-    flex: 0 0 85vw;
-    width: 85vw;
-    max-width: none;
+    flex: 0 0 280px;
     scroll-snap-align: center;
   }
 }
 
-.foundersGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 40px;
-  margin-top: 60px;
-  text-align: center;
-}
+@media (max-width: 640px) {
+  .founderCard {
+    flex: 0 0 260px;
+    padding: var(--space-6);
+  }
 
-.founderCard {
-  background-color: var(--surface-elevated);
-  padding: 32px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-color);
-  transition: transform 0.2s ease;
-}
-
-.founderCard:hover {
-  transform: translateY(-4px);
-  border-color: var(--accent-blue);
-}
-
-.avatarPlaceholder {
-  width: 120px;
-  height: 120px;
-  background-color: var(--secondary-grey);
-  border-radius: 50%;
-  margin: 0 auto 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted-text);
-  font-weight: 600;
-  border: 1px solid var(--border-color);
-}
-
-.founderName {
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.founderRole {
-  font-size: 0.875rem;
-  color: var(--accent-blue);
-  font-weight: 600;
-  margin-bottom: 16px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.founderBio {
-  font-size: 0.9375rem;
-  color: var(--muted-text);
-  line-height: 1.6;
+  .avatarPlaceholder {
+    width: 80px;
+    height: 80px;
+  }
 }
