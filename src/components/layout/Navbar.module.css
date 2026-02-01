@@ -26,8 +26,10 @@
   font-size: 1.5rem;
   letter-spacing: -0.02em;
   color: var(--foreground);
+  z-index: 102; /* Ensure logo stays above drawer */
 }
 
+/* Desktop Navigation */
 .navLinks {
   display: flex;
   gap: 32px;
@@ -57,4 +59,61 @@
 
 .ctaButton:hover {
   background-color: var(--accent-blue-hover);
+}
+
+/* Mobile Navigation */
+.mobileMenuBtn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  z-index: 102;
+  color: var(--foreground);
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background-color: var(--bg-section-white); /* Ensure solid background */
+  z-index: 101;
+  padding: 100px 24px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  transform: translateY(-100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.drawer.open {
+  transform: translateY(0);
+}
+
+.mobileNavLink {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--foreground);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 16px;
+}
+
+.mobileCta {
+  margin-top: auto;
+  text-align: center;
+  width: 100%;
+  padding: 16px;
+  font-size: 1.125rem;
+}
+
+@media (max-width: 991px) {
+  .navLinks {
+    display: none;
+  }
+  
+  .mobileMenuBtn {
+    display: block;
+  }
 }

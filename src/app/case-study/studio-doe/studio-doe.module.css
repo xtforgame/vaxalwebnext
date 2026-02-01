@@ -111,6 +111,10 @@
 }
 
 @media (max-width: 991px) {
+  .hero {
+    padding-top: 40px;
+    padding-bottom: 60px;
+  }
   .title {
     font-size: 3rem;
   }

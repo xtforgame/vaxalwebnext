@@ -108,8 +108,9 @@
   }
 
   .founderCard {
-    flex: 0 0 85%; /* Show 85% of card to hint at scroll */
-    max-width: 320px;
+    flex: 0 0 85vw; /* Use viewport width relative unit to ensure peek effect */
+    width: 85vw;
+    max-width: none;
     scroll-snap-align: center;
   }
 }

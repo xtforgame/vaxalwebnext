@@ -142,6 +142,11 @@
   .heroTitle {
     font-size: 3rem;
   }
+
+  .heroSection {
+    padding: 40px 0 60px;
+    min-height: auto;
+  }
   
   .stepItem {
     grid-template-columns: 1fr;

@@ -57,3 +57,19 @@
   color: var(--muted-text);
   font-size: 0.85rem;
 }
+
+@media (max-width: 991px) {
+  .footer {
+    padding-bottom: 40px;
+  }
+  
+  .footerContainer {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding: 0 24px;
+  }
+  
+  .brandColumn p {
+    max-width: 100%;
+  }
+}
