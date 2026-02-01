@@ -1,7 +1,7 @@
-# 思序網路 (Si Xu Network) 官方網站 - 功能與設計規格書
+# Vaxal (思序網路) 官方網站 - 功能與設計規格書
 
 ## 1. 專案概述 (Project Overview)
-*   **專案名稱**：思序網路 (Vaxal / Si Xu Network) 2026 官網改版
+*   **專案名稱**：Vaxal (Vaxal) 2026 官網改版
 *   **核心目標**：打造一個「詳盡、現代化且具信賴感」的形象網站。
 *   **設計哲學**：**Product-Led Service (產品化服務)**。
     *   借鏡 SaaS 產品網頁的敘事邏輯（具體演示、清晰步驟），來包裝高度客製化的顧問服務。
@@ -13,7 +13,7 @@
 *   **核心關鍵字**：Infrastructure (穩固基建), Intelligence (AI 賦能), Trust (信賴實績), Scalability (規模化能力)。
 *   **Slogan (Headline 暫定)**：
     *   Main: **Build with Intelligence. Scale with Trust.**
-    *   Sub: 從 AI 試點到企業級治理，思序網路是您最堅實的技術轉型夥伴。
+    *   Sub: 從 AI 試點到企業級治理，Vaxal 是您最堅實的技術轉型夥伴。
 *   **視覺風格 (Visual Direction)**：
     *   參考對象：`getformflow.io`
     *   **配色**：
@@ -27,7 +27,7 @@
 ## 3. 網站架構 (Sitemap)
 
 ### 3.0 全站導覽 (Navigation)
-*   **Left**: Logo (Si Xu / Vaxal)
+*   **Left**: Logo (Vaxal)
 *   **Right**: Services, Method (Step 1-2-3), Case Study (Studio Doe), About
 *   **CTA Button**: "Start Pilot" (開啟試點)
 
@@ -37,10 +37,10 @@
 | 區塊 (Section) | 內容重點 (Key Content) | 視覺呈現 (Visual Strategy) |
 | :--- | :--- | :--- |
 | **Hero** | 價值主張 (Slogan) + Email Capture (CTA) | **Split Layout**: 左側文案 + CTA；右側為 **Ryko Agent 運作動畫** (即時回應、解決問題)。 |
-| **Trust Bar** | 實力背書 | 灰階 Logo Wall: **Studio Doe**, Next.js, OpenAI, Vercel 等技術與客戶標章。 |
+| **Trust Bar** | 實力背書 | 灰階 Logo Wall: **Studio Doe**, **d8ai**, **Beluga AI**, Next.js, OpenAI, Vercel。 |
 | **Method (The 3 Steps)** | 合作三部曲 (Connect -> Automate -> Scale) | **Z-Pattern Layout**: <br>1. **Connect**: Ryko 對話視窗 (User Ask -> AI Answer)<br>2. **Automate**: BrevFlow 節點流動動畫 (Data -> Process -> Result)<br>3. **Scale**: SoloistBoard 看板畫面 (AIPM auto-moving cards) |
 | **Services Grid** | 服務項目矩陣 | 卡片式佈局，列出 Ryko, BrevFlow, SoloistBoard, FormalDoc 四大產品線，強調它們如何支援顧問服務。 |
-| **Infrastructure Case** | Studio Doe 預告 | 強調「高併發、模組化」的電商基建。僅作為信任背書，引導至詳細頁面。 |
+| **Infrastructure Case** | Studio Doe 預告 | 強計「高併發、模組化」的電商基建。僅作為信任背書，引導至詳細頁面。 |
 | **Footer** | 聯絡資訊 | 簡潔的 Link List + Social Icons。 |
 
 ### 3.2 深度案例頁 (Case Study: Studio Doe)

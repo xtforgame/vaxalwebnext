@@ -25,7 +25,7 @@
 
 .card {
   padding: 40px;
-  background-color: var(--secondary-grey);
+  background-color: var(--surface-elevated);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
   transition: all 0.3s ease;

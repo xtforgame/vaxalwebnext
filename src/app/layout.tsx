@@ -16,7 +16,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
-  title: "Si Xu Network | Build with Intelligence. Scale with Trust.",
+  title: "思序網路 Vaxal | Build with Intelligence. Scale with Trust.",
   description: "Your pragmatic growth partner in the AI era. Combining enterprise experience with startup agility.",
 };
 

@@ -1,6 +1,6 @@
 .caseSection {
-  background-color: #0f172a; /* Dark Navy for contrast */
-  color: white;
+  background-color: var(--dark-section-bg);
+  color: var(--dark-section-text);
 }
 
 .content {
@@ -32,7 +32,7 @@
 
 .description {
   font-size: 1.125rem;
-  color: #94a3b8;
+  color: var(--dark-section-muted);
   line-height: 1.7;
   margin-bottom: 40px;
 }
@@ -51,7 +51,7 @@
 }
 
 .statItem p {
-  color: #64748b;
+  color: var(--dark-section-muted);
   font-size: 0.875rem;
 }
 

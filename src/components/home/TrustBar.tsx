@@ -3,8 +3,8 @@ import styles from './TrustBar.module.css';
 
 const PARTNERS = [
   { name: 'Studio Doe' },
-  { name: 'Eight Dimension' },
-  { name: 'Cosmic Whale' },
+  { name: 'd8ai' },
+  { name: 'Beluga AI' },
   { name: 'Next.js' },
   { name: 'OpenAI' },
   { name: 'Vercel' },

@@ -15,7 +15,7 @@ export default function Philosophy() {
         
         <div className={styles.description}>
           <p style={{ fontSize: '1.125rem', color: 'var(--muted-text)', lineHeight: '1.8', marginBottom: '40px' }}>
-            Ryko、BrevFlow、SoloistBoard 這些複雜系統，正是思序網路使用自身開發的 AI 工作流與 Vibe Coding 打造出來的。我們不只是理論家，更是這套生產力革命的第一批受益者。
+            Ryko、BrevFlow、SoloistBoard 這些複雜系統，正是思序網路 (Vaxal) 使用自身開發的 AI 工作流與 Vibe Coding 打造出來的。我們不只是理論家，更是這套生產力革命的第一批受益者。
           </p>
         </div>
 

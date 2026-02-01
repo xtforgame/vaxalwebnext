@@ -1,4 +1,4 @@
-# 思序網路 (Si Xu Network) 訪談紀錄與產品核心整理
+# 思序網路 (Vaxal) 訪談紀錄與產品核心整理
 
 ## 1. 產品矩陣 (Product Matrix)
 我們擁有完整的 AI 產品線，但目前的商業模式主軸是「顧問 + 客製化導入 (Consulting + Customization)」，產品是達成服務的強大工具。

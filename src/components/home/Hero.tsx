@@ -13,7 +13,7 @@ export default function Hero() {
           </h1>
           <p className={styles.subheadline}>
             反對 AI 泡沫，我們只交付可量化的真實成果。<br />
-            從無痛試點到企業級治理，思序網路是您最堅實的技術夥伴。
+            從無痛試點到企業級治理，思序網路 (Vaxal) 是您最堅實的技術夥伴。
           </p>
           <div className={styles.ctaGroup}>
             <Button size="lg" href="/contact">

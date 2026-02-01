@@ -26,7 +26,7 @@ export default function Methodology() {
   return (
     <SectionWrapper background="grey" className={styles.methodSection} id="methodology">
       <div className={styles.header}>
-        <h2 className={styles.title}>The Si Xu Method</h2>
+        <h2 className={styles.title}>The Vaxal Method</h2>
         <p className={styles.subtitle}>
           我們不販售空泛的大餅。透過由易入難的三部曲架構，確保每一個階段都能交付可量化的成果。
         </p>

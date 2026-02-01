@@ -1,8 +1,8 @@
 .ctaSection {
   text-align: center;
   padding: 120px 0;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--dark-section-bg) 0%, var(--border-color) 200%);
+  color: var(--dark-section-text);
 }
 
 .container {
@@ -17,7 +17,7 @@
 
 .subtitle {
   font-size: 1.25rem;
-  color: #94a3b8;
+  color: var(--dark-section-muted);
   margin-bottom: 48px;
 }
 

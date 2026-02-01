@@ -33,7 +33,7 @@
 .avatarPlaceholder {
   width: 120px;
   height: 120px;
-  background-color: var(--secondary-grey);
+  background-color: var(--surface-elevated);
   border-radius: 50%;
   margin: 0 auto 24px;
   display: flex;
@@ -68,7 +68,7 @@
   max-width: 800px;
   margin: 0 auto;
   padding: 40px;
-  background-color: var(--secondary-grey);
+  background-color: var(--surface-elevated);
   border-radius: var(--radius-lg);
   border: 1px dashed var(--border-color);
   text-align: center;

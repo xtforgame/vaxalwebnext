@@ -6,7 +6,7 @@ export default function Navbar() {
     <header className={styles.header}>
       <div className={styles.navContainer}>
         <Link href="/" className={styles.logo}>
-          Si Xu Network
+          Vaxal
         </Link>
         
         <nav className={styles.navLinks}>

@@ -6,7 +6,7 @@ export default function Footer() {
     <footer className={styles.footer}>
       <div className={styles.footerContainer}>
         <div className={styles.brandColumn}>
-          <h3>Si Xu Network</h3>
+          <h3>思序網路 Vaxal</h3>
           <p>
             Build with Intelligence. Scale with Trust.<br/>
             Your pragmatic growth partner in the AI era.
@@ -41,7 +41,7 @@ export default function Footer() {
       </div>
       
       <div className={styles.copyright}>
-        &copy; {new Date().getFullYear()} Si Xu Network. All rights reserved.
+        &copy; {new Date().getFullYear()} 思序網路 Vaxal. All rights reserved.
       </div>
     </footer>
   );
