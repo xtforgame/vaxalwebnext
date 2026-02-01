@@ -127,6 +127,10 @@
 }
 
 .mockTitle {
+  position: absolute;
+  text-align: center;
+  left: 0;
+  width: 100%;
   flex: 1;
   text-align: center;
   font-family: var(--font-body);
