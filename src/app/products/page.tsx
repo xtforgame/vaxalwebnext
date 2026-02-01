@@ -22,14 +22,14 @@ const ALL_PRODUCTS = [
     name: 'SoloistBoard',
     tagline: 'AI Governance Platform',
     description: 'Orchestrate autonomous agents and human teams in one place. Total visibility into AI-driven projects.',
-    href: '#'
+    href: '/products/soloistboard'
   },
   {
     id: 'formaldoc',
     name: 'FormalDoc',
     tagline: 'Intelligent Documentation',
     description: 'Convert enterprise standards into AI templates. Automating high-precision business output.',
-    href: '#'
+    href: '/products/formaldoc'
   }
 ];
 

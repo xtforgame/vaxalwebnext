@@ -96,4 +96,65 @@
     grid-template-columns: 1fr;
     gap: 40px;
   }
+  
+  .foundersGrid {
+    grid-template-columns: 1fr;
+    gap: 60px;
+  }
+}
+
+.foundersGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  margin-top: 60px;
+  text-align: center;
+}
+
+.founderCard {
+  background-color: var(--surface-elevated);
+  padding: 32px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  transition: transform 0.2s ease;
+}
+
+.founderCard:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent-blue);
+}
+
+.avatarPlaceholder {
+  width: 120px;
+  height: 120px;
+  background-color: var(--secondary-grey);
+  border-radius: 50%;
+  margin: 0 auto 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-text);
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+}
+
+.founderName {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.founderRole {
+  font-size: 0.875rem;
+  color: var(--accent-blue);
+  font-weight: 600;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.founderBio {
+  font-size: 0.9375rem;
+  color: var(--muted-text);
+  line-height: 1.6;
 }

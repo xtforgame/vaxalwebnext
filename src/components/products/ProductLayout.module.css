@@ -1,0 +1,154 @@
+/* Shared Layout for Product Pages */
+
+/* Hero Section - The Philosophy */
+.heroSection {
+  padding: 180px 0 100px;
+  background-color: var(--primary-white);
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+}
+
+.heroContent {
+  max-width: 900px;
+}
+
+.heroTag {
+  display: inline-block;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-blue);
+  margin-bottom: 24px;
+}
+
+.heroTitle {
+  font-size: 4.5rem;
+  line-height: 1.1;
+  margin-bottom: 32px;
+  letter-spacing: -0.04em;
+  font-weight: 800;
+}
+
+.heroSubtitle {
+  font-size: 1.5rem;
+  color: var(--muted-text);
+  line-height: 1.6;
+  max-width: 700px;
+}
+
+/* Assertion Section - The Context */
+.assertionSection {
+  padding: 140px 0;
+  background-color: var(--deep-section-bg);
+  color: var(--deep-section-text);
+  text-align: center;
+}
+
+.assertionWrapper {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.assertionTitle {
+  font-size: 2.5rem;
+  margin-bottom: 32px;
+  font-weight: 700;
+}
+
+.assertionText {
+  font-size: 1.25rem;
+  line-height: 1.8;
+  color: var(--deep-section-muted);
+}
+
+/* Steps Section - The Method */
+.stepsSection {
+  padding: 140px 0;
+  background-color: var(--bg-section-grey);
+}
+
+.stepsHeader {
+  text-align: center;
+  margin-bottom: 100px;
+}
+
+.stepsTitle {
+  font-size: 2rem;
+  margin-bottom: 16px;
+}
+
+.stepsSubtitle {
+  color: var(--muted-text);
+  font-size: 1.125rem;
+}
+
+.stepItem {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 80px;
+  align-items: center;
+  margin-bottom: 160px;
+}
+
+.stepItem:last-child {
+  margin-bottom: 0;
+}
+
+.stepItem:nth-child(even) {
+  direction: rtl;
+}
+
+.stepItem:nth-child(even) .stepContent {
+  direction: ltr;
+}
+
+.stepNumber {
+  font-size: 4rem;
+  font-weight: 900;
+  color: var(--border-color); /* Subtle numeral */
+  line-height: 1;
+  margin-bottom: 24px;
+  display: block;
+}
+
+.stepTitle {
+  font-size: 2rem;
+  margin-bottom: 24px;
+}
+
+.stepDesc {
+  font-size: 1.125rem;
+  line-height: 1.7;
+  color: var(--muted-text);
+}
+
+.stepVisual {
+  background-color: var(--surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-text);
+  font-style: italic;
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.05);
+}
+
+@media (max-width: 991px) {
+  .heroTitle {
+    font-size: 3rem;
+  }
+  
+  .stepItem {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    margin-bottom: 100px;
+  }
+  
+  .stepItem:nth-child(even) {
+    direction: ltr;
+  }
+}

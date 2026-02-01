@@ -1,6 +1,24 @@
 import SectionWrapper from '@/components/ui/SectionWrapper';
 import styles from './about.module.css';
 
+const FOUNDERS = [
+  {
+    name: 'Rick Chen',
+    role: 'Co-Founder / Strategy',
+    bio: '台大校友。專注於 AI 戰略與商業架構，深信 AI 應是企業成長的催化劑而非單純的工具替代。'
+  },
+  {
+    name: 'Marson Mao',
+    role: 'Co-Founder / Technology',
+    bio: '清大校友。負責核心產品架構，擁抱 Vibe Coding 與自動化治理，致力於打造極致穩定的軟體基建。'
+  },
+  {
+    name: 'Jack Lin',
+    role: 'Co-Founder / Engineering',
+    bio: '專長於高併發系統與自動化流程。感同身受企業從 0 到 100 的成長痛點。'
+  }
+];
+
 export default function AboutPage() {
   return (
     <div className={styles.container}>
@@ -24,8 +42,8 @@ export default function AboutPage() {
             <p className={styles.leadText}>
               我們深信 AI 不應只是孤立的工具，而是企業流動的血液。
             </p>
-            <p>
-              思序網路 (Vaxal) 的成立初衷很單純：讓複雜的技術變得可治理、可擴展且具備具體的商業價值。我們不追求虛幻的 AI 泡沫，我們追求的是能實質推動產業進步的「數位基建」。
+            <p style={{ color: 'var(--muted-text)', lineHeight: '1.7', fontSize: '1.125rem' }}>
+              思序網路 (Vaxal) 的成立初衷很單純：讓複雜的技術變得可治理、可擴展且具備具體的商業價值。我們的目標很清晰：在 AI 浪潮中，為企業打造能實質推動產業進步的「數位基建」。
             </p>
           </div>
           <div className={styles.valuesCard}>
@@ -42,12 +60,19 @@ export default function AboutPage() {
       <SectionWrapper background="grey" className={styles.team}>
         <h2 className={styles.sectionTitle}>The DNA</h2>
         <div className={styles.teamContent}>
-          <p>
+          <p style={{ fontSize: '1.125rem', color: 'var(--muted-text)', lineHeight: '1.7', marginBottom: '40px' }}>
             我們的團隊成員來自頂尖軟體企業與創新實驗室。我們融合了大公司的嚴謹品質控管與小團隊的極速敏捷開發。
           </p>
-          <div className={styles.foundersRef}>
-             {/* Refers back to homepage team section or duplicates key info */}
-             Rick Chen (Strategy), Marson Mao (Technology), Jack Lin (Engineering)
+          
+          <div className={styles.foundersGrid}>
+            {FOUNDERS.map((founder) => (
+              <div key={founder.name} className={styles.founderCard}>
+                <div className={styles.avatarPlaceholder}>Vaxal</div>
+                <h3 className={styles.founderName}>{founder.name}</h3>
+                <p className={styles.founderRole}>{founder.role}</p>
+                <p className={styles.founderBio}>{founder.bio}</p>
+              </div>
+            ))}
           </div>
         </div>
       </SectionWrapper>
