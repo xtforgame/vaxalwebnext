@@ -4,7 +4,7 @@ import styles from './CtaSection.module.css';
 
 export default function CtaSection() {
   return (
-    <SectionWrapper className={styles.ctaSection}>
+    <SectionWrapper id="contact" className={styles.ctaSection}>
       <div className={styles.container}>
         <h2 className={styles.title}>Ready to Build with Trust?</h2>
         <p className={styles.subtitle}>

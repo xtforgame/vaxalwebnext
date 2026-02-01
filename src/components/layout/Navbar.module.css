@@ -2,7 +2,7 @@
   height: var(--header-height);
   width: 100%;
   border-bottom: 1px solid var(--border-color);
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: var(--header-bg);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
@@ -47,7 +47,7 @@
 
 .ctaButton {
   background-color: var(--accent-blue);
-  color: white;
+  color: #FFFFFF;
   padding: 10px 20px;
   border-radius: var(--radius-md);
   font-weight: 600;

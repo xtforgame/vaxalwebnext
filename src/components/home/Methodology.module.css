@@ -1,5 +1,6 @@
 .methodSection {
-  background-color: var(--secondary-grey);
+  background-color: var(--deep-section-bg);
+  color: var(--deep-section-text);
 }
 
 .header {
@@ -14,7 +15,7 @@
 
 .subtitle {
   font-size: 1.125rem;
-  color: var(--muted-text);
+  color: var(--deep-section-muted);
   max-width: 700px;
   margin: 0 auto;
 }
@@ -71,12 +72,13 @@
 .stepTitle {
   font-size: 2rem;
   margin-bottom: 24px;
+  color: var(--deep-section-text);
 }
 
 .stepDescription {
   font-size: 1.125rem;
   line-height: 1.7;
-  color: var(--muted-text);
+  color: var(--deep-section-muted);
   margin-bottom: 32px;
 }
 

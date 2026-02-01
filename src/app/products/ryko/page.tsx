@@ -60,8 +60,8 @@ export default function RykoPage() {
           {FEATURES.map((feature, idx) => (
             <div key={idx} className={styles.featureCard}>
               <div className={styles.featureIcon}>{feature.icon}</div>
-              <h3 className={feature.featureTitle}>{feature.title}</h3>
-              <p className={feature.featureDesc}>{feature.desc}</p>
+              <h3 className={styles.featureTitle}>{feature.title}</h3>
+              <p className={styles.featureDesc}>{feature.desc}</p>
             </div>
           ))}
         </div>
@@ -72,7 +72,7 @@ export default function RykoPage() {
         <SectionWrapper>
           <h2 className={styles.archTitle}>Bridging the Gap: AI x Enterprise Data</h2>
           <div className={styles.archVisual}>
-            [ Architecture Diagram: LLM -> Ryko Runtime -> (Internal DB / CRM / Custom APIs) ]<br/>
+            [ Architecture Diagram: LLM {'->'} Ryko Runtime {'->'} (Internal DB / CRM / Custom APIs) ]<br/>
             Visualizing the secure bridge and tool dispatching layers.
           </div>
         </SectionWrapper>

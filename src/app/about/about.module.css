@@ -1,0 +1,99 @@
+.container {
+  min-height: 100vh;
+}
+
+.hero {
+  padding: 160px 0 100px;
+  background-color: var(--deep-section-bg);
+  color: var(--deep-section-text);
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background-color: var(--accent-blue);
+  color: #FFFFFF;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 100px;
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 4rem;
+  line-height: 1.1;
+  margin-bottom: 32px;
+  letter-spacing: -0.04em;
+}
+
+.subtitle {
+  font-size: 1.5rem;
+  color: var(--deep-section-muted);
+  max-width: 700px;
+  line-height: 1.5;
+}
+
+.philosophy {
+  padding: 120px 0;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+}
+
+.sectionTitle {
+  font-size: 2.5rem;
+  margin-bottom: 32px;
+}
+
+.leadText {
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin-bottom: 24px;
+  color: var(--foreground);
+}
+
+.valuesCard {
+  padding: 48px;
+  background-color: var(--surface-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+}
+
+.valuesCard h3 {
+  margin-bottom: 24px;
+}
+
+.valuesCard ul {
+  list-style: none;
+}
+
+.valuesCard li {
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.team {
+  padding: 120px 0;
+  text-align: center;
+}
+
+.teamContent {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.foundersRef {
+  margin-top: 40px;
+  font-weight: 600;
+  color: var(--accent-blue);
+}
+
+@media (max-width: 991px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}

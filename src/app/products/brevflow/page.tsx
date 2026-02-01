@@ -65,7 +65,7 @@ export default function BrevFlowPage() {
 
           <div className={styles.flowVisual}>
             [ Interactive Flow Builder UI ]<br/>
-            Drag & Drop nodes: Triggers → AI Processing → API Calls → Notifications
+            Drag {'&'} Drop nodes: Triggers {'→'} AI Processing {'→'} API Calls {'→'} Notifications
           </div>
         </SectionWrapper>
       </section>

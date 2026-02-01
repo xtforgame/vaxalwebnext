@@ -6,11 +6,11 @@
 }
 
 .background-white {
-  background-color: var(--primary-white);
+  background-color: var(--bg-section-white);
 }
 
 .background-grey {
-  background-color: var(--secondary-grey);
+  background-color: var(--bg-section-grey);
 }
 
 .container {
