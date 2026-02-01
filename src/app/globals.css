@@ -36,23 +36,23 @@
   --radius-xl: 24px;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #020617; /* Slate 950 */
+    --background: #020617; 
     --foreground: #F8FAFC;
-    --secondary-grey: #0F172A; /* Slate 900 */
-    --border-color: #1E293B; /* Slate 800 */
-    --muted-text: #94A3B8; /* Slate 400 */
+    --secondary-grey: #0F172A; 
+    --border-color: #1E293B; 
+    --muted-text: #94A3B8; 
 
-    /* Section Backgrounds - Dark Mode */
     --bg-section-white: var(--background);
     --bg-section-grey: #0B1120;
 
-    /* Surfaces & Components - Dark Mode */
     --surface-elevated: #0F172A;
     --header-bg: rgba(2, 6, 23, 0.8);
   }
 }
+*/
 
 html,
 body {
