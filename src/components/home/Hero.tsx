@@ -12,7 +12,7 @@ export default function Hero() {
             Scale with Trust.
           </h1>
           <p className={styles.subheadline}>
-            反對 AI 泡沫，我們只交付可量化的真實成果。<br />
+            我們將機器的智慧轉化為企業的資產，確保技術的每一分投資都有清晰、可量化的價值。<br />
             從無痛試點到企業級治理，思序網路 (Vaxal) 是您最堅實的技術夥伴。
           </p>
           <div className={styles.ctaGroup}>

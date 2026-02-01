@@ -1,6 +1,6 @@
 .heroSection {
-  padding-top: 80px; /* Reduced top padding as Navbar is sticky/fixed usually */
-  padding-bottom: var(--section-spacing);
+  padding-top: 80px;
+  padding-bottom: 160px;
   display: flex;
   align-items: center;
   min-height: calc(100vh - var(--header-height));

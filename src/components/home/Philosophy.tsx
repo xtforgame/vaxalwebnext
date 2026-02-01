@@ -21,12 +21,12 @@ export default function Philosophy() {
 
         <div className={styles.valuesGrid}>
           <div className={styles.valueCard}>
-            <h3 className={styles.valueTitle}>反對 AI 泡沫</h3>
-            <p className={styles.valueDescription}>不賣空泛的大餅與展示用的 Demo。每一階段的導入，都必須轉化為可量化的實質效率提升。</p>
+            <h3 className={styles.valueTitle}>落地的價值</h3>
+            <p className={styles.valueDescription}>不賣展示用的 Demo。每一階段的導入，都必須轉化為可量化的實質效率提升。</p>
           </div>
           <div className={styles.valueCard}>
-            <h3 className={styles.valueTitle}>反對資料綁架</h3>
-            <p className={styles.valueDescription}>主動提供 AI 對話紀錄導出服務。客戶留下是因為信賴我們的價值，而非因為資料被鎖鎖死。</p>
+            <h3 className={styles.valueTitle}>透明的治理</h3>
+            <p className={styles.valueDescription}>主動提供 AI 對話紀錄導出服務。客戶留下是因為信賴我們的價值，而非因為技術黑盒。</p>
           </div>
           <div className={styles.valueCard}>
             <h3 className={styles.valueTitle}>共生式的夥伴關係</h3>

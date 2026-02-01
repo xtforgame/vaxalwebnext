@@ -1,0 +1,42 @@
+.contextSection {
+  background-color: var(--bg-section-grey);
+  padding: 140px 0;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.leadText {
+  font-size: 1.25rem;
+  color: var(--muted-text);
+  line-height: 1.8;
+  margin-bottom: 32px;
+}
+
+.highlight {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.mainStatement {
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--foreground);
+  letter-spacing: -0.02em;
+}
+
+.accent {
+  color: var(--accent-blue);
+}
+
+@media (max-width: 768px) {
+  .mainStatement {
+    font-size: 1.75rem;
+  }
+}
