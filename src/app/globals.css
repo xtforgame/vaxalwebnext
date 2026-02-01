@@ -98,7 +98,7 @@
   --accent-blue-hover: var(--color-accent-hover);
   --primary-white: var(--bg-white);
   --surface-elevated: var(--bg-elevated);
-  --header-bg: rgba(255, 255, 255, 0.9);
+  --header-bg: var(--color-primary);
   --bg-section-white: var(--bg-white);
   --bg-section-grey: var(--bg-surface);
 }

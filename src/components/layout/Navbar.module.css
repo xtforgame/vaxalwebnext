@@ -5,10 +5,7 @@
 .header {
   height: var(--header-height);
   width: 100%;
-  background-color: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border-light);
+  background-color: var(--color-primary);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -28,18 +25,14 @@
 
 /* ============ Logo ============ */
 .logo {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 1.375rem;
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
+  display: flex;
+  align-items: center;
   z-index: 102;
   transition: opacity var(--transition-base);
 }
 
 .logo:hover {
-  opacity: 0.8;
-  color: var(--text-primary);
+  opacity: 0.85;
 }
 
 /* ============ Desktop Navigation ============ */
@@ -53,7 +46,7 @@
   font-family: var(--font-body);
   font-size: 0.9375rem;
   font-weight: 500;
-  color: var(--text-body);
+  color: rgba(255, 255, 255, 0.85);
   transition: color var(--transition-base);
   position: relative;
   display: inline-flex;
@@ -62,11 +55,12 @@
 }
 
 .navLink:hover {
-  color: var(--color-accent);
+  color: #FFFFFF;
 }
 
 .chevron {
   transition: transform var(--transition-base);
+  opacity: 0.7;
 }
 
 /* ============ Desktop Dropdown ============ */
@@ -133,21 +127,19 @@
   align-items: center;
   justify-content: center;
   background-color: var(--color-accent);
-  color: #FFFFFF;
+  color: var(--color-primary);
   padding: var(--space-3) var(--space-5);
   border-radius: var(--radius-lg);
   font-family: var(--font-body);
   font-weight: 600;
   font-size: 0.9375rem;
-  box-shadow: var(--shadow-btn-primary);
   transition: all var(--transition-base);
 }
 
 .ctaButton:hover {
-  background-color: var(--color-accent-hover);
+  background-color: #FFFFFF;
   transform: translateY(-1px);
-  box-shadow: var(--shadow-btn-primary-hover);
-  color: #FFFFFF;
+  color: var(--color-primary);
 }
 
 /* ============ Mobile Menu Button ============ */
@@ -158,13 +150,13 @@
   cursor: pointer;
   padding: var(--space-2);
   z-index: 102;
-  color: var(--text-primary);
+  color: #FFFFFF;
   border-radius: var(--radius-md);
   transition: background-color var(--transition-base);
 }
 
 .mobileMenuBtn:hover {
-  background-color: var(--bg-surface);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* ============ Mobile Drawer ============ */
@@ -175,7 +167,7 @@
   width: 100%;
   height: 100vh;
   height: 100dvh;
-  background: var(--bg-white);
+  background: var(--color-primary);
   z-index: 101;
   display: flex;
   flex-direction: column;
@@ -219,15 +211,15 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.6);
   border-radius: var(--radius-lg);
   margin-right: var(--space-4);
   transition: all var(--transition-base);
 }
 
 .mobileExpandBtn:hover {
-  background: var(--bg-surface);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
 }
 
 .mobileExpandBtn svg {
@@ -261,9 +253,9 @@
   font-family: var(--font-body);
   font-size: 1.125rem;
   font-weight: 500;
-  color: var(--text-body);
+  color: rgba(255, 255, 255, 0.8);
   padding: var(--space-3) var(--space-5);
-  background: var(--bg-surface);
+  background: rgba(255, 255, 255, 0.05);
   transition: all var(--transition-base);
 }
 
@@ -278,7 +270,7 @@
 }
 
 .mobileSubLink:hover {
-  background: var(--border-light);
+  background: rgba(255, 255, 255, 0.12);
   color: var(--color-accent);
 }
 
@@ -289,7 +281,7 @@
   font-family: var(--font-heading);
   font-size: 1.75rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #FFFFFF;
   padding: var(--space-5) var(--space-6);
   margin: 0 var(--space-4);
   border-radius: var(--radius-xl);
@@ -298,12 +290,12 @@
 }
 
 .mobileNavLink:hover {
-  background: var(--bg-surface);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--color-accent);
 }
 
 .mobileNavLink:active {
-  background: var(--color-accent-light);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 /* ============ Mobile CTA ============ */
@@ -314,6 +306,12 @@
   border-radius: var(--radius-xl);
   text-align: center;
   justify-content: center;
+  background-color: var(--color-accent) !important;
+  color: var(--color-primary) !important;
+}
+
+.mobileCta:hover {
+  background-color: #FFFFFF !important;
 }
 
 /* ============ Responsive ============ */
@@ -334,8 +332,9 @@
     padding: 0 var(--space-5);
   }
 
-  .logo {
-    font-size: 1.25rem;
+  .logo img {
+    width: 100px;
+    height: auto;
   }
 
   .mobileNavLink {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import styles from './Navbar.module.css';
 
 const PRODUCTS = [
@@ -49,7 +50,13 @@ export default function Navbar() {
     <header className={styles.header}>
       <div className={styles.navContainer}>
         <Link href="/" className={styles.logo} onClick={closeMenu}>
-          Vaxal
+          <Image
+            src="/vaxal.svg"
+            alt="Vaxal"
+            width={120}
+            height={38}
+            priority
+          />
         </Link>
 
         {/* Desktop Navigation */}
