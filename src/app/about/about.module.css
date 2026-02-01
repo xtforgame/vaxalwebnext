@@ -35,6 +35,7 @@
 
 .philosophy {
   padding: 120px 0;
+  background-color: var(--bg-section-grey);
 }
 
 .contentGrid {

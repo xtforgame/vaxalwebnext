@@ -41,8 +41,8 @@
 /* Assertion Section - The Context */
 .assertionSection {
   padding: 140px 0;
-  background-color: var(--deep-section-bg);
-  color: var(--deep-section-text);
+  background-color: var(--bg-section-grey);
+  color: var(--foreground);
   text-align: center;
 }
 
@@ -60,13 +60,13 @@
 .assertionText {
   font-size: 1.25rem;
   line-height: 1.8;
-  color: var(--deep-section-muted);
+  color: var(--muted-text);
 }
 
 /* Steps Section - The Method */
 .stepsSection {
   padding: 140px 0;
-  background-color: var(--bg-section-grey);
+  background-color: var(--bg-section-white); /* White to contrast with Assertion (Grey) and CTA (Grey) */
 }
 
 .stepsHeader {
@@ -107,7 +107,8 @@
 .stepNumber {
   font-size: 4rem;
   font-weight: 900;
-  color: var(--border-color); /* Subtle numeral */
+  color: var(--accent-blue);
+  opacity: 1;
   line-height: 1;
   margin-bottom: 24px;
   display: block;

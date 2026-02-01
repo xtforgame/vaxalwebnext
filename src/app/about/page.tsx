@@ -57,7 +57,7 @@ export default function AboutPage() {
         </div>
       </SectionWrapper>
 
-      <SectionWrapper background="grey" className={styles.team}>
+      <SectionWrapper background="white" className={styles.team}>
         <h2 className={styles.sectionTitle}>The DNA</h2>
         <div className={styles.teamContent}>
           <p style={{ fontSize: '1.125rem', color: 'var(--muted-text)', lineHeight: '1.7', marginBottom: '40px' }}>
