@@ -22,7 +22,7 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 40px;
   margin-bottom: 120px;
 }
@@ -89,7 +89,27 @@
 
 @media (max-width: 991px) {
   .grid {
-    grid-template-columns: 1fr;
-    gap: 60px;
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 24px;
+    padding-bottom: 24px; /* Space for scrollbar if visible */
+    padding-left: 20px;   /* Safe area start */
+    padding-right: 20px;  /* Safe area end */
+    margin-right: -20px;  /* Negative margin to allow full-width scroll */
+    margin-left: -20px;
+    /* Hide scrollbar for cleaner look */
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .founderCard {
+    flex: 0 0 85%; /* Show 85% of card to hint at scroll */
+    max-width: 320px;
+    scroll-snap-align: center;
   }
 }

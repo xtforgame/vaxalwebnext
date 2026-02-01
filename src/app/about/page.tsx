@@ -4,17 +4,22 @@ import styles from './about.module.css';
 const FOUNDERS = [
   {
     name: 'Rick Chen',
-    role: 'Co-Founder / Strategy',
-    bio: '台大校友。專注於 AI 戰略與商業架構，深信 AI 應是企業成長的催化劑而非單純的工具替代。'
+    role: 'CEO',
+    bio: '專注於 AI 戰略與商業架構，深信 AI 應是企業成長的催化劑而非單純的工具替代。'
   },
   {
     name: 'Marson Mao',
-    role: 'Co-Founder / Technology',
-    bio: '清大校友。負責核心產品架構，擁抱 Vibe Coding 與自動化治理，致力於打造極致穩定的軟體基建。'
+    role: 'CTO',
+    bio: '負責核心產品架構，擁抱 Vibe Coding 與自動化治理，致力於打造極致穩定的軟體基建。'
+  },
+  {
+    name: 'Kathy Pan',
+    role: 'COO',
+    bio: '負責公司營運與流程優化，確保團隊在高速成長中維持穩健的執行力。'
   },
   {
     name: 'Jack Lin',
-    role: 'Co-Founder / Engineering',
+    role: 'Director, E-Commerce Solution',
     bio: '專長於高併發系統與自動化流程。感同身受企業從 0 到 100 的成長痛點。'
   }
 ];
@@ -61,7 +66,7 @@ export default function AboutPage() {
         <h2 className={styles.sectionTitle}>The DNA</h2>
         <div className={styles.teamContent}>
           <p style={{ fontSize: '1.125rem', color: 'var(--muted-text)', lineHeight: '1.7', marginBottom: '40px' }}>
-            我們的團隊成員來自頂尖軟體企業與創新實驗室。我們融合了大公司的嚴謹品質控管與小團隊的極速敏捷開發。
+            我們是一群來自台大、清大的校友，團隊成員更來自頂尖軟體企業與創新實驗室。我們融合了大公司的嚴謹品質控管與小團隊的極速敏捷開發。
           </p>
           
           <div className={styles.foundersGrid}>

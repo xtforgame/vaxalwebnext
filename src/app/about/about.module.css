@@ -82,7 +82,7 @@
 }
 
 .teamContent {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -99,14 +99,33 @@
   }
   
   .foundersGrid {
-    grid-template-columns: 1fr;
-    gap: 60px;
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 24px;
+    padding-bottom: 24px;
+    padding-left: 20px;
+    padding-right: 20px;
+    margin-right: -20px;
+    margin-left: -20px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .foundersGrid::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .founderCard {
+    flex: 0 0 85%;
+    max-width: 320px;
+    scroll-snap-align: center;
   }
 }
 
 .foundersGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 40px;
   margin-top: 60px;
   text-align: center;
