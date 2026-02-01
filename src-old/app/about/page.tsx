@@ -31,7 +31,7 @@ export default function AboutPage() {
         <SectionWrapper padding="none">
           <span className={styles.badge}>Our Story</span>
           <h1 className={styles.title}>
-            Intelligence is <br/>
+            Intelligence is<br />
             the New Standard.
           </h1>
           <p className={styles.subtitle}>
@@ -40,14 +40,14 @@ export default function AboutPage() {
         </SectionWrapper>
       </header>
 
-      <SectionWrapper className={styles.philosophy}>
+      <SectionWrapper background="grey" className={styles.philosophy}>
         <div className={styles.contentGrid}>
           <div>
             <h2 className={styles.sectionTitle}>The Vision</h2>
             <p className={styles.leadText}>
               我們深信 AI 不應只是孤立的工具，而是企業流動的血液。
             </p>
-            <p style={{ color: 'var(--muted-text)', lineHeight: '1.7', fontSize: '1.125rem' }}>
+            <p className={styles.bodyText}>
               思序網路 (Vaxal) 的成立初衷很單純：讓複雜的技術變得可治理、可擴展且具備具體的商業價值。我們的目標很清晰：在 AI 浪潮中，為企業打造能實質推動產業進步的「數位基建」。
             </p>
           </div>
@@ -65,10 +65,10 @@ export default function AboutPage() {
       <SectionWrapper background="white" className={styles.team}>
         <h2 className={styles.sectionTitle}>The DNA</h2>
         <div className={styles.teamContent}>
-          <p style={{ fontSize: '1.125rem', color: 'var(--muted-text)', lineHeight: '1.7', marginBottom: '40px' }}>
+          <p className={styles.teamIntro}>
             我們是一群來自台大、清大的校友，團隊成員更來自頂尖軟體企業與創新實驗室。我們融合了大公司的嚴謹品質控管與小團隊的極速敏捷開發。
           </p>
-          
+
           <div className={styles.foundersGrid}>
             {FOUNDERS.map((founder) => (
               <div key={founder.name} className={styles.founderCard}>

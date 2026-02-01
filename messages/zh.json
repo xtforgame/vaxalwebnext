@@ -1,0 +1,317 @@
+{
+  "metadata": {
+    "title": "Vaxal | 以智慧建構，以信任擴展",
+    "description": "AI 時代務實的成長夥伴。結合企業經驗與新創敏捷。"
+  },
+  "nav": {
+    "products": "產品",
+    "caseStudy": "客戶案例",
+    "about": "關於我們",
+    "startPilot": "開始試用",
+    "skipToMain": "跳至主要內容"
+  },
+  "hero": {
+    "headline1": "以智慧建構。",
+    "headline2": "以信任擴展。",
+    "subheadline": "我們將機器的智慧轉化為人類的價值——透過務實的 AI 解決方案，讓組織能專注在真正重要的事：創新與成長。",
+    "cta": "開始試用",
+    "viewCase": "查看案例",
+    "mockTitle": "Ryko Agent",
+    "mockUser": "幫我整理這週的會議記錄",
+    "mockAgent": "好的，我找到了 3 場會議記錄。正在為您生成摘要...",
+    "mockPlaceholder": "輸入訊息..."
+  },
+  "context": {
+    "headline": "在 AI 迅速演變的時代，",
+    "headlineAccent": "適應力就是競爭力",
+    "description": "我們協助團隊擁抱變革，用對的工具、對的流程、對的節奏，將 AI 從概念轉化為可衡量的商業價值。"
+  },
+  "trustBar": {
+    "title": "受到創新團隊信賴"
+  },
+  "methodology": {
+    "badge": "我們的方法論",
+    "title": "三步驟打造 AI 工作流程",
+    "description": "從連接到自動化再到治理，我們提供完整的 AI 轉型路徑。",
+    "step1": {
+      "number": "01",
+      "title": "連接",
+      "subtitle": "打通資料孤島",
+      "description": "透過 Ryko 的自然語言介面，讓 AI 安全地存取您的企業資料、應用程式和服務。無需複雜整合，即可開始對話式協作。",
+      "feature1": "企業級資料連接器",
+      "feature2": "即時存取控制",
+      "feature3": "零程式碼整合"
+    },
+    "step2": {
+      "number": "02",
+      "title": "自動化",
+      "subtitle": "釋放重複性工作",
+      "description": "BrevFlow 讓您用直覺的流程設計器建構跨系統自動化。從簡單的通知到複雜的審批流程，都能輕鬆實現。",
+      "feature1": "視覺化流程設計",
+      "feature2": "跨平台整合",
+      "feature3": "條件式邏輯"
+    },
+    "step3": {
+      "number": "03",
+      "title": "治理",
+      "subtitle": "確保可控與合規",
+      "description": "SoloistBoard 提供專案級別的 AI 使用監控和治理工具。確保每一次 AI 決策都可追溯、可解釋、符合組織政策。",
+      "feature1": "使用量儀表板",
+      "feature2": "合規性檢查",
+      "feature3": "決策日誌"
+    }
+  },
+  "products": {
+    "badge": "產品矩陣",
+    "title": "為每個工作流程設計的 AI 工具",
+    "description": "四款互相配合的產品，覆蓋從對話、自動化、文件到專案治理的完整鏈路。",
+    "learnMore": "了解更多",
+    "ryko": {
+      "name": "Ryko",
+      "tagline": "AI Agent 對話介面",
+      "description": "自然語言驅動的企業 AI 助手。連接您的資料源，用對話完成工作。"
+    },
+    "brevflow": {
+      "name": "BrevFlow",
+      "tagline": "跨平台工作流自動化",
+      "description": "視覺化流程設計器，輕鬆建構跨系統自動化任務，無需撰寫程式碼。"
+    },
+    "formaldoc": {
+      "name": "FormalDoc",
+      "tagline": "智能文件生成",
+      "description": "從範本到成品，AI 輔助您快速產出專業文件，保持品牌一致性。"
+    },
+    "soloistboard": {
+      "name": "SoloistBoard",
+      "tagline": "專案智能治理",
+      "description": "專案級別的 AI 使用監控與治理平台，確保合規與可追溯性。"
+    }
+  },
+  "caseTeaser": {
+    "badge": "客戶案例",
+    "title": "Studio Doe 如何用 Vaxal 節省 60% 行政時間",
+    "description": "一間 15 人的設計工作室，透過我們的 AI 工具重新定義了日常營運。從報價到排程，從會議記錄到進度追蹤，Vaxal 讓他們專注在真正的創意工作。",
+    "cta": "閱讀完整案例",
+    "stat1": {
+      "value": "60%",
+      "label": "行政時間節省"
+    },
+    "stat2": {
+      "value": "3 週",
+      "label": "完成導入"
+    },
+    "stat3": {
+      "value": "15 人",
+      "label": "團隊規模"
+    }
+  },
+  "philosophy": {
+    "badge": "我們的理念",
+    "title": "我們相信的事",
+    "pillar1": {
+      "title": "務實優先",
+      "description": "不追逐熱門技術，只採用能解決真實問題的方案。每個功能都經過驗證才上線。"
+    },
+    "pillar2": {
+      "title": "人機協作",
+      "description": "AI 是放大人類能力的工具，而非取代。我們設計讓人保持掌控的系統。"
+    },
+    "pillar3": {
+      "title": "Dogfooding",
+      "description": "我們用自己的產品營運公司。從內部工作流到客戶服務，Vaxal 是自己的第一個用戶。"
+    }
+  },
+  "founders": {
+    "badge": "創辦團隊",
+    "title": "實戰出身的建造者",
+    "description": "我們的團隊來自企業 IT、新創開發、設計顧問等領域。共同點是：都在第一線解決過真實的業務挑戰。",
+    "founder1": {
+      "name": "Allen",
+      "role": "Architect",
+      "bio": "軟體開發背景，專注高可用系統"
+    },
+    "founder2": {
+      "name": "Kevin",
+      "role": "Maker",
+      "bio": "全端開發者，熱衷自動化工具"
+    },
+    "founder3": {
+      "name": "Sean",
+      "role": "Enabler",
+      "bio": "設計與商業策略背景，用戶體驗專家"
+    }
+  },
+  "cta": {
+    "title": "準備好開始了嗎？",
+    "description": "從一個小型試點開始，我們將協助您在 2-4 週內看到首批成果。無長期合約，按結果付費。",
+    "button": "預約諮詢",
+    "note": "免費諮詢 · 無需綁約"
+  },
+  "footer": {
+    "description": "AI 時代務實的成長夥伴",
+    "productsTitle": "產品",
+    "companyTitle": "公司",
+    "caseStudy": "客戶案例",
+    "about": "關於我們",
+    "contact": "聯繫我們",
+    "copyright": "Vaxal. 保留所有權利。"
+  },
+  "productsPage": {
+    "title": "產品",
+    "description": "四款互相配合的 AI 工具，覆蓋從對話、自動化、文件到專案治理的完整工作流程。",
+    "exploreProduct": "探索產品"
+  },
+  "aboutPage": {
+    "badge": "關於我們",
+    "title": "我們是 Vaxal",
+    "intro": "一群相信 AI 應該讓工作更有意義的人。我們不追逐技術潮流，只專注解決真實的業務問題。",
+    "storyTitle": "我們的故事",
+    "storyP1": "Vaxal 誕生於一個簡單的觀察：大多數團隊在 AI 工具上投入了大量時間和金錢，卻看不到實質的業務改善。問題不在技術本身，而在於缺乏一個連接工具與工作流程的橋樑。",
+    "storyP2": "我們的創辦團隊來自企業 IT、產品開發、設計顧問等不同背景，但都有一個共同經歷：在第一線看到組織如何掙扎於「AI 的承諾」與「現實的落差」之間。",
+    "storyP3": "所以我們創建了 Vaxal——不是又一套 AI 工具，而是一個務實的方法論和配套工具集，幫助團隊用對的方式擁抱 AI。",
+    "visionTitle": "我們的願景",
+    "visionP1": "讓每個組織都能用 AI 放大人類的創造力和生產力，同時保持對工作流程的完全掌控。",
+    "visionP2": "我們相信最好的 AI 工具是「隱形」的——它們融入日常工作，讓人專注在真正重要的事情上，而不是花時間學習如何使用工具。",
+    "dnaTitle": "團隊 DNA",
+    "dna1": {
+      "title": "務實",
+      "description": "不空談願景，只做能落地的事"
+    },
+    "dna2": {
+      "title": "透明",
+      "description": "對客戶坦誠，包括我們的局限"
+    },
+    "dna3": {
+      "title": "迭代",
+      "description": "小步快跑，持續根據反饋改進"
+    },
+    "dna4": {
+      "title": "同理",
+      "description": "深入理解用戶的真實工作場景"
+    }
+  },
+  "caseStudyPage": {
+    "badge": "客戶案例",
+    "title": "Studio Doe：設計工作室的 AI 轉型之旅",
+    "client": "客戶",
+    "clientName": "Studio Doe",
+    "industry": "產業",
+    "industryName": "設計顧問",
+    "duration": "導入時間",
+    "durationValue": "3 週",
+    "challengeTitle": "挑戰",
+    "challengeP1": "Studio Doe 是一間 15 人的品牌設計工作室，以高品質的視覺識別設計聞名。然而，隨著業務成長，創辦人發現團隊花越來越多時間在行政工作上——報價、排程、會議記錄、進度追蹤——而非實際的設計工作。",
+    "challengeP2": "他們嘗試過多種工具，但碎片化的解決方案反而增加了溝通成本。設計師需要在 5-6 個不同的應用程式之間切換，資訊散落各處。",
+    "stat1": {
+      "value": "40%",
+      "label": "設計師時間花在行政工作"
+    },
+    "stat2": {
+      "value": "6 個",
+      "label": "日常使用的工具數量"
+    },
+    "stat3": {
+      "value": "2 小時",
+      "label": "每週花在會議記錄"
+    },
+    "stat4": {
+      "value": "頻繁",
+      "label": "資訊遺漏導致的溝通問題"
+    },
+    "solutionTitle": "解決方案",
+    "solutionIntro": "我們與 Studio Doe 合作，用 Vaxal 的產品套件重新設計了他們的工作流程。重點不是取代現有工具，而是用 AI 連接它們、自動化重複性任務、並提供統一的資訊存取點。",
+    "solutionVisual": "Vaxal 解決方案架構圖",
+    "impactTitle": "成果",
+    "impactStat1": {
+      "value": "60%",
+      "label": "行政時間節省"
+    },
+    "impactStat2": {
+      "value": "3 週",
+      "label": "完成導入"
+    },
+    "impactStat3": {
+      "value": "85%",
+      "label": "團隊滿意度"
+    },
+    "impactStat4": {
+      "value": "2x",
+      "label": "專案可見度提升"
+    },
+    "testimonial": "Vaxal 改變了我們的工作方式。現在設計師可以專注在設計上，而不是花時間在行政瑣事。更重要的是，所有資訊都在一個地方，不會再有遺漏。",
+    "testimonialAuthor": "— Studio Doe 創辦人"
+  },
+  "productDetail": {
+    "startUsing": "開始使用",
+    "watchDemo": "觀看示範",
+    "capability": "核心能力"
+  },
+  "rykoPage": {
+    "tag": "核心基礎設施",
+    "title": "企業智慧的作業系統",
+    "subtitle": "Ryko 不僅是一個 AI 模型容器，它是連接企業資料與 LLM 的核心運行環境。支援 MCP 協議、Skill 掛載與多模態交互，讓 AI 理解您的業務語言。",
+    "cta": "部署 Ryko",
+    "assertionTitle": "從「對話」走向「執行」",
+    "assertionText": "大多數 AI 應用仍停留在 Chatbot 階段，無法觸及企業核心資料。Ryko 打破了這道牆。它是一個標準化的運行環境，能讓 LLM 安全地透過工具 (Tools) 讀寫企業內部 API，將 AI 的角色從「諮詢顧問」轉變為「實戰員工」。",
+    "capabilitiesTitle": "核心能力",
+    "capabilitiesSubtitle": "企業級 AI 運行的三大基石",
+    "cap1Title": "MCP 標準支援",
+    "cap1Desc": "全面支援 Model Context Protocol (MCP)。您的內部工具只需撰寫一次，即可被 Ryko 驅動的任何模型調用。透過標準化接口，讓 AI 精準調度企業資源。",
+    "cap2Title": "多模型相容",
+    "cap2Desc": "不被單一模型綁架。Ryko 允許您在 GPT-4、Claude 或 Llama 之間自由切換。根據任務難度選擇最合適的模型，平衡成本與效能。",
+    "cap3Title": "離線與隱私優先",
+    "cap3Desc": "對於敏感資料，Ryko 支援完全離線部署。配合本地端模型，確保數據在您的機房內閉環運行，符合最嚴格的資安規範。"
+  },
+  "brevflowPage": {
+    "tag": "工作流自動化",
+    "title": "AI 原生的自動化引擎",
+    "subtitle": "BrevFlow 讓您用直覺的視覺化介面建構跨系統工作流。從簡單的通知到複雜的審批流程，將重複性勞動轉化為 AI 自動化流水線。",
+    "cta": "開始自動化",
+    "assertionTitle": "告別重複性工作",
+    "assertionText": "企業中有太多工作是「複製貼上」式的重複勞動。BrevFlow 讓您定義一次流程，AI 就能代勞執行。跨越平台的限制，將複雜的業務邏輯自動化為高效、可靠的流程。",
+    "capabilitiesTitle": "核心能力",
+    "capabilitiesSubtitle": "打造無縫自動化體驗",
+    "cap1Title": "視覺化流程設計",
+    "cap1Desc": "拖拉式介面設計工作流程。無需撰寫程式碼，即可建構複雜的條件判斷、迴圈與分支邏輯。",
+    "cap2Title": "跨平台整合",
+    "cap2Desc": "一鍵連接 Slack、Notion、Google Workspace、自建 API 等上百種服務。資料在系統間自由流動。",
+    "cap3Title": "AI 智慧決策",
+    "cap3Desc": "在流程節點中嵌入 AI 判斷。讓 AI 根據情境自動選擇下一步，而非僅執行固定規則。"
+  },
+  "formaldocPage": {
+    "tag": "智能文件",
+    "title": "專業文件的 AI 生產線",
+    "subtitle": "FormalDoc 將企業規範轉化為 AI 樣板，自動產出正規、精確的專業商務文件。從範本到成品，保持品牌一致性。",
+    "cta": "開始生成",
+    "assertionTitle": "文件不再是瓶頸",
+    "assertionText": "報價單、合約、報告——這些文件耗費大量時間，卻往往格式不一。FormalDoc 讓 AI 理解您的格式規範，一鍵生成符合標準的專業文件。",
+    "capabilitiesTitle": "核心能力",
+    "capabilitiesSubtitle": "端到端文件自動化",
+    "cap1Title": "範本學習",
+    "cap1Desc": "上傳現有文件，AI 自動學習格式、用語與結構，建立專屬企業樣板。",
+    "cap2Title": "動態內容填充",
+    "cap2Desc": "從 CRM、ERP 或任何數據源自動帶入資料。確保內容即時、正確。",
+    "cap3Title": "多格式輸出",
+    "cap3Desc": "支援 Word、PDF、HTML 等多種輸出格式。根據需求自動轉換並套用樣式。"
+  },
+  "soloistboardPage": {
+    "tag": "專案治理",
+    "title": "AI 專案的指揮中心",
+    "subtitle": "SoloistBoard 提供專案級別的 AI 使用監控和治理工具。確保每一次 AI 決策都可追溯、可解釋、符合組織政策。",
+    "cta": "開始治理",
+    "assertionTitle": "AI 需要被治理",
+    "assertionText": "當 AI 開始執行關鍵任務，監控與可追溯性變得至關重要。SoloistBoard 讓您掌握所有 AI 行為，確保合規且可控。",
+    "capabilitiesTitle": "核心能力",
+    "capabilitiesSubtitle": "企業級 AI 治理框架",
+    "cap1Title": "行為追蹤",
+    "cap1Desc": "記錄每一次 AI 調用、決策依據與輸出結果。完整的審計軌跡，滿足合規需求。",
+    "cap2Title": "用量分析",
+    "cap2Desc": "即時監控 Token 使用量、成本分攤與效能指標。優化 AI 投資回報。",
+    "cap3Title": "政策管控",
+    "cap3Desc": "設定組織層級的 AI 使用政策。自動阻擋不合規請求，保護敏感資料。"
+  },
+  "languageSwitcher": {
+    "zh": "中文",
+    "en": "English"
+  }
+}

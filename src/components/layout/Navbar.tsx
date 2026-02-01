@@ -1,18 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
+import LanguageSwitcher from './LanguageSwitcher';
 import styles from './Navbar.module.css';
 
-const PRODUCTS = [
-  { name: 'Ryko', href: '/products/ryko', description: 'AI Agent 對話介面' },
-  { name: 'BrevFlow', href: '/products/brevflow', description: '跨平台工作流自動化' },
-  { name: 'FormalDoc', href: '/products/formaldoc', description: '智能文件生成' },
-  { name: 'SoloistBoard', href: '/products/soloistboard', description: '專案智能治理' },
-];
-
 export default function Navbar() {
+  const t = useTranslations();
+
+  const PRODUCTS = [
+    { name: 'Ryko', href: '/products/ryko', description: t('products.ryko.tagline') },
+    { name: 'BrevFlow', href: '/products/brevflow', description: t('products.brevflow.tagline') },
+    { name: 'FormalDoc', href: '/products/formaldoc', description: t('products.formaldoc.tagline') },
+    { name: 'SoloistBoard', href: '/products/soloistboard', description: t('products.soloistboard.tagline') },
+  ];
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProductsOpen, setIsProductsOpen] = useState(false);
 
@@ -83,7 +86,7 @@ export default function Navbar() {
           {/* Products with Dropdown */}
           <div className={styles.navDropdown}>
             <Link href="/products" className={styles.navLink}>
-              Products
+              {t('nav.products')}
               <svg className={styles.chevron} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M6 9l6 6 6-6"/>
               </svg>
@@ -99,14 +102,15 @@ export default function Navbar() {
           </div>
 
           <Link href="/case-study/studio-doe" className={styles.navLink}>
-            Case Study
+            {t('nav.caseStudy')}
           </Link>
           <Link href="/about" className={styles.navLink}>
-            About
+            {t('nav.about')}
           </Link>
           <Link href="/#contact" className={styles.ctaButton}>
-            Start Pilot
+            {t('nav.startPilot')}
           </Link>
+          <LanguageSwitcher />
         </nav>
 
         {/* Mobile Menu Button (Hamburger) */}
@@ -132,7 +136,7 @@ export default function Navbar() {
           <div className={styles.mobileNavGroup}>
             <div className={styles.mobileNavHeader}>
               <Link href="/products" className={styles.mobileNavLink} onClick={closeMenu}>
-                Products
+                {t('nav.products')}
               </Link>
               <button
                 className={`${styles.mobileExpandBtn} ${isProductsOpen ? styles.expanded : ''}`}
@@ -161,14 +165,17 @@ export default function Navbar() {
           </div>
 
           <Link href="/case-study/studio-doe" className={styles.mobileNavLink} onClick={closeMenu}>
-            Case Study
+            {t('nav.caseStudy')}
           </Link>
           <Link href="/about" className={styles.mobileNavLink} onClick={closeMenu}>
-            About
+            {t('nav.about')}
           </Link>
           <Link href="/#contact" className={`${styles.ctaButton} ${styles.mobileCta}`} onClick={closeMenu}>
-            Start Pilot
+            {t('nav.startPilot')}
           </Link>
+          <div className={styles.mobileLangSwitcher}>
+            <LanguageSwitcher />
+          </div>
         </div>
       </div>
     </header>

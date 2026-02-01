@@ -7,10 +7,10 @@ export default function StudioDoeCase() {
     <div className={styles.casePage}>
       {/* Hero Section */}
       <section className={styles.hero}>
-        <SectionWrapper padding="none">
+        <SectionWrapper background="transparent" padding="none">
           <span className={styles.badge}>E-commerce Infrastructure</span>
           <h1 className={styles.title}>
-            Powering Studio Doe's <br/>
+            Powering Studio Doe&apos;s<br />
             Digital Transformation.
           </h1>
           <div className={styles.meta}>
@@ -31,7 +31,7 @@ export default function StudioDoeCase() {
       </section>
 
       {/* Challenge & Approach */}
-      <SectionWrapper className={styles.section}>
+      <SectionWrapper background="white" className={styles.section}>
         <div className={styles.contentGrid}>
           <div className={styles.textBlock}>
             <h2 className={styles.sectionTitle}>The Challenge</h2>
@@ -64,18 +64,18 @@ export default function StudioDoeCase() {
       </SectionWrapper>
 
       {/* Visual / Solution */}
-      <SectionWrapper background="grey" className={styles.section}>
+      <SectionWrapper background="grey" className={`${styles.section} ${styles.solutionSection}`}>
         <h2 className={styles.sectionTitle} style={{ textAlign: 'center' }}>The Solution: Modular Architecture</h2>
-        <p style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto 60px', color: 'var(--muted-text)' }}>
+        <p className={styles.solutionIntro}>
           思序網路 (Vaxal) 協助 Studio Doe 從架構底層出發，建立了完整的 CI/CD 流程、微服務化組件，並導入了基於 Ryko 的 AI 實驗室環境。
         </p>
         <div className={styles.fullVisual}>
-          [ High-Resolution Visual: Infrastructure Map with Real-time Traffic visualization ]
+          High-Resolution Visual: Infrastructure Map with Real-time Traffic Visualization
         </div>
       </SectionWrapper>
 
       {/* Result Section */}
-      <SectionWrapper className={styles.section}>
+      <SectionWrapper background="white" className={`${styles.section} ${styles.impactSection}`}>
         <div className={styles.contentGrid}>
           <div className={styles.textBlock}>
             <h2 className={styles.sectionTitle}>The Impact</h2>
@@ -87,11 +87,11 @@ export default function StudioDoeCase() {
             </p>
             <Button size="lg" href="/contact">Start Your Journey</Button>
           </div>
-          <div style={{ padding: '40px', background: 'var(--bg-section-grey)', borderRadius: 'var(--radius-lg)' }}>
-            <blockquote style={{ fontSize: '1.25rem', fontStyle: 'italic', color: 'var(--foreground)', borderLeft: '4px solid var(--accent-blue)', paddingLeft: '24px' }}>
-              "思序網路不只是開發商，更是我們的技術策略合夥人。他們解決了我們最恐懼的穩定性問題，並陪著我們探索未來的可能性。"
+          <div className={styles.testimonialCard}>
+            <blockquote className={styles.testimonialQuote}>
+              「思序網路不只是開發商，更是我們的技術策略合夥人。他們解決了我們最恐懼的穩定性問題，並陪著我們探索未來的可能性。」
             </blockquote>
-            <p style={{ marginTop: '24px', fontWeight: '600' }}>— An Chih, Founder of Studio Doe</p>
+            <p className={styles.testimonialAuthor}>— An Chih, Founder of Studio Doe</p>
           </div>
         </div>
       </SectionWrapper>

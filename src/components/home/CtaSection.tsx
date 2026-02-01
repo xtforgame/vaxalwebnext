@@ -1,23 +1,24 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import SectionWrapper from '@/components/ui/SectionWrapper';
 import Button from '@/components/ui/Button';
 import styles from './CtaSection.module.css';
 
 export default function CtaSection() {
+  const t = useTranslations('cta');
+
   return (
     <SectionWrapper background="dark" id="contact" className={styles.ctaSection}>
       <div className={styles.container}>
-        <h2 className={styles.title}>Ready to Build with Trust?</h2>
-        <p className={styles.subtitle}>
-          從一個小痛點開始。讓我們展示 AI 如何能為您的企業帶來具體、可量化的改變。
-        </p>
+        <h2 className={styles.title}>{t('title')}</h2>
+        <p className={styles.subtitle}>{t('description')}</p>
         <div className={styles.buttonGroup}>
-          <Button size="lg" href="/contact">
-            Start Your Pilot
-          </Button>
-          <Button variant="outline" size="lg" href="/about" className={styles.outlineBtn}>
-            Learn More About Us
+          <Button size="lg" href="/#contact">
+            {t('button')}
           </Button>
         </div>
+        <p className={styles.note}>{t('note')}</p>
       </div>
     </SectionWrapper>
   );

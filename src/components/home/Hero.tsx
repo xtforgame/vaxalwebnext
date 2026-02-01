@@ -1,25 +1,30 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import SectionWrapper from '@/components/ui/SectionWrapper';
 import Button from '@/components/ui/Button';
 import styles from './Hero.module.css';
 
 export default function Hero() {
+  const t = useTranslations('hero');
+
   return (
     <SectionWrapper background="base" padding="none" className={styles.heroSection}>
       <div className={styles.heroContent}>
         <div className={styles.textContent}>
           <h1 className={styles.headline}>
-            <span className={styles.headlineAccent}>Build with Intelligence.</span><br />
-            Scale with Trust.
+            <span className={styles.headlineAccent}>{t('headline1')}</span><br />
+            {t('headline2')}
           </h1>
           <p className={styles.subheadline}>
-            我們將機器的智慧轉化為企業的資產，確保技術的每一分投資都有清晰、可量化的價值。從無痛試點到企業級治理，思序網路 (Vaxal) 是您最堅實的技術夥伴。
+            {t('subheadline')}
           </p>
           <div className={styles.ctaGroup}>
             <Button size="lg" href="/#contact">
-              Start Pilot
+              {t('cta')}
             </Button>
             <Button variant="outline" size="lg" href="/case-study/studio-doe">
-              View Case Study
+              {t('viewCase')}
             </Button>
           </div>
         </div>
@@ -31,14 +36,14 @@ export default function Hero() {
               <span className={styles.mockDot}></span>
               <span className={styles.mockDot}></span>
             </div>
-            <span className={styles.mockTitle}>Ryko Agent</span>
+            <span className={styles.mockTitle}>{t('mockTitle')}</span>
           </div>
 
           <div className={styles.mockChat}>
             <div className={`${styles.mockMessage} ${styles.user}`}>
               <div className={styles.mockAvatar}>You</div>
               <div className={styles.mockBubble}>
-                幫我分析 Q4 的銷售數據，找出表現最好的產品。
+                {t('mockUser')}
               </div>
             </div>
 
@@ -49,21 +54,14 @@ export default function Hero() {
                 </svg>
               </div>
               <div className={styles.mockBubble}>
-                正在連接銷售資料庫... 找到 3 個表現最佳的產品：產品 A (+42%)、產品 B (+38%)、產品 C (+31%)。需要詳細分析嗎？
-              </div>
-            </div>
-
-            <div className={`${styles.mockMessage} ${styles.user}`}>
-              <div className={styles.mockAvatar}>You</div>
-              <div className={styles.mockBubble}>
-                好，幫我生成一份給主管會議的報告。
+                {t('mockAgent')}
               </div>
             </div>
           </div>
 
           <div className={styles.mockInput}>
             <div className={styles.mockInputField}>
-              Ask Ryko anything...
+              {t('mockPlaceholder')}
             </div>
             <div className={styles.mockSendBtn}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

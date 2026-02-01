@@ -4,7 +4,7 @@ import styles from './CtaSection.module.css';
 
 export default function CtaSection() {
   return (
-    <SectionWrapper id="contact" className={styles.ctaSection}>
+    <SectionWrapper background="dark" id="contact" className={styles.ctaSection}>
       <div className={styles.container}>
         <h2 className={styles.title}>Ready to Build with Trust?</h2>
         <p className={styles.subtitle}>
@@ -14,7 +14,7 @@ export default function CtaSection() {
           <Button size="lg" href="/contact">
             Start Your Pilot
           </Button>
-          <Button variant="outline" size="lg" style={{ color: 'white', borderColor: 'rgba(255,255,255,0.2)' }} href="/about">
+          <Button variant="outline" size="lg" href="/about" className={styles.outlineBtn}>
             Learn More About Us
           </Button>
         </div>

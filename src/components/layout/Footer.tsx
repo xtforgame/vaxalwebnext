@@ -1,47 +1,42 @@
-import Link from 'next/link';
+'use client';
+
+import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import styles from './Footer.module.css';
 
 export default function Footer() {
+  const t = useTranslations();
+
   return (
     <footer className={styles.footer}>
       <div className={styles.footerContainer}>
         <div className={styles.brandColumn}>
-          <h3>思序網路 Vaxal</h3>
-          <p>
-            Build with Intelligence. Scale with Trust.<br/>
-            Your pragmatic growth partner in the AI era.
-          </p>
+          <h3>Vaxal</h3>
+          <p>{t('footer.description')}</p>
         </div>
-        
+
         <div className={styles.linkColumn}>
-          <h4>Products</h4>
+          <h4>{t('footer.productsTitle')}</h4>
           <ul className={styles.linkList}>
             <li><Link href="/products/ryko" className={styles.footerLink}>Ryko</Link></li>
             <li><Link href="/products/brevflow" className={styles.footerLink}>BrevFlow</Link></li>
+            <li><Link href="/products/formaldoc" className={styles.footerLink}>FormalDoc</Link></li>
             <li><Link href="/products/soloistboard" className={styles.footerLink}>SoloistBoard</Link></li>
-          </ul>
-        </div>
-        
-        <div className={styles.linkColumn}>
-          <h4>Company</h4>
-          <ul className={styles.linkList}>
-            <li><Link href="/about" className={styles.footerLink}>About Us</Link></li>
-            <li><Link href="/careers" className={styles.footerLink}>Careers</Link></li>
-            <li><Link href="/contact" className={styles.footerLink}>Contact</Link></li>
           </ul>
         </div>
 
         <div className={styles.linkColumn}>
-          <h4>Connect</h4>
+          <h4>{t('footer.companyTitle')}</h4>
           <ul className={styles.linkList}>
-            <li><a href="https://github.com" target="_blank" rel="noopener noreferrer" className={styles.footerLink}>GitHub</a></li>
-            <li><a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className={styles.footerLink}>LinkedIn</a></li>
+            <li><Link href="/case-study/studio-doe" className={styles.footerLink}>{t('footer.caseStudy')}</Link></li>
+            <li><Link href="/about" className={styles.footerLink}>{t('footer.about')}</Link></li>
+            <li><Link href="/#contact" className={styles.footerLink}>{t('footer.contact')}</Link></li>
           </ul>
         </div>
       </div>
-      
+
       <div className={styles.copyright}>
-        &copy; {new Date().getFullYear()} 思序網路 Vaxal. All rights reserved.
+        &copy; {new Date().getFullYear()} {t('footer.copyright')}
       </div>
     </footer>
   );

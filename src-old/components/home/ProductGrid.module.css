@@ -1,80 +1,130 @@
+/* ============================================
+   Product Grid - Soft UI Evolution
+   ============================================ */
+
 .productSection {
-  background-color: var(--bg-section-white);
+  background-color: var(--bg-white);
 }
 
+/* ============ Header ============ */
 .header {
   text-align: center;
-  margin-bottom: 60px;
+  margin-bottom: var(--space-16);
 }
 
 .title {
-  font-size: 2.5rem;
-  margin-bottom: 16px;
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
   font-size: 1.125rem;
-  color: var(--muted-text);
+  color: var(--text-body);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.7;
 }
 
+/* ============ Grid ============ */
 .grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 32px;
+  gap: var(--space-8);
 }
 
+/* ============ Card - Soft UI Style ============ */
 .card {
-  padding: 40px;
-  background-color: var(--surface-elevated);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-color);
-  transition: all 0.3s ease;
+  padding: var(--space-10);
+  background: var(--bg-white);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
+  transition: all var(--transition-base);
 }
 
 .card:hover {
-  transform: translateY(-8px);
-  border-color: var(--accent-blue);
-  box-shadow: 0 20px 40px -20px rgba(37, 99, 235, 0.15);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--color-accent-light);
 }
 
+/* ============ Icon Wrapper ============ */
 .iconWrapper {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-md);
-  background-color: var(--surface-elevated);
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  background: var(--color-accent-light);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 24px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-  color: var(--accent-blue);
+  margin-bottom: var(--space-6);
+  color: var(--color-accent);
+  transition: all var(--transition-base);
 }
 
+.card:hover .iconWrapper {
+  background: var(--color-accent);
+  color: #FFFFFF;
+  transform: scale(1.05);
+}
+
+/* ============ Content ============ */
 .productTitle {
+  font-family: var(--font-heading);
   font-size: 1.5rem;
-  margin-bottom: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+  letter-spacing: -0.02em;
 }
 
 .productDescription {
-  color: var(--muted-text);
-  line-height: 1.6;
-  margin-bottom: 24px;
+  color: var(--text-body);
+  line-height: 1.7;
+  margin-bottom: var(--space-6);
   flex-grow: 1;
+  font-size: 0.9375rem;
 }
 
+/* ============ Learn More Link ============ */
 .learnMore {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--accent-blue);
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  transition: gap var(--transition-base);
 }
 
 .learnMore:hover {
-  text-decoration: underline;
+  gap: var(--space-3);
+  color: var(--color-accent-hover);
+}
+
+.learnMore svg {
+  transition: transform var(--transition-base);
+}
+
+.learnMore:hover svg {
+  transform: translateX(2px);
+}
+
+/* ============ Responsive ============ */
+@media (max-width: 991px) {
+  .grid {
+    gap: var(--space-6);
+  }
+
+  .card {
+    padding: var(--space-8);
+  }
 }
 
 @media (max-width: 768px) {

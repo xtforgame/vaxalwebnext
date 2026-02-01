@@ -1,116 +1,167 @@
+/* ============================================
+   Founders Section - Soft UI Evolution
+   ============================================ */
+
 .foundersSection {
-  background-color: var(--bg-section-grey);
-  padding: 140px 0;
+  background-color: var(--bg-surface);
 }
 
+/* ============ Header ============ */
 .header {
   text-align: center;
-  margin-bottom: 80px;
+  margin-bottom: var(--space-16);
 }
 
 .title {
-  font-size: 2.5rem;
-  margin-bottom: 24px;
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
   font-size: 1.125rem;
-  color: var(--muted-text);
+  color: var(--text-body);
   max-width: 800px;
   margin: 0 auto;
+  line-height: 1.7;
 }
 
+/* ============ Founders Grid ============ */
 .grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 40px;
-  margin-bottom: 120px;
+  gap: var(--space-8);
+  margin-bottom: var(--space-20);
 }
 
+/* ============ Founder Card ============ */
 .founderCard {
   text-align: center;
+  padding: var(--space-8);
+  background: var(--bg-white);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
 }
 
+.founderCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-accent-light);
+}
+
+/* ============ Avatar ============ */
 .avatarPlaceholder {
-  width: 120px;
-  height: 120px;
-  background-color: var(--surface-elevated);
-  border-radius: 50%;
-  margin: 0 auto 24px;
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, var(--color-accent-light) 0%, var(--bg-surface) 100%);
+  border-radius: var(--radius-full);
+  margin: 0 auto var(--space-5);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--muted-text);
-  border: 1px solid var(--border-color);
+  color: var(--color-accent);
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 2px solid var(--bg-white);
+  box-shadow: var(--shadow-md);
 }
 
+/* ============ Content ============ */
 .founderName {
+  font-family: var(--font-heading);
   font-size: 1.25rem;
   font-weight: 700;
-  margin-bottom: 8px;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+  letter-spacing: -0.01em;
 }
 
 .founderRole {
-  font-size: 0.9375rem;
-  color: var(--accent-blue);
+  font-size: 0.8125rem;
   font-weight: 600;
-  margin-bottom: 16px;
+  color: var(--color-accent);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+  margin-bottom: var(--space-4);
 }
 
 .founderBio {
-  font-size: 0.9375rem;
-  color: var(--muted-text);
-  line-height: 1.6;
+  font-size: 0.875rem;
+  color: var(--text-body);
+  line-height: 1.65;
 }
 
+/* ============ Philosophy Box ============ */
 .philosophyBox {
   max-width: 800px;
   margin: 0 auto;
-  padding: 40px;
-  background-color: var(--surface-elevated);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-color);
+  padding: var(--space-10);
+  background: var(--bg-white);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-md);
   text-align: center;
 }
 
 .philosophyTitle {
-  font-size: 1.25rem;
+  font-family: var(--font-heading);
+  font-size: 1.375rem;
   font-weight: 700;
-  margin-bottom: 16px;
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+  letter-spacing: -0.01em;
 }
 
 .philosophyText {
   font-size: 1rem;
-  color: var(--muted-text);
-  line-height: 1.7;
+  color: var(--text-body);
+  line-height: 1.75;
 }
 
+/* ============ Responsive ============ */
 @media (max-width: 991px) {
   .grid {
     display: flex;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
-    gap: 24px;
-    padding-bottom: 24px; /* Space for scrollbar if visible */
-    padding-left: 20px;   /* Safe area start */
-    padding-right: 20px;  /* Safe area end */
-    margin-right: -20px;  /* Negative margin to allow full-width scroll */
-    margin-left: -20px;
-    /* Hide scrollbar for cleaner look */
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    gap: var(--space-5);
+    padding: var(--space-2) 0 var(--space-6);
+    margin: 0 calc(-1 * var(--space-5));
+    padding-left: var(--space-5);
+    padding-right: var(--space-5);
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
-  
+
   .grid::-webkit-scrollbar {
     display: none;
   }
 
   .founderCard {
-    flex: 0 0 85vw; /* Use viewport width relative unit to ensure peek effect */
-    width: 85vw;
-    max-width: none;
+    flex: 0 0 280px;
     scroll-snap-align: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .founderCard {
+    flex: 0 0 260px;
+    padding: var(--space-6);
+  }
+
+  .avatarPlaceholder {
+    width: 80px;
+    height: 80px;
+  }
+
+  .philosophyBox {
+    padding: var(--space-6);
   }
 }

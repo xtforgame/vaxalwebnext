@@ -1,0 +1,33 @@
+.switcher {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.option {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-base);
+}
+
+.option:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.option.active {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.divider {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.75rem;
+}

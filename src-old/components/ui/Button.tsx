@@ -3,7 +3,7 @@ import Link from 'next/link';
 import styles from './Button.module.css';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
   href?: string;
@@ -19,13 +19,13 @@ export default function Button({
   className = '',
   ...props
 }: ButtonProps) {
-  const rootClassName = `
-    ${styles.button} 
-    ${styles[variant]} 
-    ${styles[size]} 
-    ${fullWidth ? styles.fullWidth : ''}
-    ${className}
-  `.trim();
+  const rootClassName = [
+    styles.button,
+    styles[variant],
+    styles[size],
+    fullWidth ? styles.fullWidth : '',
+    className,
+  ].filter(Boolean).join(' ');
 
   if (href) {
     return (

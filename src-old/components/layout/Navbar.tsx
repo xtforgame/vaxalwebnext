@@ -2,29 +2,65 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import styles from './Navbar.module.css';
+
+const PRODUCTS = [
+  { name: 'Ryko', href: '/products/ryko', description: 'AI Agent 對話介面' },
+  { name: 'BrevFlow', href: '/products/brevflow', description: '跨平台工作流自動化' },
+  { name: 'FormalDoc', href: '/products/formaldoc', description: '智能文件生成' },
+  { name: 'SoloistBoard', href: '/products/soloistboard', description: '專案智能治理' },
+];
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isProductsOpen, setIsProductsOpen] = useState(false);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+    if (isMenuOpen) {
+      setIsProductsOpen(false);
+    }
   };
 
-  // Close menu when route changes (optional, but good UX)
-  // Since this is a simple implementation, we'll just close it on link click
   const closeMenu = () => {
     setIsMenuOpen(false);
+    setIsProductsOpen(false);
+  };
+
+  const toggleProducts = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsProductsOpen(!isProductsOpen);
   };
 
   // Prevent scrolling when menu is open
   useEffect(() => {
     if (isMenuOpen) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
       document.body.style.overflow = 'hidden';
     } else {
+      // Restore scroll position
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
       document.body.style.overflow = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
     }
     return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
       document.body.style.overflow = '';
     };
   }, [isMenuOpen]);
@@ -33,16 +69,37 @@ export default function Navbar() {
     <header className={styles.header}>
       <div className={styles.navContainer}>
         <Link href="/" className={styles.logo} onClick={closeMenu}>
-          思序網路 Vaxal
+          <Image
+            src="/vaxal.svg"
+            alt="Vaxal"
+            width={120}
+            height={38}
+            priority
+          />
         </Link>
-        
+
         {/* Desktop Navigation */}
         <nav className={styles.navLinks}>
-          <Link href="/products" className={styles.navLink}>
-            Products
-          </Link>
+          {/* Products with Dropdown */}
+          <div className={styles.navDropdown}>
+            <Link href="/products" className={styles.navLink}>
+              Products
+              <svg className={styles.chevron} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </Link>
+            <div className={styles.dropdownMenu}>
+              {PRODUCTS.map((product) => (
+                <Link key={product.href} href={product.href} className={styles.dropdownItem}>
+                  <span className={styles.dropdownItemName}>{product.name}</span>
+                  <span className={styles.dropdownItemDesc}>{product.description}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
           <Link href="/case-study/studio-doe" className={styles.navLink}>
-            Case study
+            Case Study
           </Link>
           <Link href="/about" className={styles.navLink}>
             About
@@ -53,8 +110,8 @@ export default function Navbar() {
         </nav>
 
         {/* Mobile Menu Button (Hamburger) */}
-        <button 
-          className={styles.mobileMenuBtn} 
+        <button
+          className={styles.mobileMenuBtn}
           onClick={toggleMenu}
           aria-label="Toggle menu"
         >
@@ -71,11 +128,40 @@ export default function Navbar() {
 
         {/* Mobile Drawer */}
         <div className={`${styles.drawer} ${isMenuOpen ? styles.open : ''}`}>
-          <Link href="/products" className={styles.mobileNavLink} onClick={closeMenu}>
-            Products
-          </Link>
+          {/* Products with Expandable Sub-menu */}
+          <div className={styles.mobileNavGroup}>
+            <div className={styles.mobileNavHeader}>
+              <Link href="/products" className={styles.mobileNavLink} onClick={closeMenu}>
+                Products
+              </Link>
+              <button
+                className={`${styles.mobileExpandBtn} ${isProductsOpen ? styles.expanded : ''}`}
+                onClick={toggleProducts}
+                aria-label="Expand products"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 9l6 6 6-6"/>
+                </svg>
+              </button>
+            </div>
+            <div className={`${styles.mobileSubMenu} ${isProductsOpen ? styles.open : ''}`}>
+              <div className={styles.mobileSubMenuInner}>
+                {PRODUCTS.map((product) => (
+                  <Link
+                    key={product.href}
+                    href={product.href}
+                    className={styles.mobileSubLink}
+                    onClick={closeMenu}
+                  >
+                    {product.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <Link href="/case-study/studio-doe" className={styles.mobileNavLink} onClick={closeMenu}>
-            Case study
+            Case Study
           </Link>
           <Link href="/about" className={styles.mobileNavLink} onClick={closeMenu}>
             About

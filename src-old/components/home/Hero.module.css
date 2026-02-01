@@ -1,98 +1,292 @@
+/* ============================================
+   Hero Section - Soft UI Evolution
+   ============================================ */
+
 .heroSection {
-  padding-top: 80px;
-  padding-bottom: 160px;
+  padding-top: var(--space-20);
+  padding-bottom: var(--space-32);
   display: flex;
   align-items: center;
   min-height: calc(100vh - var(--header-height));
-  background-color: var(--bg-section-white);
+  background-color: var(--bg-base);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle grid texture background */
+.heroSection::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border-light) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-light) 1px, transparent 1px);
+  background-size: 60px 60px;
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .heroContent {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 60px;
+  grid-template-columns: 1fr 1.1fr;
+  gap: var(--space-16);
   align-items: center;
+  position: relative;
+  z-index: 1;
 }
 
+/* ============ Text Content ============ */
 .textContent {
   max-width: 560px;
 }
 
 .headline {
-  font-size: 3.5rem;
-  line-height: 1.1;
-  margin-bottom: 24px;
-  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-blue-hover) 100%);
+  font-family: var(--font-heading);
+  font-size: clamp(2.75rem, 5vw, 3.75rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  margin-bottom: var(--space-6);
+  color: var(--text-primary);
+}
+
+.headlineAccent {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 50%, var(--color-accent) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Fallback for text color if background clip fails */
 @supports not (background-clip: text) {
-  .headline {
-    color: var(--accent-blue);
+  .headlineAccent {
+    color: var(--color-primary);
   }
 }
 
 .subheadline {
-  font-size: 1.25rem;
-  color: var(--muted-text);
-  margin-bottom: 40px;
-  line-height: 1.6;
+  font-size: 1.1875rem;
+  color: var(--text-body);
+  margin-bottom: var(--space-10);
+  line-height: 1.7;
 }
 
+/* ============ CTA Group ============ */
 .ctaGroup {
   display: flex;
-  gap: 16px;
+  gap: var(--space-4);
   align-items: center;
+  flex-wrap: wrap;
 }
 
+/* ============ Visual Content (Ryko Agent Demo) ============ */
 .visualContent {
   position: relative;
   width: 100%;
-  height: 500px;
-  background-color: var(--secondary-grey);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--border-color);
-  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.1);
+  height: 480px;
+  background: var(--bg-white);
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-xl);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mock Header */
+.mockHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-base);
+}
+
+.mockDots {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.mockDot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--border-light);
+}
+
+.mockDot:first-child {
+  background: #FCA5A5;
+}
+
+.mockDot:nth-child(2) {
+  background: #FCD34D;
+}
+
+.mockDot:nth-child(3) {
+  background: #86EFAC;
+}
+
+.mockTitle {
+  position: absolute;
+  text-align: center;
+  left: 0;
+  width: 100%;
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: -0.01em;
+}
+
+/* Mock Chat Area */
+.mockChat {
+  flex: 1;
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  overflow: hidden;
+}
+
+.mockMessage {
+  display: flex;
+  gap: var(--space-3);
+  max-width: 85%;
+}
+
+.mockMessage.user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.mockAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 
-/* Placeholder for Ryko Animation */
-.mockupPlaceholder {
-  color: var(--muted-text);
-  font-weight: 500;
-  text-align: center;
+.mockMessage.agent .mockAvatar {
+  background: var(--color-accent-light);
+  color: var(--color-accent);
 }
 
+.mockBubble {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.mockMessage.user .mockBubble {
+  background: var(--color-accent);
+  color: #FFFFFF;
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.mockMessage.agent .mockBubble {
+  background: var(--bg-surface);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+/* Mock Input */
+.mockInput {
+  margin-top: auto;
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.mockInputField {
+  flex: 1;
+  height: 44px;
+  padding: 0 var(--space-4);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.mockSendBtn {
+  width: 44px;
+  height: 44px;
+  background: var(--color-accent);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+}
+
+/* ============ Responsive ============ */
 @media (max-width: 991px) {
   .heroSection {
-    padding-top: 40px;
-    padding-bottom: 60px;
-    height: auto;
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-20);
     min-height: auto;
-    display: block; /* Remove flex centering */
   }
 
   .heroContent {
     grid-template-columns: 1fr;
-    gap: 40px;
+    gap: var(--space-12);
   }
 
   .textContent {
     max-width: 100%;
-    margin-bottom: 32px;
+    text-align: center;
   }
 
-  .headline {
-    font-size: 2.5rem; /* Slightly smaller for mobile */
+  .ctaGroup {
+    justify-content: center;
   }
 
   .visualContent {
-    height: 300px; /* Reduced height for mobile */
+    height: 380px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .heroSection {
+    padding-top: var(--space-10);
+    padding-bottom: var(--space-16);
+  }
+
+  .headline {
+    font-size: 2.25rem;
+  }
+
+  .subheadline {
+    font-size: 1.0625rem;
+  }
+
+  .ctaGroup {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .ctaGroup > * {
+    width: 100%;
+  }
+
+  .visualContent {
+    height: 340px;
   }
 }

@@ -314,6 +314,12 @@
   background-color: #FFFFFF !important;
 }
 
+/* ============ Mobile Language Switcher ============ */
+.mobileLangSwitcher {
+  padding: var(--space-6) var(--space-6);
+  margin-top: auto;
+}
+
 /* ============ Responsive ============ */
 @media (max-width: 991px) {
   .navLinks {

@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import SectionWrapper from '@/components/ui/SectionWrapper';
 import styles from './TrustBar.module.css';
 
@@ -11,9 +14,11 @@ const PARTNERS = [
 ];
 
 export default function TrustBar() {
+  const t = useTranslations('trustBar');
+
   return (
     <SectionWrapper className={styles.trustBar}>
-      <h2 className={styles.title}>Trusted by leaders & powered by top-tier tech</h2>
+      <h2 className={styles.title}>{t('title')}</h2>
       <div className={styles.logoGrid}>
         {PARTNERS.map((partner) => (
           <div key={partner.name} className={styles.logoItem}>

@@ -1,52 +1,52 @@
+/* ============================================
+   Methodology Section - Soft UI Evolution
+   Z-Pattern 3-Step Layout
+   ============================================ */
+
 .methodSection {
-  background-color: var(--bg-section-grey);
-  color: var(--foreground);
+  background-color: var(--bg-surface);
 }
 
+/* ============ Header ============ */
 .header {
   text-align: center;
-  margin-bottom: 80px;
+  margin-bottom: var(--space-24);
 }
 
 .title {
-  font-size: 2.5rem;
-  margin-bottom: 16px;
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
   font-size: 1.125rem;
-  color: var(--muted-text);
+  color: var(--text-body);
   max-width: 700px;
   margin: 0 auto;
+  line-height: 1.7;
 }
 
+/* ============ Steps Container ============ */
 .stepsContainer {
   display: flex;
   flex-direction: column;
-  gap: 120px;
+  gap: var(--space-32);
   position: relative;
 }
 
-/* Optional vertical line connecting steps */
-.stepsContainer::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: linear-gradient(to bottom, var(--border-color), var(--accent-blue), var(--border-color));
-  transform: translateX(-50%);
-  display: none; /* Hide by default, can be shown on desktop */
-}
-
+/* ============ Step Item (Z-Pattern) ============ */
 .stepItem {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 80px;
+  grid-template-columns: 1fr 1.2fr;
+  gap: var(--space-16);
   align-items: center;
 }
 
+/* Alternate layout for Z-pattern */
 .stepItem:nth-child(even) {
   direction: rtl;
 }
@@ -55,64 +55,141 @@
   direction: ltr;
 }
 
+.stepItem:nth-child(even) .visualPlaceholder {
+  direction: ltr;
+}
+
+/* ============ Step Content ============ */
 .stepContent {
   max-width: 480px;
 }
 
 .stepNumber {
-  display: inline-block;
-  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+  border-radius: var(--radius-xl);
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
   font-weight: 700;
-  color: var(--accent-blue);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-5);
 }
 
 .stepTitle {
-  font-size: 2rem;
-  margin-bottom: 24px;
-  color: var(--foreground);
+  font-family: var(--font-heading);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+  letter-spacing: -0.02em;
 }
 
 .stepDescription {
-  font-size: 1.125rem;
-  line-height: 1.7;
-  color: var(--muted-text);
-  margin-bottom: 32px;
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--text-body);
 }
 
+/* ============ Visual Placeholder (Mock UI) ============ */
 .visualPlaceholder {
   width: 100%;
-  height: 400px;
-  background-color: var(--surface-elevated);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-color);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+  height: 380px;
+  background: var(--bg-white);
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Mock window header */
+.visualPlaceholder::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 44px;
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border-light);
+}
+
+/* Mock content area */
+.mockContent {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--muted-text);
-  font-style: italic;
+  padding: var(--space-6);
+  margin-top: 44px;
 }
 
+.mockLabel {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* Step-specific visual mock styling */
+.step1Visual .mockContent {
+  background: linear-gradient(180deg, var(--bg-base) 0%, var(--bg-white) 100%);
+}
+
+.step2Visual .mockContent {
+  background: linear-gradient(135deg, var(--color-accent-light) 0%, var(--bg-white) 100%);
+}
+
+.step3Visual .mockContent {
+  background: linear-gradient(180deg, var(--bg-white) 0%, var(--bg-base) 100%);
+}
+
+/* ============ Responsive ============ */
 @media (max-width: 991px) {
+  .stepsContainer {
+    gap: var(--space-20);
+  }
+
   .stepItem {
     grid-template-columns: 1fr;
-    gap: 40px;
+    gap: var(--space-8);
     text-align: center;
   }
-  
+
   .stepItem:nth-child(even) {
     direction: ltr;
   }
-  
+
   .stepContent {
     max-width: 100%;
     margin: 0 auto;
   }
-  
-  .stepsContainer {
-    gap: 80px;
+
+  .stepNumber {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .visualPlaceholder {
+    height: 280px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .visualPlaceholder {
+    height: 240px;
+  }
+
+  .header {
+    margin-bottom: var(--space-16);
   }
 }
