@@ -4,8 +4,8 @@
 
 .hero {
   padding: 160px 0 100px;
-  background-color: var(--deep-section-bg);
-  color: var(--deep-section-text);
+  background-color: var(--bg-section-white);
+  color: #0F172A; /* Force dark text */
 }
 
 .badge {
