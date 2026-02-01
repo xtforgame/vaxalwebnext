@@ -1,0 +1,68 @@
+.philosophySection {
+  background-color: var(--bg-section-white);
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.header {
+  margin-bottom: 60px;
+}
+
+.title {
+  font-size: 2.5rem;
+  margin-bottom: 24px;
+}
+
+.quote {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--foreground);
+  line-height: 1.5;
+  margin-bottom: 60px;
+  position: relative;
+  font-style: italic;
+}
+
+.quote::before {
+  content: '"';
+  position: absolute;
+  left: -20px;
+  top: -10px;
+  font-size: 4rem;
+  color: var(--accent-blue);
+  opacity: 0.2;
+}
+
+.valuesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  margin-top: 80px;
+}
+
+.valueCard {
+  text-align: left;
+}
+
+.valueTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--accent-blue);
+}
+
+.valueDescription {
+  font-size: 0.9375rem;
+  color: var(--muted-text);
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .valuesGrid {
+    grid-template-columns: 1fr;
+  }
+}

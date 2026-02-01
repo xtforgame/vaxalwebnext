@@ -1,0 +1,45 @@
+.trustBar {
+  padding-top: 0;
+  padding-bottom: 60px;
+}
+
+.title {
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted-text);
+  margin-bottom: 40px;
+  margin-top: 60px;
+}
+
+.logoGrid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 80px; /* More spacing */
+  opacity: 1;
+}
+
+.logoItem {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--foreground);
+  opacity: 0.25; /* Lighter logos */
+  filter: grayscale(1);
+  transition: all 0.3s ease;
+  cursor: default;
+}
+
+.logoItem:hover {
+  filter: grayscale(0);
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .logoGrid {
+    gap: 30px;
+  }
+}

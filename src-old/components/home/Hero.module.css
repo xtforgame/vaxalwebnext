@@ -1,0 +1,98 @@
+.heroSection {
+  padding-top: 80px;
+  padding-bottom: 160px;
+  display: flex;
+  align-items: center;
+  min-height: calc(100vh - var(--header-height));
+  background-color: var(--bg-section-white);
+}
+
+.heroContent {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.textContent {
+  max-width: 560px;
+}
+
+.headline {
+  font-size: 3.5rem;
+  line-height: 1.1;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-blue-hover) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Fallback for text color if background clip fails */
+@supports not (background-clip: text) {
+  .headline {
+    color: var(--accent-blue);
+  }
+}
+
+.subheadline {
+  font-size: 1.25rem;
+  color: var(--muted-text);
+  margin-bottom: 40px;
+  line-height: 1.6;
+}
+
+.ctaGroup {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.visualContent {
+  position: relative;
+  width: 100%;
+  height: 500px;
+  background-color: var(--secondary-grey);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Placeholder for Ryko Animation */
+.mockupPlaceholder {
+  color: var(--muted-text);
+  font-weight: 500;
+  text-align: center;
+}
+
+@media (max-width: 991px) {
+  .heroSection {
+    padding-top: 40px;
+    padding-bottom: 60px;
+    height: auto;
+    min-height: auto;
+    display: block; /* Remove flex centering */
+  }
+
+  .heroContent {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .textContent {
+    max-width: 100%;
+    margin-bottom: 32px;
+  }
+
+  .headline {
+    font-size: 2.5rem; /* Slightly smaller for mobile */
+  }
+
+  .visualContent {
+    height: 300px; /* Reduced height for mobile */
+  }
+}

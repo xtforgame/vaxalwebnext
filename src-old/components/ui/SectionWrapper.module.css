@@ -1,0 +1,36 @@
+.section {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.padding-default {
+  padding: var(--section-spacing) 0;
+}
+
+.padding-none {
+  padding: 0;
+}
+
+.padding-top {
+  padding-top: var(--section-spacing);
+}
+
+.padding-bottom {
+  padding-bottom: var(--section-spacing);
+}
+
+.background-white {
+  background-color: var(--bg-section-white);
+}
+
+.background-grey {
+  background-color: var(--bg-section-grey);
+}
+
+.container {
+  width: 100%;
+  max-width: var(--container-width);
+  margin: 0 auto;
+  padding: 0 24px;
+}
