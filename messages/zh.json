@@ -13,242 +13,235 @@
   "hero": {
     "headline1": "以智慧建構。",
     "headline2": "以信任擴展。",
-    "subheadline": "我們將機器的智慧轉化為人類的價值——透過務實的 AI 解決方案，讓組織能專注在真正重要的事：創新與成長。",
+    "subheadline": "我們將機器的智慧轉化為企業的資產，確保技術的每一分投資都有清晰、可量化的價值。從無痛試點到企業級治理，思序網路 (Vaxal) 是您最堅實的技術夥伴。",
     "cta": "開始試用",
     "viewCase": "查看案例",
     "mockTitle": "Ryko Agent",
-    "mockUser": "幫我整理這週的會議記錄",
-    "mockAgent": "好的，我找到了 3 場會議記錄。正在為您生成摘要...",
-    "mockPlaceholder": "輸入訊息..."
+    "mockUser1": "幫我分析 Q4 的銷售數據，找出表現最好的產品。",
+    "mockAgent": "正在連接銷售資料庫... 找到 3 個表現最佳的產品：產品 A (+42%)、產品 B (+38%)、產品 C (+31%)。需要詳細分析嗎？",
+    "mockUser2": "好，幫我生成一份給主管會議的報告。",
+    "mockPlaceholder": "詢問 Ryko 任何問題..."
   },
   "context": {
-    "headline": "在 AI 迅速演變的時代，",
-    "headlineAccent": "適應力就是競爭力",
-    "description": "我們協助團隊擁抱變革，用對的工具、對的流程、對的節奏，將 AI 從概念轉化為可衡量的商業價值。"
+    "leadText": "過去，數位轉型意味著",
+    "highlight1": "高昂成本",
+    "highlight2": "漫長導入",
+    "highlight3": "未知的成效",
+    "mainStatement1": "現在，LLM AI 時代抹平了門檻。",
+    "mainStatement2": "智慧不再是大型企業的奢侈品，而是每一間企業都能隨手取用的",
+    "mainStatementAccent": "基礎建設",
+    "closingText": "這是一場全球同步的進步浪潮，而最好的入場時間，就是現在。"
   },
   "trustBar": {
-    "title": "受到創新團隊信賴"
+    "title": "受到業界領袖信賴，採用頂尖技術"
   },
   "methodology": {
-    "badge": "我們的方法論",
-    "title": "三步驟打造 AI 工作流程",
-    "description": "從連接到自動化再到治理，我們提供完整的 AI 轉型路徑。",
+    "title": "Vaxal 方法論",
+    "subtitle": "技術的力量應立竿見影。我們透過由易入難的三部曲架構，確保每一個發展階段都能交付可量化的價值。",
     "step1": {
       "number": "01",
-      "title": "連接",
-      "subtitle": "打通資料孤島",
-      "description": "透過 Ryko 的自然語言介面，讓 AI 安全地存取您的企業資料、應用程式和服務。無需複雜整合，即可開始對話式協作。",
-      "feature1": "企業級資料連接器",
-      "feature2": "即時存取控制",
-      "feature3": "零程式碼整合"
+      "title": "連結 (試點)",
+      "description": "從痛點出發的無痛搶灘。透過 Ryko Agent 解決單點痛點，無需大型基建即可驗證 AI 價值。快速部署，即時見效。",
+      "visual": "Ryko Agent 演示"
     },
     "step2": {
       "number": "02",
-      "title": "自動化",
-      "subtitle": "釋放重複性工作",
-      "description": "BrevFlow 讓您用直覺的流程設計器建構跨系統自動化。從簡單的通知到複雜的審批流程，都能輕鬆實現。",
-      "feature1": "視覺化流程設計",
-      "feature2": "跨平台整合",
-      "feature3": "條件式邏輯"
+      "title": "自動化 (規模化)",
+      "description": "將單點連結成線。使用 BrevFlow 串接全域資料與跨部門工作流，將重複性勞動轉化為 AI 自動化流水線。",
+      "visual": "工作流自動化"
     },
     "step3": {
       "number": "03",
-      "title": "治理",
-      "subtitle": "確保可控與合規",
-      "description": "SoloistBoard 提供專案級別的 AI 使用監控和治理工具。確保每一次 AI 決策都可追溯、可解釋、符合組織政策。",
-      "feature1": "使用量儀表板",
-      "feature2": "合規性檢查",
-      "feature3": "決策日誌"
+      "title": "治理 (管理)",
+      "description": "實現企業級智能治理。導入 SoloistBoard，讓 AI 不僅是執行者，更是專案主動推進器，確保規模化維運的絕對可控。",
+      "visual": "管理儀表板"
     }
   },
   "products": {
-    "badge": "產品矩陣",
-    "title": "為每個工作流程設計的 AI 工具",
-    "description": "四款互相配合的產品，覆蓋從對話、自動化、文件到專案治理的完整鏈路。",
+    "title": "Vaxal 產品生態系",
+    "subtitle": "我們建立的工具，不只是為了自動化，更是為了賦予企業規模化的治理能力。",
     "learnMore": "了解更多",
     "ryko": {
       "name": "Ryko",
       "tagline": "AI Agent 對話介面",
-      "description": "自然語言驅動的企業 AI 助手。連接您的資料源，用對話完成工作。"
+      "description": "AI 核心運行環境。支援 MCP 與微服務化，讓 AI 代理人能精準調度企業內部工具與數據。"
     },
     "brevflow": {
       "name": "BrevFlow",
       "tagline": "跨平台工作流自動化",
-      "description": "視覺化流程設計器，輕鬆建構跨系統自動化任務，無需撰寫程式碼。"
+      "description": "AI Native 自動化工作流。跨越平台的限制，將複雜的業務邏輯自動化為高效、可靠的 AI 流程。"
     },
     "formaldoc": {
       "name": "FormalDoc",
       "tagline": "智能文件生成",
-      "description": "從範本到成品，AI 輔助您快速產出專業文件，保持品牌一致性。"
+      "description": "標準化文件生成系統。將企業規範轉化為 AI 樣板，自動產出正規、精確的專業商務文件。"
     },
     "soloistboard": {
       "name": "SoloistBoard",
       "tagline": "專案智能治理",
-      "description": "專案級別的 AI 使用監控與治理平台，確保合規與可追溯性。"
+      "description": "AI 專案治理平台。透過看板式管理與 AI 自律代理人，主動推進專案進度，降低溝通成本。"
     }
   },
   "caseTeaser": {
-    "badge": "客戶案例",
-    "title": "Studio Doe 如何用 Vaxal 節省 60% 行政時間",
-    "description": "一間 15 人的設計工作室，透過我們的 AI 工具重新定義了日常營運。從報價到排程，從會議記錄到進度追蹤，Vaxal 讓他們專注在真正的創意工作。",
+    "badge": "經典案例",
+    "title": "解碼時尚領導品牌背後的基礎建設",
+    "description": "我們為 Studio Doe 打造了具備「高併發、極致穩定、深度模組化」的 EC 基建。在面對億級營收的流量高峰與複雜行銷場景下，依然保持零失誤的高效維運。",
     "cta": "閱讀完整案例",
     "stat1": {
-      "value": "60%",
-      "label": "行政時間節省"
+      "value": "100%",
+      "label": "大促期間正常運行時間"
     },
     "stat2": {
-      "value": "3 週",
-      "label": "完成導入"
-    },
-    "stat3": {
-      "value": "15 人",
-      "label": "團隊規模"
+      "value": "100M+",
+      "label": "支撐年營收"
     }
   },
   "philosophy": {
-    "badge": "我們的理念",
-    "title": "我們相信的事",
+    "title": "我們就是最好的證明",
+    "quote": "我們怎麼知道它有效？因為我們用它打造了整間公司。",
+    "description": "Ryko、BrevFlow、SoloistBoard 這些複雜系統，正是思序網路 (Vaxal) 使用自身開發的 AI 工作流與 Vibe Coding 打造出來的。我們不只是理論家，更是這套生產力革命的第一批受益者。",
     "pillar1": {
-      "title": "務實優先",
-      "description": "不追逐熱門技術，只採用能解決真實問題的方案。每個功能都經過驗證才上線。"
+      "title": "落地的價值",
+      "description": "不賣展示用的 Demo。每一階段的導入，都必須轉化為可量化的實質效率提升。"
     },
     "pillar2": {
-      "title": "人機協作",
-      "description": "AI 是放大人類能力的工具，而非取代。我們設計讓人保持掌控的系統。"
+      "title": "透明的治理",
+      "description": "主動提供 AI 對話紀錄導出服務。客戶留下是因為信賴我們的價值，而非因為技術黑盒。"
     },
     "pillar3": {
-      "title": "Dogfooding",
-      "description": "我們用自己的產品營運公司。從內部工作流到客戶服務，Vaxal 是自己的第一個用戶。"
+      "title": "夥伴心態",
+      "description": "出身新創，我們理解成長的痛。我們是與你並肩奔跑的戰友，而非在旁觀看的顧問。"
     }
   },
   "founders": {
-    "badge": "創辦團隊",
-    "title": "實戰出身的建造者",
-    "description": "我們的團隊來自企業 IT、新創開發、設計顧問等領域。共同點是：都在第一線解決過真實的業務挑戰。",
+    "title": "團隊基因",
+    "subtitle": "我們是一群來自台大、清大的校友，團隊成員更來自頂尖軟體企業與創新實驗室。我們融合了大公司的嚴謹品質控管與小團隊的極速敏捷開發。",
+    "philosophyTitle": "我們的理念：價值優先於價格",
+    "philosophyText": "我們不是在旁觀看的顧問，而是與你並肩奔跑的戰友。我們堅持價值優先於價格，在 AI 時代，用最高效的方式為客戶交付最具競爭力的成果。",
     "founder1": {
-      "name": "Allen",
-      "role": "Architect",
-      "bio": "軟體開發背景，專注高可用系統"
+      "name": "Rick Chen",
+      "role": "CEO",
+      "bio": "專注於 AI 戰略與商業架構，深信 AI 應是企業成長的催化劑而非單純的工具替代。"
     },
     "founder2": {
-      "name": "Kevin",
-      "role": "Maker",
-      "bio": "全端開發者，熱衷自動化工具"
+      "name": "Marson Mao",
+      "role": "CTO",
+      "bio": "負責核心產品架構，擁抱 Vibe Coding 與自動化治理，致力於打造極致穩定的軟體基建。"
     },
     "founder3": {
-      "name": "Sean",
-      "role": "Enabler",
-      "bio": "設計與商業策略背景，用戶體驗專家"
+      "name": "Kathy Pan",
+      "role": "COO",
+      "bio": "負責公司營運與流程優化，確保團隊在高速成長中維持穩健的執行力。"
+    },
+    "founder4": {
+      "name": "Jack Lin",
+      "role": "Director, E-Commerce Solution",
+      "bio": "專長於高併發系統與自動化流程。感同身受企業從 0 到 100 的成長痛點。"
     }
   },
   "cta": {
-    "title": "準備好開始了嗎？",
-    "description": "從一個小型試點開始，我們將協助您在 2-4 週內看到首批成果。無長期合約，按結果付費。",
-    "button": "預約諮詢",
-    "note": "免費諮詢 · 無需綁約"
+    "title": "準備好以信任建構了嗎？",
+    "description": "從一個小痛點開始。讓我們展示 AI 如何能為您的企業帶來具體、可量化的改變。",
+    "button": "開始您的試點",
+    "buttonSecondary": "了解更多關於我們"
   },
   "footer": {
-    "description": "AI 時代務實的成長夥伴",
+    "brand": "思序網路 Vaxal",
+    "description": "以智慧建構，以信任擴展。\nAI 時代務實的成長夥伴。",
     "productsTitle": "產品",
     "companyTitle": "公司",
-    "caseStudy": "客戶案例",
-    "about": "關於我們",
+    "aboutUs": "關於我們",
+    "careers": "加入我們",
     "contact": "聯繫我們",
-    "copyright": "Vaxal. 保留所有權利。"
+    "connectTitle": "聯繫",
+    "copyright": "思序網路 Vaxal. 版權所有。"
   },
   "productsPage": {
-    "title": "產品",
-    "description": "四款互相配合的 AI 工具，覆蓋從對話、自動化、文件到專案治理的完整工作流程。",
-    "exploreProduct": "探索產品"
-  },
-  "aboutPage": {
-    "badge": "關於我們",
-    "title": "我們是 Vaxal",
-    "intro": "一群相信 AI 應該讓工作更有意義的人。我們不追逐技術潮流，只專注解決真實的業務問題。",
-    "storyTitle": "我們的故事",
-    "storyP1": "Vaxal 誕生於一個簡單的觀察：大多數團隊在 AI 工具上投入了大量時間和金錢，卻看不到實質的業務改善。問題不在技術本身，而在於缺乏一個連接工具與工作流程的橋樑。",
-    "storyP2": "我們的創辦團隊來自企業 IT、產品開發、設計顧問等不同背景，但都有一個共同經歷：在第一線看到組織如何掙扎於「AI 的承諾」與「現實的落差」之間。",
-    "storyP3": "所以我們創建了 Vaxal——不是又一套 AI 工具，而是一個務實的方法論和配套工具集，幫助團隊用對的方式擁抱 AI。",
-    "visionTitle": "我們的願景",
-    "visionP1": "讓每個組織都能用 AI 放大人類的創造力和生產力，同時保持對工作流程的完全掌控。",
-    "visionP2": "我們相信最好的 AI 工具是「隱形」的——它們融入日常工作，讓人專注在真正重要的事情上，而不是花時間學習如何使用工具。",
-    "dnaTitle": "團隊 DNA",
-    "dna1": {
-      "title": "務實",
-      "description": "不空談願景，只做能落地的事"
+    "title": "產品生態系",
+    "description": "一套專為將機器智慧導入企業治理而設計的工具組合。",
+    "exploreProduct": "探索產品文件 →",
+    "comingSoon": "即將推出",
+    "ryko": {
+      "tagline": "AI 運行環境與橋樑",
+      "description": "連接 LLM 與企業內部資料的安全橋樑。支援 MCP 協議，精準調度工具。"
     },
-    "dna2": {
-      "title": "透明",
-      "description": "對客戶坦誠，包括我們的局限"
+    "brevflow": {
+      "tagline": "AI 原生自動化",
+      "description": "將複雜的業務邏輯轉化為可靠的 AI 工作流。一次建構，處處自動化。"
     },
-    "dna3": {
-      "title": "迭代",
-      "description": "小步快跑，持續根據反饋改進"
+    "soloistboard": {
+      "tagline": "AI 治理平台",
+      "description": "在同一平台協調自主代理人與人類團隊。完整掌握 AI 驅動的專案進度。"
     },
-    "dna4": {
-      "title": "同理",
-      "description": "深入理解用戶的真實工作場景"
+    "formaldoc": {
+      "tagline": "智能文件生成",
+      "description": "將企業標準轉化為 AI 模板。自動化高精度的商務文件產出。"
     }
   },
+  "aboutPage": {
+    "badge": "我們的故事",
+    "title": "智慧是\n新標準。",
+    "subtitle": "誕生於企業軟體與 AI 研究的交匯點，Vaxal 致力於彌合技術潛力與企業現實之間的鴻溝。",
+    "visionTitle": "願景",
+    "visionLeadText": "我們深信 AI 不應只是孤立的工具，而是企業流動的血液。",
+    "visionBodyText": "思序網路 (Vaxal) 的成立初衷很單純：讓複雜的技術變得可治理、可擴展且具備具體的商業價值。我們的目標很清晰：在 AI 浪潮中，為企業打造能實質推動產業進步的「數位基建」。",
+    "coreValuesTitle": "核心價值",
+    "coreValue1": {
+      "title": "以信任擴展",
+      "description": "規模化必須建立在安全與透明的基礎上。"
+    },
+    "coreValue2": {
+      "title": "價值優先於價格",
+      "description": "我們交付的是長期的技術資產，而非短期的人力。"
+    },
+    "coreValue3": {
+      "title": "Vibe Coding",
+      "description": "用最高效、最直覺的方式達成複雜的工程目標。"
+    },
+    "dnaTitle": "團隊基因",
+    "dnaIntro": "我們是一群來自台大、清大的校友，團隊成員更來自頂尖軟體企業與創新實驗室。我們融合了大公司的嚴謹品質控管與小團隊的極速敏捷開發。"
+  },
   "caseStudyPage": {
-    "badge": "客戶案例",
-    "title": "Studio Doe：設計工作室的 AI 轉型之旅",
+    "badge": "電商基礎建設",
+    "title": "驅動 Studio Doe 的\n數位轉型",
     "client": "客戶",
     "clientName": "Studio Doe",
-    "industry": "產業",
-    "industryName": "設計顧問",
-    "duration": "導入時間",
-    "durationValue": "3 週",
+    "service": "服務",
+    "serviceName": "基礎建設與 AI 藍圖",
+    "timeline": "合作期程",
+    "timelineValue": "長期合作夥伴",
     "challengeTitle": "挑戰",
-    "challengeP1": "Studio Doe 是一間 15 人的品牌設計工作室，以高品質的視覺識別設計聞名。然而，隨著業務成長，創辦人發現團隊花越來越多時間在行政工作上——報價、排程、會議記錄、進度追蹤——而非實際的設計工作。",
-    "challengeP2": "他們嘗試過多種工具，但碎片化的解決方案反而增加了溝通成本。設計師需要在 5-6 個不同的應用程式之間切換，資訊散落各處。",
+    "challengeP1": "身為台灣頂尖的時裝品牌，Studio Doe 在大促期間面臨極端的流量峰值。傳統的單體架構已無法支撐品牌的高速成長，亟需一套高可用、可擴展且能深度整合後續 AI 功能的技術基建。",
+    "challengeP2": "「穩定」只是基本，「彈性」與「前瞻性」才是決定品牌長期競爭力的關鍵。",
     "stat1": {
-      "value": "40%",
-      "label": "設計師時間花在行政工作"
+      "value": "100%",
+      "label": "大促期間正常運行時間"
     },
     "stat2": {
-      "value": "6 個",
-      "label": "日常使用的工具數量"
+      "value": "100M+",
+      "label": "支撐年營收"
     },
     "stat3": {
-      "value": "2 小時",
-      "label": "每週花在會議記錄"
+      "value": "90%",
+      "label": "部署時間縮減"
     },
     "stat4": {
-      "value": "頻繁",
-      "label": "資訊遺漏導致的溝通問題"
+      "value": "<2秒",
+      "label": "全球頁面載入時間"
     },
-    "solutionTitle": "解決方案",
-    "solutionIntro": "我們與 Studio Doe 合作，用 Vaxal 的產品套件重新設計了他們的工作流程。重點不是取代現有工具，而是用 AI 連接它們、自動化重複性任務、並提供統一的資訊存取點。",
-    "solutionVisual": "Vaxal 解決方案架構圖",
-    "impactTitle": "成果",
-    "impactStat1": {
-      "value": "60%",
-      "label": "行政時間節省"
-    },
-    "impactStat2": {
-      "value": "3 週",
-      "label": "完成導入"
-    },
-    "impactStat3": {
-      "value": "85%",
-      "label": "團隊滿意度"
-    },
-    "impactStat4": {
-      "value": "2x",
-      "label": "專案可見度提升"
-    },
-    "testimonial": "Vaxal 改變了我們的工作方式。現在設計師可以專注在設計上，而不是花時間在行政瑣事。更重要的是，所有資訊都在一個地方，不會再有遺漏。",
-    "testimonialAuthor": "— Studio Doe 創辦人"
-  },
-  "productDetail": {
-    "startUsing": "開始使用",
-    "watchDemo": "觀看示範",
-    "capability": "核心能力"
+    "solutionTitle": "解決方案：模組化架構",
+    "solutionIntro": "思序網路 (Vaxal) 協助 Studio Doe 從架構底層出發，建立了完整的 CI/CD 流程、微服務化組件，並導入了基於 Ryko 的 AI 實驗室環境。",
+    "solutionVisual": "高解析度視覺化：即時流量監控的基礎建設地圖",
+    "impactTitle": "成效",
+    "impactP1": "現在，Studio Doe 不再需要擔心促銷活動導致的系統崩潰。品牌團隊可以專注於創意與行銷，而技術基建則由 Vaxal 提供最堅實的後盾。",
+    "impactP2": "這套系統也為後續的 AI 尺寸推薦、智能補貨系統打下了完美的數據與接口基礎。",
+    "impactCta": "開啟您的旅程",
+    "testimonial": "「思序網路不只是開發商，更是我們的技術策略合夥人。他們解決了我們最恐懼的穩定性問題，並陪著我們探索未來的可能性。」",
+    "testimonialAuthor": "— An Chih, Studio Doe 創辦人"
   },
   "rykoPage": {
-    "tag": "核心基礎設施",
-    "title": "企業智慧的作業系統",
+    "tag": "核心基礎建設",
+    "title": "企業智慧的\n作業系統",
     "subtitle": "Ryko 不僅是一個 AI 模型容器，它是連接企業資料與 LLM 的核心運行環境。支援 MCP 協議、Skill 掛載與多模態交互，讓 AI 理解您的業務語言。",
     "cta": "部署 Ryko",
     "assertionTitle": "從「對話」走向「執行」",
@@ -257,58 +250,67 @@
     "capabilitiesSubtitle": "企業級 AI 運行的三大基石",
     "cap1Title": "MCP 標準支援",
     "cap1Desc": "全面支援 Model Context Protocol (MCP)。您的內部工具只需撰寫一次，即可被 Ryko 驅動的任何模型調用。透過標準化接口，讓 AI 精準調度企業資源。",
-    "cap2Title": "多模型相容",
-    "cap2Desc": "不被單一模型綁架。Ryko 允許您在 GPT-4、Claude 或 Llama 之間自由切換。根據任務難度選擇最合適的模型，平衡成本與效能。",
-    "cap3Title": "離線與隱私優先",
-    "cap3Desc": "對於敏感資料，Ryko 支援完全離線部署。配合本地端模型，確保數據在您的機房內閉環運行，符合最嚴格的資安規範。"
+    "cap1Visual": "動畫：Ryko 將任務調度至各 MCP 伺服器",
+    "cap2Title": "多模型兼容",
+    "cap2Desc": "不被單一模型綁架。Ryko 允許您在 GPT-4, Claude 3 或 Llama 3 之間自由切換。根據任務難度選擇最合適的模型，平衡成本與效能。",
+    "cap2Visual": "視覺化：無縫切換模型 (OpenAI → Anthropic → 本地 Llama)",
+    "cap3Title": "離線優先與隱私保護",
+    "cap3Desc": "對於敏感資料，Ryko 支援完全離線部署 (Air-gapped)。配合本地端模型，確保數據在您的機房內閉環運行，符合最嚴格的資安規範。",
+    "cap3Visual": "視覺化：防護盾圖標保護伺服器機架，資料留在內部"
   },
   "brevflowPage": {
-    "tag": "工作流自動化",
-    "title": "AI 原生的自動化引擎",
-    "subtitle": "BrevFlow 讓您用直覺的視覺化介面建構跨系統工作流。從簡單的通知到複雜的審批流程，將重複性勞動轉化為 AI 自動化流水線。",
+    "tag": "AI 自動化工作流",
+    "title": "為代理人重新設計的工作流自動化",
+    "subtitle": "BrevFlow 是專為 AI 時代打造的工作流平台。這裡的節點不只是死板的 API 觸發器，而是具備判斷力的 Ryko Agent。就像指派任務給一群數位同事，而非編寫一段腳本。",
     "cta": "開始自動化",
-    "assertionTitle": "告別重複性工作",
-    "assertionText": "企業中有太多工作是「複製貼上」式的重複勞動。BrevFlow 讓您定義一次流程，AI 就能代勞執行。跨越平台的限制，將複雜的業務邏輯自動化為高效、可靠的流程。",
-    "capabilitiesTitle": "核心能力",
-    "capabilitiesSubtitle": "打造無縫自動化體驗",
-    "cap1Title": "視覺化流程設計",
-    "cap1Desc": "拖拉式介面設計工作流程。無需撰寫程式碼，即可建構複雜的條件判斷、迴圈與分支邏輯。",
-    "cap2Title": "跨平台整合",
-    "cap2Desc": "一鍵連接 Slack、Notion、Google Workspace、自建 API 等上百種服務。資料在系統間自由流動。",
-    "cap3Title": "AI 智慧決策",
-    "cap3Desc": "在流程節點中嵌入 AI 判斷。讓 AI 根據情境自動選擇下一步，而非僅執行固定規則。"
+    "assertionTitle": "從「觸發」走向「協作」",
+    "assertionText": "傳統自動化 (Zapier/n8n) 雖然強大，但處理不了模糊的判斷。BrevFlow 引入了「Agent Node」。當流程遇到需要決策的節點時，交給 AI 判斷，處理完再繼續執行。這讓自動化不再容易因為例外狀況而中斷。",
+    "capabilitiesTitle": "流程機制",
+    "cap1Title": "代理人作為節點",
+    "cap1Desc": "在工作流中直接嵌入 Ryko Agent。您可以設定這個節點的角色（例如：「資深編輯」），並給予它上下文。它會像真人一樣處理輸入的資料，產出高品質的結果。",
+    "cap1Visual": "視覺化：流程圖中一個節點是發光的大腦/頭像",
+    "cap2Title": "協作網路",
+    "cap2Desc": "串聯多個 Agent 形成協作網。由「研究員 Agent」蒐集資料，交給「分析師 Agent」撰寫報告，最後由「審核 Agent」檢查。BrevFlow 管理這中間所有的訊息傳遞與狀態同步。",
+    "cap2Visual": "視覺化：多個代理人依序傳遞文件",
+    "cap3Title": "人機協作",
+    "cap3Desc": "保持控制權。在關鍵節點設置人工審核機制。當 AI 信心分數不足，或涉及高風險操作時，BrevFlow 會自動暫停並通知管理員介入，確保安全。",
+    "cap3Visual": "視覺化：流程在鎖定圖標處暫停，等待用戶批准"
   },
   "formaldocPage": {
-    "tag": "智能文件",
-    "title": "專業文件的 AI 生產線",
-    "subtitle": "FormalDoc 將企業規範轉化為 AI 樣板，自動產出正規、精確的專業商務文件。從範本到成品，保持品牌一致性。",
-    "cta": "開始生成",
-    "assertionTitle": "文件不再是瓶頸",
-    "assertionText": "報價單、合約、報告——這些文件耗費大量時間，卻往往格式不一。FormalDoc 讓 AI 理解您的格式規範，一鍵生成符合標準的專業文件。",
-    "capabilitiesTitle": "核心能力",
-    "capabilitiesSubtitle": "端到端文件自動化",
-    "cap1Title": "範本學習",
-    "cap1Desc": "上傳現有文件，AI 自動學習格式、用語與結構，建立專屬企業樣板。",
-    "cap2Title": "動態內容填充",
-    "cap2Desc": "從 CRM、ERP 或任何數據源自動帶入資料。確保內容即時、正確。",
-    "cap3Title": "多格式輸出",
-    "cap3Desc": "支援 Word、PDF、HTML 等多種輸出格式。根據需求自動轉換並套用樣式。"
+    "tag": "智能文件生成",
+    "title": "由 AI 規範化的\n企業標準",
+    "subtitle": "FormalDoc 是文件模板的建構系統。上傳您的企業標準 Docx 檔案，我們將其轉化為 AI 可讀、可寫的嚴謹樣板。並進一步生成 MCP Server，讓所有 AI 產出都符合最高規範。",
+    "cta": "立即標準化",
+    "assertionTitle": "從「範文」走向「規範」",
+    "assertionText": "企業深受文件格式混亂之苦。FormalDoc 不只是生成文字，而是鎖定「結構」。透過逆向工程您的現有文件，我們提取出隱性的排版規則與邏輯，封裝成 AI 工具。從此，每一次的輸出都是完美的 100 分。",
+    "capabilitiesTitle": "標準化流程",
+    "cap1Title": "模板導入",
+    "cap1Desc": "上傳範本，立即解析。無論是採購合約、技術白皮書還是季報，FormalDoc 能深度解析其中的樣式、變數與段落結構。您也可以從我們的標準樣板庫中直接下載使用。",
+    "cap1Visual": "視覺化：Docx 檔案被掃描並拆解為結構區塊",
+    "cap2Title": "MCP 生成",
+    "cap2Desc": "將樣板轉化為工具 (Tool)。FormalDoc 會自動產對應的 MCP Server 代碼。這意味著您可以直接命令 Ryko：「使用『採購合約樣板』生成一份草稿」，無需再次調教格式。",
+    "cap2Visual": "視覺化：模板區塊轉換為程式碼區塊/API 圖標",
+    "cap3Title": "協作精修",
+    "cap3Desc": "人機協作精修。生成的模板並非死板不可改，您可以在 FormalDoc 平台上與 AI 協作調整定義。確保每一個欄位、每一個條款都精確符合當下的業務需求。",
+    "cap3Visual": "視覺化：使用者與 AI 游標一同編輯文件"
   },
   "soloistboardPage": {
-    "tag": "專案治理",
-    "title": "AI 專案的指揮中心",
-    "subtitle": "SoloistBoard 提供專案級別的 AI 使用監控和治理工具。確保每一次 AI 決策都可追溯、可解釋、符合組織政策。",
-    "cta": "開始治理",
-    "assertionTitle": "AI 需要被治理",
-    "assertionText": "當 AI 開始執行關鍵任務，監控與可追溯性變得至關重要。SoloistBoard 讓您掌握所有 AI 行為，確保合規且可控。",
-    "capabilitiesTitle": "核心能力",
-    "capabilitiesSubtitle": "企業級 AI 治理框架",
-    "cap1Title": "行為追蹤",
-    "cap1Desc": "記錄每一次 AI 調用、決策依據與輸出結果。完整的審計軌跡，滿足合規需求。",
-    "cap2Title": "用量分析",
-    "cap2Desc": "即時監控 Token 使用量、成本分攤與效能指標。優化 AI 投資回報。",
-    "cap3Title": "政策管控",
-    "cap3Desc": "設定組織層級的 AI 使用政策。自動阻擋不合規請求，保護敏感資料。"
+    "tag": "AI 治理",
+    "title": "自主推進的\n專案管理",
+    "subtitle": "SoloistBoard 是 AI 時代的 Trello。在這裡，不同的 Ryko Agent 扮演 PM、規格撰寫者與工程師。它們不僅是卡片上的頭像，而是主動推進進度的生產力引擎。",
+    "cta": "搶先體驗",
+    "assertionTitle": "從「管理」走向「自律」",
+    "assertionText": "專案軟體不該只是紀錄狀態的死板工具。SoloistBoard 賦予看板生命。當您建立一個需求卡片，負責「規格」的 Agent 會主動詢問細節；負責「開發」的 Agent 會開始撰寫代碼。我們將專案開發變成一場 AI 與人的協奏曲。",
+    "capabilitiesTitle": "主動式治理",
+    "cap1Title": "角色化代理人",
+    "cap1Desc": "專款專用。您可以為專案配置不同的 Agent 角色：Product Owner Agent 負責釐清需求邊界，Tech Lead Agent 負責架構審查。它們在看板上擁有自己的身分與職責。",
+    "cap1Visual": "視覺化：看板欄位上方有 Agent 頭像",
+    "cap2Title": "主動推進",
+    "cap2Desc": "告別被動等待。SoloistBoard 的 Agent 會主動檢查卡片停滯時間，發送提醒，甚至自動生成會議摘要或日報。它確保專案永遠保持向前推進的動能。",
+    "cap2Visual": "視覺化：代理人發送推進進度的通知彈窗",
+    "cap3Title": "統一上下文",
+    "cap3Desc": "所有 Agent 共享同一個專案上下文。無論是文件、對話紀錄還是代碼變更，都成為 Agent 的長期記憶。這大幅降低了人類與 AI 之間重複溝通的成本。",
+    "cap3Visual": "視覺化：中央大腦連接各種專案檔案"
   },
   "languageSwitcher": {
     "zh": "中文",

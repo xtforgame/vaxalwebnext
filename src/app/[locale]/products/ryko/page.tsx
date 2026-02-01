@@ -8,24 +8,34 @@ export default async function RykoPage() {
 
   return (
     <>
+      {/* 1. Philosophy: The Engine */}
       <SectionWrapper className={styles.heroSection} padding="none">
         <div className={styles.heroContent}>
           <span className={styles.heroTag}>{t('tag')}</span>
-          <h1 className={styles.heroTitle}>{t('title')}</h1>
-          <p className={styles.heroSubtitle}>{t('subtitle')}</p>
+          <h1 className={styles.heroTitle}>
+            {t('title').split('\n')[0]} <br />
+            {t('title').split('\n')[1] || ''}
+          </h1>
+          <p className={styles.heroSubtitle}>
+            {t('subtitle')}
+          </p>
           <div style={{ marginTop: '48px', display: 'flex', gap: '16px' }}>
-            <Button size="lg" href="/#contact">{t('cta')}</Button>
+            <Button size="lg" href="/contact">{t('cta')}</Button>
           </div>
         </div>
       </SectionWrapper>
 
+      {/* 2. Assertion: Why this matters (Context) */}
       <SectionWrapper className={styles.assertionSection}>
         <div className={styles.assertionWrapper}>
           <h2 className={styles.assertionTitle}>{t('assertionTitle')}</h2>
-          <p className={styles.assertionText}>{t('assertionText')}</p>
+          <p className={styles.assertionText}>
+            {t('assertionText')}
+          </p>
         </div>
       </SectionWrapper>
 
+      {/* 3. Method: How it works */}
       <SectionWrapper className={styles.stepsSection}>
         <div className={styles.stepsHeader}>
           <h2 className={styles.stepsTitle}>{t('capabilitiesTitle')}</h2>
@@ -36,10 +46,12 @@ export default async function RykoPage() {
           <div className={styles.stepContent}>
             <span className={styles.stepNumber}>01</span>
             <h3 className={styles.stepTitle}>{t('cap1Title')}</h3>
-            <p className={styles.stepDesc}>{t('cap1Desc')}</p>
+            <p className={styles.stepDesc}>
+              {t('cap1Desc')}
+            </p>
           </div>
           <div className={styles.stepVisual}>
-            <div className={styles.visualPlaceholder}>MCP Protocol</div>
+            [ {t('cap1Visual')} ]
           </div>
         </div>
 
@@ -47,10 +59,12 @@ export default async function RykoPage() {
           <div className={styles.stepContent}>
             <span className={styles.stepNumber}>02</span>
             <h3 className={styles.stepTitle}>{t('cap2Title')}</h3>
-            <p className={styles.stepDesc}>{t('cap2Desc')}</p>
+            <p className={styles.stepDesc}>
+              {t('cap2Desc')}
+            </p>
           </div>
           <div className={styles.stepVisual}>
-            <div className={styles.visualPlaceholder}>Multi-Model</div>
+            [ {t('cap2Visual')} ]
           </div>
         </div>
 
@@ -58,10 +72,12 @@ export default async function RykoPage() {
           <div className={styles.stepContent}>
             <span className={styles.stepNumber}>03</span>
             <h3 className={styles.stepTitle}>{t('cap3Title')}</h3>
-            <p className={styles.stepDesc}>{t('cap3Desc')}</p>
+            <p className={styles.stepDesc}>
+              {t('cap3Desc')}
+            </p>
           </div>
           <div className={styles.stepVisual}>
-            <div className={styles.visualPlaceholder}>Privacy First</div>
+            [ {t('cap3Visual')} ]
           </div>
         </div>
       </SectionWrapper>

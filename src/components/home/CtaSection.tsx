@@ -14,11 +14,13 @@ export default function CtaSection() {
         <h2 className={styles.title}>{t('title')}</h2>
         <p className={styles.subtitle}>{t('description')}</p>
         <div className={styles.buttonGroup}>
-          <Button size="lg" href="/#contact">
+          <Button size="lg" href="/contact">
             {t('button')}
           </Button>
+          <Button variant="outline" size="lg" href="/about" className={styles.outlineBtn}>
+            {t('buttonSecondary')}
+          </Button>
         </div>
-        <p className={styles.note}>{t('note')}</p>
       </div>
     </SectionWrapper>
   );

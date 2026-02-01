@@ -7,27 +7,40 @@ import styles from './Philosophy.module.css';
 export default function Philosophy() {
   const t = useTranslations('philosophy');
 
-  const pillars = [
-    { title: t('pillar1.title'), description: t('pillar1.description') },
-    { title: t('pillar2.title'), description: t('pillar2.description') },
-    { title: t('pillar3.title'), description: t('pillar3.description') },
-  ];
-
   return (
     <SectionWrapper background="white" id="philosophy">
       <div className={styles.container}>
         <div className={styles.header}>
-          <span className={styles.badge}>{t('badge')}</span>
           <h2 className={styles.title}>{t('title')}</h2>
         </div>
 
+        <p className={styles.quote}>
+          {t('quote')}
+        </p>
+
+        <p className={styles.description}>
+          {t('description')}
+        </p>
+
         <div className={styles.valuesGrid}>
-          {pillars.map((pillar, index) => (
-            <div key={index} className={styles.valueCard}>
-              <h3 className={styles.valueTitle}>{pillar.title}</h3>
-              <p className={styles.valueDescription}>{pillar.description}</p>
-            </div>
-          ))}
+          <div className={styles.valueCard}>
+            <h3 className={styles.valueTitle}>{t('pillar1.title')}</h3>
+            <p className={styles.valueDescription}>
+              {t('pillar1.description')}
+            </p>
+          </div>
+          <div className={styles.valueCard}>
+            <h3 className={styles.valueTitle}>{t('pillar2.title')}</h3>
+            <p className={styles.valueDescription}>
+              {t('pillar2.description')}
+            </p>
+          </div>
+          <div className={styles.valueCard}>
+            <h3 className={styles.valueTitle}>{t('pillar3.title')}</h3>
+            <p className={styles.valueDescription}>
+              {t('pillar3.description')}
+            </p>
+          </div>
         </div>
       </div>
     </SectionWrapper>

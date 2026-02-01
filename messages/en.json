@@ -13,302 +13,304 @@
   "hero": {
     "headline1": "Build with Intelligence.",
     "headline2": "Scale with Trust.",
-    "subheadline": "We transform machine intelligence into human value—through pragmatic AI solutions that let organizations focus on what truly matters: innovation and growth.",
+    "subheadline": "We transform machine intelligence into enterprise assets, ensuring every tech investment delivers clear, quantifiable value. From painless pilots to enterprise-grade governance, Vaxal is your most reliable technology partner.",
     "cta": "Start Pilot",
-    "viewCase": "View Case",
+    "viewCase": "View Case Study",
     "mockTitle": "Ryko Agent",
-    "mockUser": "Help me organize this week's meeting notes",
-    "mockAgent": "Sure, I found 3 meeting records. Generating summary for you...",
-    "mockPlaceholder": "Type a message..."
+    "mockUser1": "Help me analyze Q4 sales data and find the best performing products.",
+    "mockAgent": "Connecting to sales database... Found 3 top-performing products: Product A (+42%), Product B (+38%), Product C (+31%). Would you like a detailed analysis?",
+    "mockUser2": "Yes, generate a report for the executive meeting.",
+    "mockPlaceholder": "Ask Ryko anything..."
   },
   "context": {
-    "headline": "In an era where AI evolves rapidly,",
-    "headlineAccent": "adaptability is competitiveness",
-    "description": "We help teams embrace change, using the right tools, processes, and pace to transform AI from concept to measurable business value."
+    "leadText": "In the past, digital transformation meant",
+    "highlight1": "high costs",
+    "highlight2": "lengthy implementation",
+    "highlight3": "uncertain outcomes",
+    "mainStatement1": "Now, the LLM AI era has leveled the playing field.",
+    "mainStatement2": "Intelligence is no longer a luxury for large enterprises, but",
+    "mainStatementAccent": "infrastructure",
+    "closingText": "This is a global wave of progress happening in sync, and the best time to join is now."
   },
   "trustBar": {
-    "title": "Trusted by innovative teams"
+    "title": "Trusted by leaders & powered by top-tier tech"
   },
   "methodology": {
-    "badge": "Our Methodology",
-    "title": "Three Steps to AI Workflow",
-    "description": "From connection to automation to governance, we provide a complete AI transformation path.",
+    "title": "The Vaxal Method",
+    "subtitle": "Technology should deliver immediate impact. Our three-phase approach ensures every stage delivers quantifiable value.",
     "step1": {
       "number": "01",
-      "title": "Connect",
-      "subtitle": "Bridge data silos",
-      "description": "Through Ryko's natural language interface, let AI securely access your enterprise data, applications, and services. Start conversational collaboration without complex integrations.",
-      "feature1": "Enterprise-grade data connectors",
-      "feature2": "Real-time access control",
-      "feature3": "Zero-code integration"
+      "title": "Connect (Pilot)",
+      "description": "Start from pain points with zero friction. Use Ryko Agent to solve specific problems without massive infrastructure, validating AI value quickly. Fast deployment, instant results.",
+      "visual": "Ryko Agent Demo"
     },
     "step2": {
       "number": "02",
-      "title": "Automate",
-      "subtitle": "Free from repetitive work",
-      "description": "BrevFlow lets you build cross-system automation with an intuitive flow designer. From simple notifications to complex approval workflows, everything is achievable.",
-      "feature1": "Visual flow designer",
-      "feature2": "Cross-platform integration",
-      "feature3": "Conditional logic"
+      "title": "Automate (Scale)",
+      "description": "Connect the dots into a line. Use BrevFlow to integrate global data and cross-department workflows, transforming repetitive labor into AI-powered automation pipelines.",
+      "visual": "Workflow Automation"
     },
     "step3": {
       "number": "03",
-      "title": "Govern",
-      "subtitle": "Ensure control and compliance",
-      "description": "SoloistBoard provides project-level AI usage monitoring and governance tools. Ensure every AI decision is traceable, explainable, and compliant with organizational policies.",
-      "feature1": "Usage dashboard",
-      "feature2": "Compliance checks",
-      "feature3": "Decision logs"
+      "title": "Govern (Manage)",
+      "description": "Achieve enterprise-grade intelligent governance. Deploy SoloistBoard to make AI not just an executor, but a proactive project driver, ensuring absolute control at scale.",
+      "visual": "Management Dashboard"
     }
   },
   "products": {
-    "badge": "Product Matrix",
-    "title": "AI Tools Designed for Every Workflow",
-    "description": "Four complementary products covering the complete chain from conversation, automation, documents to project governance.",
-    "learnMore": "Learn More",
+    "title": "The Vaxal Ecosystem",
+    "subtitle": "The tools we build aren't just for automation—they're designed to empower enterprises with scalable governance capabilities.",
+    "learnMore": "Learn more",
     "ryko": {
       "name": "Ryko",
       "tagline": "AI Agent Interface",
-      "description": "Natural language-driven enterprise AI assistant. Connect your data sources, get work done through conversation."
+      "description": "AI core runtime environment. Supports MCP and microservices architecture, enabling AI agents to precisely orchestrate internal enterprise tools and data."
     },
     "brevflow": {
       "name": "BrevFlow",
       "tagline": "Cross-platform Workflow Automation",
-      "description": "Visual flow designer to easily build cross-system automation tasks without writing code."
+      "description": "AI Native workflow automation. Breaking platform boundaries, transforming complex business logic into efficient, reliable AI processes."
     },
     "formaldoc": {
       "name": "FormalDoc",
       "tagline": "Intelligent Document Generation",
-      "description": "From templates to finished products, AI assists you in quickly producing professional documents while maintaining brand consistency."
+      "description": "Standardized document generation system. Transforms enterprise standards into AI templates, automatically producing precise, professional business documents."
     },
     "soloistboard": {
       "name": "SoloistBoard",
       "tagline": "Project Intelligence Governance",
-      "description": "Project-level AI usage monitoring and governance platform, ensuring compliance and traceability."
+      "description": "AI project governance platform. Through kanban-style management and autonomous AI agents, proactively drive project progress and reduce communication costs."
     }
   },
   "caseTeaser": {
-    "badge": "Case Study",
-    "title": "How Studio Doe Saved 60% of Admin Time with Vaxal",
-    "description": "A 15-person design studio redefined daily operations through our AI tools. From quotes to scheduling, from meeting notes to progress tracking, Vaxal lets them focus on real creative work.",
-    "cta": "Read Full Case",
+    "badge": "Hero Case Study",
+    "title": "Decoding the Infrastructure behind a Leading Fashion Brand.",
+    "description": "We built Studio Doe an e-commerce infrastructure with high concurrency, extreme stability, and deep modularity. Even facing billion-dollar revenue traffic peaks and complex marketing scenarios, it maintains flawless, efficient operations.",
+    "cta": "Read Full Case Study",
     "stat1": {
-      "value": "60%",
-      "label": "Admin time saved"
+      "value": "100%",
+      "label": "Peak uptime during major drops"
     },
     "stat2": {
-      "value": "3 weeks",
-      "label": "Implementation time"
-    },
-    "stat3": {
-      "value": "15",
-      "label": "Team size"
+      "value": "100M+",
+      "label": "Annual revenue supported"
     }
   },
   "philosophy": {
-    "badge": "Our Philosophy",
-    "title": "What We Believe",
+    "title": "We Are the Best Proof",
+    "quote": "How do we know it works? We built our entire company on it.",
+    "description": "Complex systems like Ryko, BrevFlow, and SoloistBoard were built by Vaxal using our own AI workflows and Vibe Coding. We're not just theorists—we're the first beneficiaries of this productivity revolution.",
     "pillar1": {
-      "title": "Pragmatism First",
-      "description": "We don't chase trending technology, only adopt solutions that solve real problems. Every feature is validated before launch."
+      "title": "Grounded Value",
+      "description": "We don't sell demo-only showcases. Every phase of implementation must translate into quantifiable efficiency gains."
     },
     "pillar2": {
-      "title": "Human-AI Collaboration",
-      "description": "AI is a tool to amplify human capabilities, not replace them. We design systems that keep humans in control."
+      "title": "Transparent Governance",
+      "description": "We proactively offer AI conversation log exports. Clients stay because they trust our value, not because they're locked into a black box."
     },
     "pillar3": {
-      "title": "Dogfooding",
-      "description": "We run our company with our own products. From internal workflows to customer service, Vaxal is its own first user."
+      "title": "Partner Mindset",
+      "description": "Coming from startups ourselves, we understand growing pains. We're teammates running alongside you, not consultants watching from the sidelines."
     }
   },
   "founders": {
-    "badge": "Founding Team",
-    "title": "Battle-tested Builders",
-    "description": "Our team comes from enterprise IT, startup development, design consulting and more. The common thread: we've all solved real business challenges on the front lines.",
+    "title": "The Team DNA",
+    "subtitle": "We're a team of alumni from top universities like NTU and NTHU, with members from leading software companies and innovation labs. We blend the rigorous quality control of large corporations with the rapid agility of small teams.",
+    "philosophyTitle": "Our Philosophy: Value > Price",
+    "philosophyText": "We're not consultants watching from the sidelines—we're teammates running alongside you. We insist on value over price, delivering the most competitive results for our clients in the most efficient way possible in the AI era.",
     "founder1": {
-      "name": "Allen",
-      "role": "Architect",
-      "bio": "Software development background, focused on high-availability systems"
+      "name": "Rick Chen",
+      "role": "CEO",
+      "bio": "Focused on AI strategy and business architecture, deeply believes AI should be a catalyst for enterprise growth, not just a tool replacement."
     },
     "founder2": {
-      "name": "Kevin",
-      "role": "Maker",
-      "bio": "Full-stack developer, passionate about automation tools"
+      "name": "Marson Mao",
+      "role": "CTO",
+      "bio": "Leads core product architecture, embraces Vibe Coding and automated governance, dedicated to building extremely stable software infrastructure."
     },
     "founder3": {
-      "name": "Sean",
-      "role": "Enabler",
-      "bio": "Design and business strategy background, UX expert"
+      "name": "Kathy Pan",
+      "role": "COO",
+      "bio": "Oversees company operations and process optimization, ensuring the team maintains solid execution during rapid growth."
+    },
+    "founder4": {
+      "name": "Jack Lin",
+      "role": "Director, E-Commerce Solution",
+      "bio": "Expert in high-concurrency systems and automated processes. Deeply understands the growing pains enterprises face from 0 to 100."
     }
   },
   "cta": {
-    "title": "Ready to Start?",
-    "description": "Start with a small pilot, we'll help you see initial results within 2-4 weeks. No long-term contracts, pay for results.",
-    "button": "Book Consultation",
-    "note": "Free consultation · No commitment required"
+    "title": "Ready to Build with Trust?",
+    "description": "Start with one small pain point. Let us show you how AI can bring concrete, quantifiable change to your business.",
+    "button": "Start Your Pilot",
+    "buttonSecondary": "Learn More About Us"
   },
   "footer": {
-    "description": "Your pragmatic growth partner in the AI era",
+    "brand": "Vaxal",
+    "description": "Build with Intelligence. Scale with Trust.\nYour pragmatic growth partner in the AI era.",
     "productsTitle": "Products",
     "companyTitle": "Company",
-    "caseStudy": "Case Study",
-    "about": "About",
+    "aboutUs": "About Us",
+    "careers": "Careers",
     "contact": "Contact",
+    "connectTitle": "Connect",
     "copyright": "Vaxal. All rights reserved."
   },
   "productsPage": {
-    "title": "Products",
-    "description": "Four complementary AI tools covering the complete workflow from conversation, automation, documents to project governance.",
-    "exploreProduct": "Explore Product"
-  },
-  "aboutPage": {
-    "badge": "About Us",
-    "title": "We are Vaxal",
-    "intro": "A team that believes AI should make work more meaningful. We don't chase tech trends, only focus on solving real business problems.",
-    "storyTitle": "Our Story",
-    "storyP1": "Vaxal was born from a simple observation: most teams invest significant time and money in AI tools, yet see no substantial business improvement. The problem isn't the technology itself, but the lack of a bridge connecting tools to workflows.",
-    "storyP2": "Our founding team comes from diverse backgrounds—enterprise IT, product development, design consulting—but we share a common experience: witnessing firsthand how organizations struggle between 'AI promises' and 'reality gaps.'",
-    "storyP3": "So we created Vaxal—not another AI tool, but a pragmatic methodology and supporting toolset to help teams embrace AI the right way.",
-    "visionTitle": "Our Vision",
-    "visionP1": "Enable every organization to amplify human creativity and productivity with AI, while maintaining complete control over their workflows.",
-    "visionP2": "We believe the best AI tools are 'invisible'—they blend into daily work, letting people focus on what truly matters, rather than spending time learning how to use tools.",
-    "dnaTitle": "Team DNA",
-    "dna1": {
-      "title": "Pragmatic",
-      "description": "No empty vision talk, only actionable execution"
+    "title": "The Ecosystem.",
+    "description": "A specialized suite of tools designed to bring machine intelligence into corporate governance.",
+    "exploreProduct": "Explore Documentation →",
+    "comingSoon": "Coming Soon",
+    "ryko": {
+      "tagline": "AI Runtime & Bridge",
+      "description": "The secure bridge between LLMs and your internal data. Supports MCP protocols for precise tool dispatching."
     },
-    "dna2": {
-      "title": "Transparent",
-      "description": "Honest with clients, including about our limitations"
+    "brevflow": {
+      "tagline": "AI Native Automations",
+      "description": "Transform complex business logic into reliable AI workflows. Build once, automate everywhere."
     },
-    "dna3": {
-      "title": "Iterative",
-      "description": "Small steps, fast pace, continuously improving based on feedback"
+    "soloistboard": {
+      "tagline": "AI Governance Platform",
+      "description": "Orchestrate autonomous agents and human teams in one place. Total visibility into AI-driven projects."
     },
-    "dna4": {
-      "title": "Empathetic",
-      "description": "Deeply understanding users' real work scenarios"
+    "formaldoc": {
+      "tagline": "Intelligent Documentation",
+      "description": "Convert enterprise standards into AI templates. Automating high-precision business output."
     }
   },
+  "aboutPage": {
+    "badge": "Our Story",
+    "title": "Intelligence is the New Standard.",
+    "subtitle": "Born from the intersection of enterprise software and AI research, Vaxal is built to bridge the gap between technical potential and corporate reality.",
+    "visionTitle": "The Vision",
+    "visionLeadText": "We deeply believe AI shouldn't be an isolated tool, but the lifeblood flowing through an enterprise.",
+    "visionBodyText": "Vaxal was founded with a simple purpose: to make complex technology governable, scalable, and deliver concrete business value. Our goal is clear: in the AI wave, build 'digital infrastructure' that truly drives industry progress.",
+    "coreValuesTitle": "Our Core Values",
+    "coreValue1": {
+      "title": "Scale with Trust",
+      "description": "Scaling must be built on a foundation of security and transparency."
+    },
+    "coreValue2": {
+      "title": "Value > Price",
+      "description": "We deliver long-term technical assets, not short-term labor."
+    },
+    "coreValue3": {
+      "title": "Vibe Coding",
+      "description": "Achieve complex engineering goals in the most efficient, intuitive way."
+    },
+    "dnaTitle": "The DNA",
+    "dnaIntro": "We're a team of alumni from top universities like NTU and NTHU, with members from leading software companies and innovation labs. We blend the rigorous quality control of large corporations with the rapid agility of small teams."
+  },
   "caseStudyPage": {
-    "badge": "Case Study",
-    "title": "Studio Doe: A Design Studio's AI Transformation Journey",
+    "badge": "E-commerce Infrastructure",
+    "title": "Powering Studio Doe's Digital Transformation.",
     "client": "Client",
     "clientName": "Studio Doe",
-    "industry": "Industry",
-    "industryName": "Design Consulting",
-    "duration": "Duration",
-    "durationValue": "3 weeks",
-    "challengeTitle": "Challenge",
-    "challengeP1": "Studio Doe is a 15-person brand design studio known for high-quality visual identity design. However, as the business grew, the founders found the team spending more time on administrative work—quotes, scheduling, meeting notes, progress tracking—rather than actual design work.",
-    "challengeP2": "They tried various tools, but fragmented solutions only increased communication costs. Designers needed to switch between 5-6 different applications, with information scattered everywhere.",
+    "service": "Service",
+    "serviceName": "Infrastructure & AI Roadmap",
+    "timeline": "Timeline",
+    "timelineValue": "Long-term Partner",
+    "challengeTitle": "The Challenge",
+    "challengeP1": "As Taiwan's leading fashion brand, Studio Doe faced extreme traffic spikes during major sales. The traditional monolithic architecture could no longer support the brand's rapid growth, urgently requiring a highly available, scalable infrastructure that could deeply integrate future AI capabilities.",
+    "challengeP2": "'Stability' is just the baseline—'flexibility' and 'forward-thinking' are what determine long-term brand competitiveness.",
     "stat1": {
-      "value": "40%",
-      "label": "Designer time spent on admin"
+      "value": "100%",
+      "label": "Peak Uptime during Flash Sales"
     },
     "stat2": {
-      "value": "6",
-      "label": "Daily tools used"
+      "value": "100M+",
+      "label": "Annual Revenue Supported"
     },
     "stat3": {
-      "value": "2 hrs",
-      "label": "Weekly meeting note time"
+      "value": "90%",
+      "label": "Reduction in Deployment Time"
     },
     "stat4": {
-      "value": "Frequent",
-      "label": "Communication issues from info loss"
+      "value": "Sub-2s",
+      "label": "Page Load Time Worldwide"
     },
-    "solutionTitle": "Solution",
-    "solutionIntro": "We partnered with Studio Doe to redesign their workflow using Vaxal's product suite. The focus wasn't replacing existing tools, but using AI to connect them, automate repetitive tasks, and provide a unified information access point.",
-    "solutionVisual": "Vaxal Solution Architecture",
-    "impactTitle": "Results",
-    "impactStat1": {
-      "value": "60%",
-      "label": "Admin time saved"
-    },
-    "impactStat2": {
-      "value": "3 weeks",
-      "label": "Implementation time"
-    },
-    "impactStat3": {
-      "value": "85%",
-      "label": "Team satisfaction"
-    },
-    "impactStat4": {
-      "value": "2x",
-      "label": "Project visibility increase"
-    },
-    "testimonial": "Vaxal transformed how we work. Now designers can focus on design, not administrative tasks. More importantly, all information is in one place—nothing gets lost anymore.",
-    "testimonialAuthor": "— Studio Doe Founder"
-  },
-  "productDetail": {
-    "startUsing": "Start Using",
-    "watchDemo": "Watch Demo",
-    "capability": "Core Capability"
+    "solutionTitle": "The Solution: Modular Architecture",
+    "solutionIntro": "Vaxal helped Studio Doe rebuild from the architecture foundation, establishing complete CI/CD pipelines, microserviced components, and introducing a Ryko-based AI lab environment.",
+    "solutionVisual": "High-Resolution Visual: Infrastructure Map with Real-time Traffic Visualization",
+    "impactTitle": "The Impact",
+    "impactP1": "Now, Studio Doe no longer needs to worry about system crashes during promotions. The brand team can focus on creativity and marketing, while Vaxal provides the most solid technical backing.",
+    "impactP2": "This system has also laid the perfect data and interface foundation for future AI-powered size recommendations and intelligent restocking systems.",
+    "impactCta": "Start Your Journey",
+    "testimonial": "\"Vaxal isn't just a developer—they're our technology strategy partner. They solved our most feared stability issues and continue exploring future possibilities with us.\"",
+    "testimonialAuthor": "— An Chih, Founder of Studio Doe"
   },
   "rykoPage": {
     "tag": "Core Infrastructure",
-    "title": "The Operating System for Enterprise Intelligence",
-    "subtitle": "Ryko is not just an AI model container—it's the core runtime connecting enterprise data with LLMs. Supporting MCP protocol, skill mounting, and multi-modal interaction, letting AI understand your business language.",
+    "title": "The Operating System for Enterprise Intelligence.",
+    "subtitle": "Ryko isn't just an AI model container—it's the core runtime connecting enterprise data with LLMs. Supporting MCP protocols, skill mounting, and multi-modal interaction, letting AI understand your business language.",
     "cta": "Deploy Ryko",
-    "assertionTitle": "From Conversation to Execution",
-    "assertionText": "Most AI applications are still stuck at the chatbot stage, unable to access core enterprise data. Ryko breaks down this wall. It's a standardized runtime that enables LLMs to safely read and write enterprise APIs through tools, transforming AI from 'consultant' to 'team member.'",
+    "assertionTitle": "From 'Conversation' to 'Execution'",
+    "assertionText": "Most AI applications are still stuck at the chatbot stage, unable to touch core enterprise data. Ryko breaks down this wall. It's a standardized runtime that lets LLMs safely read and write enterprise APIs through tools, transforming AI from 'consultant' to 'team member'.",
     "capabilitiesTitle": "Capabilities",
-    "capabilitiesSubtitle": "Three pillars of enterprise AI runtime",
+    "capabilitiesSubtitle": "Three pillars of enterprise-grade AI runtime",
     "cap1Title": "MCP Standard Support",
     "cap1Desc": "Full support for Model Context Protocol (MCP). Write your internal tools once, and any Ryko-powered model can invoke them. Standardized interfaces for precise enterprise resource orchestration.",
+    "cap1Visual": "Animation: Ryko dispatching tasks to various MCP Servers",
     "cap2Title": "Multi-Model Agnostic",
-    "cap2Desc": "Not locked to any single model. Ryko allows you to freely switch between GPT-4, Claude, or Llama. Choose the most suitable model based on task complexity, balancing cost and performance.",
+    "cap2Desc": "Not locked to any single model. Ryko lets you freely switch between GPT-4, Claude 3, or Llama 3. Choose the most suitable model based on task difficulty, balancing cost and performance.",
+    "cap2Visual": "Visual: Switching models (OpenAI → Anthropic → Local Llama) seamlessly",
     "cap3Title": "Offline & Privacy First",
-    "cap3Desc": "For sensitive data, Ryko supports fully air-gapped deployment. Combined with local models, ensuring data stays within your data center, meeting the strictest security standards."
+    "cap3Desc": "For sensitive data, Ryko supports fully air-gapped deployment. Combined with local models, ensuring data stays within your data center in a closed loop, meeting the strictest security standards.",
+    "cap3Visual": "Visual: Shield icon protecting a server rack, data staying inside"
   },
   "brevflowPage": {
-    "tag": "Workflow Automation",
-    "title": "AI-Native Automation Engine",
-    "subtitle": "BrevFlow lets you build cross-system workflows with an intuitive visual interface. From simple notifications to complex approval processes, transform repetitive labor into AI-powered automation pipelines.",
+    "tag": "AI Automation Flow",
+    "title": "Workflow Automation, Reimagined for Agents.",
+    "subtitle": "BrevFlow is a workflow platform built for the AI era. Here, nodes aren't just rigid API triggers—they're Ryko Agents with decision-making capabilities. It's like assigning tasks to a team of digital colleagues, not writing a script.",
     "cta": "Start Automating",
-    "assertionTitle": "Say Goodbye to Repetitive Work",
-    "assertionText": "Too much work in enterprises is copy-paste repetition. BrevFlow lets you define a process once, and AI handles the execution. Breaking platform boundaries, automating complex business logic into efficient, reliable workflows.",
-    "capabilitiesTitle": "Capabilities",
-    "capabilitiesSubtitle": "Building seamless automation experiences",
-    "cap1Title": "Visual Flow Designer",
-    "cap1Desc": "Drag-and-drop interface for workflow design. Build complex conditionals, loops, and branching logic without writing code.",
-    "cap2Title": "Cross-Platform Integration",
-    "cap2Desc": "One-click connection to Slack, Notion, Google Workspace, custom APIs, and hundreds of services. Data flows freely between systems.",
-    "cap3Title": "AI Smart Decisions",
-    "cap3Desc": "Embed AI judgment in workflow nodes. Let AI automatically choose next steps based on context, not just fixed rules."
+    "assertionTitle": "From 'Triggering' to 'Collaboration'",
+    "assertionText": "Traditional automation (Zapier/n8n) is powerful but can't handle ambiguous decisions. BrevFlow introduces 'Agent Nodes'. When a workflow reaches a decision point, hand it to AI for judgment, then continue execution. This prevents automation from breaking due to edge cases.",
+    "capabilitiesTitle": "Flow Mechanics",
+    "cap1Title": "Agent as a Node",
+    "cap1Desc": "Embed Ryko Agents directly in your workflows. You can define a node's role (e.g., 'Senior Editor') and give it context. It processes input data like a real person, producing high-quality results.",
+    "cap1Visual": "Visual: A flow chart where one node is a glowing brain/avatar",
+    "cap2Title": "Collaborative Mesh",
+    "cap2Desc": "Chain multiple Agents into a collaborative network. 'Researcher Agent' gathers data, passes it to 'Analyst Agent' for report writing, then 'Reviewer Agent' checks it. BrevFlow manages all message passing and state synchronization.",
+    "cap2Visual": "Visual: Multiple agents passing documents to each other in a sequence",
+    "cap3Title": "Human-in-the-Loop",
+    "cap3Desc": "Keep control. Set up human review checkpoints at critical nodes. When AI confidence is low or high-risk operations are involved, BrevFlow automatically pauses and notifies administrators to intervene, ensuring safety.",
+    "cap3Visual": "Visual: A flow pausing at a lock icon, waiting for user approval"
   },
   "formaldocPage": {
-    "tag": "Smart Documents",
-    "title": "AI Production Line for Professional Documents",
-    "subtitle": "FormalDoc transforms enterprise standards into AI templates, automatically generating precise, professional business documents. From templates to finished products, maintaining brand consistency.",
-    "cta": "Start Generating",
-    "assertionTitle": "Documents Are No Longer a Bottleneck",
-    "assertionText": "Quotes, contracts, reports—these documents consume massive time yet often have inconsistent formats. FormalDoc lets AI understand your format standards, generating standard-compliant professional documents with one click.",
-    "capabilitiesTitle": "Capabilities",
-    "capabilitiesSubtitle": "End-to-end document automation",
-    "cap1Title": "Template Learning",
-    "cap1Desc": "Upload existing documents, AI automatically learns format, terminology, and structure to build enterprise-specific templates.",
-    "cap2Title": "Dynamic Content Population",
-    "cap2Desc": "Automatically pull data from CRM, ERP, or any data source. Ensuring content is timely and accurate.",
-    "cap3Title": "Multi-Format Output",
-    "cap3Desc": "Support Word, PDF, HTML, and more output formats. Automatically convert and apply styles based on requirements."
+    "tag": "Intelligent Documentation",
+    "title": "Enterprise Standards,\nCodified by AI.",
+    "subtitle": "FormalDoc is a document template construction system. Upload your enterprise standard Docx files, and we transform them into rigorous templates that AI can read and write. We even generate MCP Servers so all AI output meets the highest standards.",
+    "cta": "Standardize Now",
+    "assertionTitle": "From 'Sample Documents' to 'Standards'",
+    "assertionText": "Enterprises suffer from chaotic document formats. FormalDoc doesn't just generate text—it locks down 'structure'. Through reverse engineering your existing documents, we extract implicit formatting rules and logic, packaging them into AI tools. Every output is a perfect 100.",
+    "capabilitiesTitle": "Standardization Process",
+    "cap1Title": "Template Ingestion",
+    "cap1Desc": "Upload templates for instant parsing. Whether procurement contracts, technical whitepapers, or quarterly reports, FormalDoc deeply analyzes styles, variables, and paragraph structures. You can also download directly from our standard template library.",
+    "cap1Visual": "Visual: Docx file being scanned and broken down into structure blocks",
+    "cap2Title": "MCP Generation",
+    "cap2Desc": "Transform templates into tools. FormalDoc automatically generates corresponding MCP Server code. This means you can directly command Ryko: 'Generate a draft using the Procurement Contract Template'—no format tweaking needed.",
+    "cap2Visual": "Visual: Template block transforming into a code block/API icon",
+    "cap3Title": "Collaborative Refinement",
+    "cap3Desc": "Human-AI collaborative refinement. Generated templates aren't rigid—you can adjust definitions collaboratively with AI on the FormalDoc platform. Ensure every field and clause precisely meets current business needs.",
+    "cap3Visual": "Visual: Users and AI cursor editing a document together"
   },
   "soloistboardPage": {
-    "tag": "Project Governance",
-    "title": "Command Center for AI Projects",
-    "subtitle": "SoloistBoard provides project-level AI usage monitoring and governance tools. Ensuring every AI decision is traceable, explainable, and compliant with organizational policies.",
-    "cta": "Start Governing",
-    "assertionTitle": "AI Needs to Be Governed",
-    "assertionText": "When AI starts executing critical tasks, monitoring and traceability become crucial. SoloistBoard gives you visibility into all AI behaviors, ensuring compliance and control.",
-    "capabilitiesTitle": "Capabilities",
-    "capabilitiesSubtitle": "Enterprise-grade AI governance framework",
-    "cap1Title": "Behavior Tracking",
-    "cap1Desc": "Record every AI call, decision basis, and output result. Complete audit trail meeting compliance requirements.",
-    "cap2Title": "Usage Analytics",
-    "cap2Desc": "Real-time monitoring of token usage, cost allocation, and performance metrics. Optimize AI investment returns.",
-    "cap3Title": "Policy Control",
-    "cap3Desc": "Set organization-level AI usage policies. Automatically block non-compliant requests, protecting sensitive data."
+    "tag": "AI Governance",
+    "title": "Project Management\nthat Drives Itself.",
+    "subtitle": "SoloistBoard is Trello for the AI era. Here, different Ryko Agents play PM, spec writers, and engineers. They're not just avatars on cards—they're productivity engines actively driving progress.",
+    "cta": "Get Early Access",
+    "assertionTitle": "From 'Management' to 'Self-Governance'",
+    "assertionText": "Project software shouldn't just be a rigid tool for recording status. SoloistBoard brings kanban boards to life. When you create a requirement card, the 'Spec' Agent proactively asks for details; the 'Dev' Agent starts writing code. We turn project development into a symphony between AI and humans.",
+    "capabilitiesTitle": "Active Governance",
+    "cap1Title": "Role-Based Agents",
+    "cap1Desc": "Purpose-built agents. Configure different Agent roles for your project: Product Owner Agent clarifies requirement boundaries, Tech Lead Agent handles architecture review. They have their own identities and responsibilities on the board.",
+    "cap1Visual": "Visual: Kanban board columns with Agent avatars on top",
+    "cap2Title": "Proactive Push",
+    "cap2Desc": "Say goodbye to passive waiting. SoloistBoard's Agents actively check card stagnation time, send reminders, even auto-generate meeting summaries or daily reports. It ensures projects always maintain forward momentum.",
+    "cap2Visual": "Visual: Notification popups from Agents nudging the progress",
+    "cap3Title": "Unified Context",
+    "cap3Desc": "All Agents share the same project context. Whether documents, conversation logs, or code changes, everything becomes the Agents' long-term memory. This dramatically reduces redundant communication between humans and AI.",
+    "cap3Visual": "Visual: A central brain connecting to various project artifacts"
   },
   "languageSwitcher": {
     "zh": "Chinese",

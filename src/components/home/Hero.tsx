@@ -43,7 +43,7 @@ export default function Hero() {
             <div className={`${styles.mockMessage} ${styles.user}`}>
               <div className={styles.mockAvatar}>You</div>
               <div className={styles.mockBubble}>
-                {t('mockUser')}
+                {t('mockUser1')}
               </div>
             </div>
 
@@ -55,6 +55,13 @@ export default function Hero() {
               </div>
               <div className={styles.mockBubble}>
                 {t('mockAgent')}
+              </div>
+            </div>
+
+            <div className={`${styles.mockMessage} ${styles.user}`}>
+              <div className={styles.mockAvatar}>You</div>
+              <div className={styles.mockBubble}>
+                {t('mockUser2')}
               </div>
             </div>
           </div>

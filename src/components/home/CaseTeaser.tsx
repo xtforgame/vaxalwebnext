@@ -25,10 +25,6 @@ export default function CaseTeaser() {
               <h4>{t('stat2.value')}</h4>
               <p>{t('stat2.label')}</p>
             </div>
-            <div className={styles.statItem}>
-              <h4>{t('stat3.value')}</h4>
-              <p>{t('stat3.label')}</p>
-            </div>
           </div>
 
           <Button size="lg" href="/case-study/studio-doe">
@@ -38,8 +34,8 @@ export default function CaseTeaser() {
 
         <div className={styles.visualSide}>
           <span className={styles.visualLabel}>
-            Studio Doe<br />
-            AI Transformation
+            Studio Doe Infrastructure Visualization<br />
+            Modules | Traffic Peaks | Managed Logic
           </span>
         </div>
       </div>

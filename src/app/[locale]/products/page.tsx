@@ -10,30 +10,30 @@ export default async function ProductsPage() {
     {
       id: 'ryko',
       name: 'Ryko',
-      tagline: t('products.ryko.tagline'),
-      description: t('products.ryko.description'),
+      tagline: t('productsPage.ryko.tagline'),
+      description: t('productsPage.ryko.description'),
       href: '/products/ryko'
     },
     {
       id: 'brevflow',
       name: 'BrevFlow',
-      tagline: t('products.brevflow.tagline'),
-      description: t('products.brevflow.description'),
+      tagline: t('productsPage.brevflow.tagline'),
+      description: t('productsPage.brevflow.description'),
       href: '/products/brevflow'
-    },
-    {
-      id: 'formaldoc',
-      name: 'FormalDoc',
-      tagline: t('products.formaldoc.tagline'),
-      description: t('products.formaldoc.description'),
-      href: '/products/formaldoc'
     },
     {
       id: 'soloistboard',
       name: 'SoloistBoard',
-      tagline: t('products.soloistboard.tagline'),
-      description: t('products.soloistboard.description'),
+      tagline: t('productsPage.soloistboard.tagline'),
+      description: t('productsPage.soloistboard.description'),
       href: '/products/soloistboard'
+    },
+    {
+      id: 'formaldoc',
+      name: 'FormalDoc',
+      tagline: t('productsPage.formaldoc.tagline'),
+      description: t('productsPage.formaldoc.description'),
+      href: '/products/formaldoc'
     }
   ];
 
@@ -57,7 +57,7 @@ export default async function ProductsPage() {
               <p className={styles.productDesc}>{product.description}</p>
               <div className={styles.cardFooter}>
                 <Link href={product.href} className={styles.link}>
-                  {t('productsPage.exploreProduct')} →
+                  {product.href !== '#' ? t('productsPage.exploreProduct') : t('productsPage.comingSoon')}
                 </Link>
               </div>
             </div>
