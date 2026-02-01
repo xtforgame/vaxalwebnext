@@ -56,26 +56,75 @@
   color: var(--text-body);
   transition: color var(--transition-base);
   position: relative;
-}
-
-.navLink::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background-color: var(--color-accent);
-  transition: width var(--transition-base);
-  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 .navLink:hover {
   color: var(--color-accent);
 }
 
-.navLink:hover::after {
-  width: 100%;
+.chevron {
+  transition: transform var(--transition-base);
+}
+
+/* ============ Desktop Dropdown ============ */
+.navDropdown {
+  position: relative;
+}
+
+.navDropdown:hover .chevron {
+  transform: rotate(180deg);
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  min-width: 260px;
+  background: var(--bg-white);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  padding: var(--space-3);
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-base);
+  z-index: 200;
+}
+
+.navDropdown:hover .dropdownMenu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.dropdownItem {
+  display: block;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  transition: background-color var(--transition-base);
+}
+
+.dropdownItem:hover {
+  background-color: var(--bg-surface);
+}
+
+.dropdownItemName {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.dropdownItemDesc {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
 }
 
 /* ============ CTA Button ============ */
@@ -118,7 +167,7 @@
   background-color: var(--bg-surface);
 }
 
-/* ============ Mobile Drawer - Full Screen Overlay ============ */
+/* ============ Mobile Drawer ============ */
 .drawer {
   position: fixed;
   top: 0;
@@ -136,6 +185,7 @@
               opacity var(--transition-slow);
   pointer-events: none;
   overflow-y: auto;
+  padding-top: var(--header-height);
 }
 
 .drawer.open {
@@ -144,12 +194,92 @@
   pointer-events: auto;
 }
 
-/* Drawer Content Area */
-.drawer::before {
-  content: '';
+/* ============ Mobile Nav Group (with expandable) ============ */
+.mobileNavGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.mobileNavHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mobileNavHeader .mobileNavLink {
+  flex: 1;
+}
+
+.mobileExpandBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-radius: var(--radius-lg);
+  margin-right: var(--space-4);
+  transition: all var(--transition-base);
+}
+
+.mobileExpandBtn:hover {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.mobileExpandBtn svg {
+  transition: transform var(--transition-base);
+}
+
+.mobileExpandBtn.expanded svg {
+  transform: rotate(180deg);
+}
+
+/* ============ Mobile Sub Menu ============ */
+.mobileSubMenu {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--transition-slow);
+  margin: 0 var(--space-4);
+}
+
+.mobileSubMenu.open {
+  grid-template-rows: 1fr;
+}
+
+.mobileSubMenuInner {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobileSubLink {
   display: block;
-  height: var(--header-height);
-  flex-shrink: 0;
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--text-body);
+  padding: var(--space-3) var(--space-5);
+  background: var(--bg-surface);
+  transition: all var(--transition-base);
+}
+
+.mobileSubLink:first-child {
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding-top: var(--space-4);
+}
+
+.mobileSubLink:last-child {
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  padding-bottom: var(--space-4);
+}
+
+.mobileSubLink:hover {
+  background: var(--border-light);
+  color: var(--color-accent);
 }
 
 /* ============ Mobile Navigation Links ============ */
@@ -157,10 +287,10 @@
   display: flex;
   align-items: center;
   font-family: var(--font-heading);
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 600;
   color: var(--text-primary);
-  padding: var(--space-6) var(--space-6);
+  padding: var(--space-5) var(--space-6);
   margin: 0 var(--space-4);
   border-radius: var(--radius-xl);
   transition: all var(--transition-base);
@@ -209,8 +339,12 @@
   }
 
   .mobileNavLink {
-    font-size: 1.75rem;
-    padding: var(--space-5) var(--space-5);
+    font-size: 1.5rem;
+    padding: var(--space-4) var(--space-5);
+    margin: 0 var(--space-3);
+  }
+
+  .mobileSubMenu {
     margin: 0 var(--space-3);
   }
 
@@ -218,11 +352,19 @@
     margin-left: var(--space-3);
     margin-right: var(--space-3);
   }
+
+  .mobileExpandBtn {
+    margin-right: var(--space-3);
+  }
 }
 
 @media (max-width: 480px) {
   .mobileNavLink {
-    font-size: 1.5rem;
+    font-size: 1.375rem;
     padding: var(--space-4) var(--space-4);
+  }
+
+  .mobileSubLink {
+    font-size: 1rem;
   }
 }

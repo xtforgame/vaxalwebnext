@@ -6,45 +6,47 @@
 
 :root {
   /* ============ Core Colors ============ */
-  --color-primary: #0F172A;      /* Slate 900 - Deep navy primary */
+  --color-primary: #34257D;      /* Deep Purple - Brand primary */
+  --color-primary-dark: #251A5C; /* Darker purple for hover */
+  --color-primary-light: #4A3A9E; /* Lighter purple */
   --color-secondary: #64748B;    /* Slate 500 - Muted text */
-  --color-accent: #2563EB;       /* Blue 600 - CTA blue */
-  --color-accent-hover: #1D4ED8; /* Blue 700 */
-  --color-accent-light: #DBEAFE; /* Blue 100 - Light blue bg */
+  --color-accent: #3DB5E6;       /* Cyan - CTA */
+  --color-accent-hover: #2A9FD0; /* Darker cyan for hover */
+  --color-accent-light: #E0F4FB; /* Light cyan bg */
 
   /* ============ Backgrounds - Soft UI Layers ============ */
-  --bg-base: #F8FAFC;            /* Slate 50 - Base background */
+  --bg-base: #F8F7FC;            /* Slight purple tint base */
   --bg-white: #FFFFFF;           /* Pure white - cards */
-  --bg-surface: #F1F5F9;         /* Slate 100 - Section background */
+  --bg-surface: #F3F2F8;         /* Light purple-grey surface */
   --bg-elevated: #FFFFFF;        /* Elevated elements */
 
   /* ============ Text Colors ============ */
-  --text-primary: #0F172A;       /* Slate 900 - Headings */
-  --text-secondary: #334155;     /* Slate 700 - Subheadings */
-  --text-body: #475569;          /* Slate 600 - Body text */
-  --text-muted: #94A3B8;         /* Slate 400 - Muted/helper text */
+  --text-primary: #1E1B4B;       /* Deep indigo - Headings */
+  --text-secondary: #3D3A6B;     /* Purple-grey - Subheadings */
+  --text-body: #5B5880;          /* Muted purple - Body text */
+  --text-muted: #9490B3;         /* Light purple - Helper text */
 
   /* ============ Borders & Shadows - Soft UI Core ============ */
-  --border-light: #E2E8F0;       /* Slate 200 */
-  --border-medium: #CBD5E1;      /* Slate 300 */
+  --border-light: #E5E3F1;       /* Light purple border */
+  --border-medium: #D1CEE3;      /* Medium purple border */
 
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.06),
-               0 2px 4px -2px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08),
-               0 4px 6px -4px rgba(15, 23, 42, 0.04);
-  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1),
-               0 8px 10px -6px rgba(15, 23, 42, 0.06);
-  --shadow-2xl: 0 25px 50px -12px rgba(15, 23, 42, 0.15);
+  --shadow-sm: 0 1px 2px rgba(52, 37, 125, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(52, 37, 125, 0.06),
+               0 2px 4px -2px rgba(52, 37, 125, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(52, 37, 125, 0.08),
+               0 4px 6px -4px rgba(52, 37, 125, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(52, 37, 125, 0.1),
+               0 8px 10px -6px rgba(52, 37, 125, 0.06);
+  --shadow-2xl: 0 25px 50px -12px rgba(52, 37, 125, 0.15);
 
   /* Button-specific shadows */
-  --shadow-btn-primary: 0 4px 14px rgba(37, 99, 235, 0.25);
-  --shadow-btn-primary-hover: 0 6px 20px rgba(37, 99, 235, 0.35);
+  --shadow-btn-primary: 0 4px 14px rgba(61, 181, 230, 0.3);
+  --shadow-btn-primary-hover: 0 6px 20px rgba(61, 181, 230, 0.4);
 
   /* ============ Deep Section (Dark backgrounds) ============ */
-  --deep-section-bg: #0F172A;
-  --deep-section-text: #F8FAFC;
-  --deep-section-muted: #94A3B8;
+  --deep-section-bg: #1E1B4B;    /* Deep indigo */
+  --deep-section-text: #F8F7FC;
+  --deep-section-muted: #9490B3;
 
   /* ============ Typography ============ */
   --font-heading: 'Outfit', sans-serif;
@@ -96,7 +98,7 @@
   --accent-blue-hover: var(--color-accent-hover);
   --primary-white: var(--bg-white);
   --surface-elevated: var(--bg-elevated);
-  --header-bg: rgba(255, 255, 255, 0.85);
+  --header-bg: rgba(255, 255, 255, 0.9);
   --bg-section-white: var(--bg-white);
   --bg-section-grey: var(--bg-surface);
 }
