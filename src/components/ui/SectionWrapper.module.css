@@ -1,8 +1,23 @@
 .section {
   width: 100%;
-  padding: var(--section-spacing) 0;
   position: relative;
   overflow: hidden;
+}
+
+.padding-default {
+  padding: var(--section-spacing) 0;
+}
+
+.padding-none {
+  padding: 0;
+}
+
+.padding-top {
+  padding-top: var(--section-spacing);
+}
+
+.padding-bottom {
+  padding-bottom: var(--section-spacing);
 }
 
 .background-white {

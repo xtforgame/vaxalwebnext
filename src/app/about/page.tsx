@@ -28,7 +28,7 @@ export default function AboutPage() {
   return (
     <div className={styles.container}>
       <header className={styles.hero}>
-        <SectionWrapper>
+        <SectionWrapper padding="none">
           <span className={styles.badge}>Our Story</span>
           <h1 className={styles.title}>
             Intelligence is <br/>

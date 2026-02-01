@@ -7,7 +7,7 @@ export default function StudioDoeCase() {
     <div className={styles.casePage}>
       {/* Hero Section */}
       <section className={styles.hero}>
-        <SectionWrapper>
+        <SectionWrapper padding="none">
           <span className={styles.badge}>E-commerce Infrastructure</span>
           <h1 className={styles.title}>
             Powering Studio Doe's <br/>

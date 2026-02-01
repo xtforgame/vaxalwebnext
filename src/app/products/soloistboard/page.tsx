@@ -5,7 +5,7 @@ import Button from '@/components/ui/Button';
 export default function SoloistBoardPage() {
   return (
     <>
-      <SectionWrapper className={styles.heroSection}>
+      <SectionWrapper className={styles.heroSection} padding="none">
         <div className={styles.heroContent}>
           <span className={styles.heroTag}>AI Governance</span>
           <h1 className={styles.heroTitle}>

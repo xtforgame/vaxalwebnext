@@ -6,7 +6,7 @@ export default function RykoPage() {
   return (
     <>
       {/* 1. Philosophy: The Engine */}
-      <SectionWrapper className={styles.heroSection}>
+      <SectionWrapper className={styles.heroSection} padding="none">
         <div className={styles.heroContent}>
           <span className={styles.heroTag}>Core Infrastructure</span>
           <h1 className={styles.heroTitle}>

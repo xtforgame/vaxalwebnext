@@ -37,7 +37,7 @@ export default function ProductsPage() {
   return (
     <div className={styles.container}>
       <header className={styles.hero}>
-        <SectionWrapper>
+        <SectionWrapper padding="none">
           <h1 className={styles.title}>The Ecosystem.</h1>
           <p className={styles.subtitle}>
             A specialized suite of tools designed to bring machine intelligence into corporate governance.
