@@ -10,9 +10,7 @@ interface WallSceneProps {
   frames: FrameConfig[];
   sceneTextures: {
     videoTexture: THREE.Texture;
-    staticTexture: THREE.Texture;
-    blendFactor: number;
-    contentZ: number;
+    contentZRef: { current: number };
   }[];
 }
 
@@ -22,7 +20,6 @@ interface WallSceneProps {
  * - All portal frames (content behind wall + frame border on wall surface)
  */
 export default function WallScene({ frames, sceneTextures }: WallSceneProps) {
-  // Wall geometry with hexagonal holes punched at each frame position
   const wallGeo = useMemo(() => {
     const holeConfigs = frames.map((f) => ({
       position: f.wallPosition,
@@ -39,15 +36,12 @@ export default function WallScene({ frames, sceneTextures }: WallSceneProps) {
         <meshStandardMaterial color="#1a1a2e" side={THREE.FrontSide} />
       </mesh>
 
-      {/* Frames: content planes (Z=-0.5, behind wall) + border rings (Z=0) */}
       {frames.map((frame, i) => (
         <PortalFrame
           key={frame.id}
           config={frame}
           videoTexture={sceneTextures[i].videoTexture}
-          staticTexture={sceneTextures[i].staticTexture}
-          blendFactor={sceneTextures[i].blendFactor}
-          contentZ={sceneTextures[i].contentZ}
+          contentZRef={sceneTextures[i].contentZRef}
         />
       ))}
     </group>

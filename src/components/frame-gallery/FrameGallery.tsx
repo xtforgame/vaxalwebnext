@@ -34,10 +34,9 @@ const FRAMES: FrameConfig[] = [
 /**
  * Compute the Z position for a video plane based on current phase and camera Z.
  *
- * During exiting: the "from" video moves WITH the camera (camera.z - VIEWPORT_DIST).
- * During entering: the "to" video moves WITH the camera.
- * Otherwise: resting at RESTING_Z (against the wall).
- * Immersed active frame: camera.z - VIEWPORT_DIST (far behind wall).
+ * During exiting/entering: the active video moves WITH the camera (camera.z - VIEWPORT_DIST),
+ * clamped so it never goes past the resting position at the wall.
+ * Otherwise: resting at RESTING_Z.
  */
 function computeContentZ(
   frameIndex: number,
@@ -47,23 +46,19 @@ function computeContentZ(
   cameraZ: number
 ): number {
   if (phase === 'immersed') {
-    // Active frame tracks camera; inactive rests at wall
     return frameIndex === fromFrame
       ? cameraZ - VIEWPORT_DIST
       : RESTING_Z;
   }
 
   if (phase === 'exiting' && frameIndex === fromFrame) {
-    // From-video moves with camera, clamped so it doesn't go past the wall
     return Math.min(cameraZ - VIEWPORT_DIST, RESTING_Z);
   }
 
   if (phase === 'entering' && frameIndex === toFrame) {
-    // To-video moves with camera, clamped so it doesn't go past the wall
     return Math.min(cameraZ - VIEWPORT_DIST, RESTING_Z);
   }
 
-  // Overview, panning, or inactive frame — rest against wall
   return RESTING_Z;
 }
 
@@ -89,13 +84,12 @@ function GalleryScene({
   const transitionRef = useRef(new TransitionController(0));
   const cameraDirectorRef = useRef<CameraDirector | null>(null);
 
-  // Per-frame blend tracking
-  const blendFactorsRef = useRef<number[]>(FRAMES.map(() => 0));
-  const [blendFactors, setBlendFactors] = useState<number[]>(FRAMES.map(() => 0));
-
-  // Per-frame content Z tracking
-  const contentZRef = useRef<number[]>([IMMERSED_Z - VIEWPORT_DIST, RESTING_Z]);
-  const [contentZs, setContentZs] = useState<number[]>([IMMERSED_Z - VIEWPORT_DIST, RESTING_Z]);
+  // Ref-based content Z — updated every frame, no React state lag
+  const contentZRefs = useRef(
+    FRAMES.map((_, i) => ({
+      current: i === 0 ? IMMERSED_Z - VIEWPORT_DIST : RESTING_Z,
+    }))
+  );
 
   useEffect(() => {
     transitionRef.current.onPhaseChange = (phase: TransitionPhase) => {
@@ -106,9 +100,6 @@ function GalleryScene({
   // Start first video (immersed in frame 0, behind wall)
   useEffect(() => {
     sceneManagers[0].play();
-    sceneManagers[0].blendFactor = 1;
-    blendFactorsRef.current = [1, 0];
-    setBlendFactors([1, 0]);
 
     // Camera behind wall, facing -Z (never rotates)
     const posA = FRAMES[0].wallPosition;
@@ -123,11 +114,14 @@ function GalleryScene({
   // Auto-start transition after delay
   useEffect(() => {
     const timer = setTimeout(() => {
+      // Start video 2 early so it's ready when we enter
+      sceneManagers[1].play();
+
       cameraDirectorRef.current = new CameraDirector(FRAMES[0], FRAMES[1]);
       transitionRef.current.startTransition(1);
     }, 3000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [sceneManagers]);
 
   useFrame((_, delta) => {
     const tc = transitionRef.current;
@@ -135,22 +129,6 @@ function GalleryScene({
 
     tc.update(delta);
     const { phase, progress, fromFrame, toFrame } = tc.state;
-
-    if (phase === 'exiting') {
-      sceneManagers[fromFrame].fadeToStatic(progress);
-    } else if (phase === 'entering') {
-      sceneManagers[toFrame].fadeToVideo(progress);
-    }
-
-    // Batch blend factor updates — only when changed
-    const newBlends = FRAMES.map((_, i) => sceneManagers[i].blendFactor);
-    const blendsChanged = newBlends.some(
-      (b, i) => Math.abs(b - blendFactorsRef.current[i]) > 0.01
-    );
-    if (blendsChanged) {
-      blendFactorsRef.current = [...newBlends];
-      setBlendFactors([...newBlends]);
-    }
 
     // Camera management — always faces -Z, only position changes
     if (phase === 'immersed') {
@@ -166,30 +144,23 @@ function GalleryScene({
     // Camera always faces -Z — no rotation ever
     camera.rotation.set(0, 0, 0);
 
-    // Compute dynamic content Z for each frame
+    // Update content Z refs directly (no React state, no lag)
     const cameraZ = camera.position.z;
-    const newContentZs = FRAMES.map((_, i) =>
-      computeContentZ(i, phase, fromFrame, toFrame, cameraZ)
-    );
-
-    const zChanged = newContentZs.some(
-      (z, i) => Math.abs(z - contentZRef.current[i]) > 0.001
-    );
-    if (zChanged) {
-      contentZRef.current = [...newContentZs];
-      setContentZs([...newContentZs]);
+    for (let i = 0; i < FRAMES.length; i++) {
+      contentZRefs.current[i].current = computeContentZ(
+        i, phase, fromFrame, toFrame, cameraZ
+      );
     }
   });
 
+  // Stable — only depends on sceneManagers (created once)
   const sceneTextures = useMemo(
     () =>
       sceneManagers.map((mgr, i) => ({
         videoTexture: mgr.videoTexture as THREE.Texture,
-        staticTexture: mgr.staticTexture as THREE.Texture,
-        blendFactor: blendFactors[i],
-        contentZ: contentZs[i],
+        contentZRef: contentZRefs.current[i],
       })),
-    [sceneManagers, blendFactors, contentZs]
+    [sceneManagers]
   );
 
   return (
