@@ -73,7 +73,7 @@ const GlassPanel = ({
   color = '#ffffff',
   position = [0, 0, 0],
   label = '',
-  opacity = 0.9,
+  opacity = 0.2,
 }: GlassPanelProps) => {
   const geometry = useMemo(
     () => createRoundedBoxGeometry(width, height, depth, radius, 6),
@@ -82,15 +82,21 @@ const GlassPanel = ({
 
   return (
     <group position={position}>
-      <mesh geometry={geometry}>
-        <meshStandardMaterial
+      <mesh geometry={geometry} renderOrder={position[2]}>
+        <meshPhysicalMaterial
           color={color}
           transparent
           opacity={opacity}
-          roughness={0.1}
-          metalness={0.05}
-          envMapIntensity={0.8}
-          side={THREE.FrontSide}
+          roughness={0}
+          metalness={0}
+          reflectivity={1}
+          envMapIntensity={1.5}
+          clearcoat={1}
+          clearcoatRoughness={0}
+          ior={1.5}
+          specularIntensity={1}
+          specularColor="#ffffff"
+          side={THREE.DoubleSide}
         />
       </mesh>
       {label && (
@@ -109,6 +115,8 @@ const GlassPanel = ({
   );
 };
 
+const opacity = 0.5;
+
 export default function MobileLayout3D() {
   const group = useRef<THREE.Group>(null);
 
@@ -122,7 +130,7 @@ export default function MobileLayout3D() {
         radius={0.15}
         color="#e2e8f0"
         position={[0, 0, 0]}
-        opacity={0.95}
+        opacity={opacity}
       />
 
       {/* 2. Main Screen Layer */}
@@ -133,7 +141,7 @@ export default function MobileLayout3D() {
         radius={0.04}
         color="#ffffff"
         position={[0, 0, 0.25]}
-        opacity={0.9}
+        opacity={opacity}
       />
 
       {/* 3. Status Bar */}
@@ -144,7 +152,7 @@ export default function MobileLayout3D() {
         radius={0.02}
         color="#f1f5f9"
         position={[0, 3.7, 0.5]}
-        opacity={0.8}
+        opacity={opacity}
       />
 
       {/* 4. Navigation Header */}
@@ -156,7 +164,7 @@ export default function MobileLayout3D() {
         color="#ffffff"
         position={[0, 3.1, 0.7]}
         label="Vaxal Dashboard"
-        opacity={0.9}
+        opacity={opacity}
       />
 
       {/* 5. Search Bar */}
@@ -168,7 +176,7 @@ export default function MobileLayout3D() {
         color="#f1f5f9"
         position={[0, 2.2, 0.9]}
         label="Search..."
-        opacity={0.85}
+        opacity={opacity}
       />
 
       {/* 6. Hero Card */}
@@ -180,22 +188,18 @@ export default function MobileLayout3D() {
         color="#3DB5E6"
         position={[0, 0.6, 1.1]}
         label="Premium 3D"
-        opacity={0.92}
+        opacity={opacity}
       />
 
       {/* 7. Action Grid */}
-      <group position={[0, -1.0, 1.3]}>
-        <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#ffffff" position={[-1.2, 0, 0]} label="AI" />
-        <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#ffffff" position={[-0.4, 0, 0]} label="Web" />
-        <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#ffffff" position={[0.4, 0, 0]} label="App" />
-        <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#ffffff" position={[1.2, 0, 0]} label="Cloud" />
-      </group>
+      <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#ffffff" position={[-1.2, -1.0, 1.3]} label="AI" opacity={opacity} />
+      <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#ffffff" position={[-0.4, -1.0, 1.3]} label="Web" opacity={opacity} />
+      <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#ffffff" position={[0.4, -1.0, 1.3]} label="App" opacity={opacity} />
+      <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#ffffff" position={[1.2, -1.0, 1.3]} label="Cloud" opacity={opacity} />
 
       {/* 8. List Items */}
-      <group position={[0, -2.4, 1.5]}>
-        <GlassPanel width={3.2} height={0.8} depth={0.06} radius={0.03} color="#ffffff" position={[0, 0, 0]} label="Item Alpha" />
-        <GlassPanel width={3.2} height={0.8} depth={0.06} radius={0.03} color="#ffffff" position={[0, -1.0, 0.2]} label="Item Beta" />
-      </group>
+      <GlassPanel width={3.2} height={0.8} depth={0.06} radius={0.03} color="#ffffff" position={[0, -2.4, 1.5]} label="Item Alpha" opacity={opacity} />
+      <GlassPanel width={3.2} height={0.8} depth={0.06} radius={0.03} color="#ffffff" position={[0, -3.4, 1.7]} label="Item Beta" opacity={opacity} />
 
       {/* 9. Bottom Navigation */}
       <GlassPanel
@@ -206,7 +210,7 @@ export default function MobileLayout3D() {
         color="#1e293b"
         position={[0, -4.0, 1.9]}
         label="Home | Search | Settings"
-        opacity={0.95}
+        opacity={opacity}
       />
     </group>
   );

@@ -1,11 +1,25 @@
 'use client';
 
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Environment, ContactShadows, Float } from '@react-three/drei';
+import { Canvas, useThree } from '@react-three/fiber';
+import { OrbitControls, ContactShadows, Float, useCubeTexture } from '@react-three/drei';
 import { Suspense, useEffect, useState, useCallback } from 'react';
 import MobileLayout3D from './MobileLayout3D';
 import type { RootState } from '@react-three/fiber';
 import * as THREE from 'three';
+
+function SkyboxEnvironment() {
+  const { scene } = useThree();
+  const cubeTexture = useCubeTexture(
+    ['posx.jpg', 'negx.jpg', 'posy.jpg', 'negy.jpg', 'posz.jpg', 'negz.jpg'],
+    { path: '/skybox/' }
+  );
+
+  cubeTexture.colorSpace = THREE.SRGBColorSpace;
+  scene.background = cubeTexture;
+  scene.environment = cubeTexture;
+
+  return null;
+}
 
 export default function GlassViewer() {
   const [contextLost, setContextLost] = useState(false);
@@ -110,11 +124,9 @@ export default function GlassViewer() {
           onCreated={handleCreated}
           frameloop="demand"
         >
-          <color attach="background" args={['#f8fafc']} />
-
-          <ambientLight intensity={0.7} />
-          <spotLight position={[10, 15, 10]} angle={0.3} penumbra={1} intensity={2} castShadow />
-          <pointLight position={[-10, -10, -10]} intensity={1} color="#3DB5E6" />
+          <ambientLight intensity={0.5} />
+          <spotLight position={[10, 15, 10]} angle={0.3} penumbra={1} intensity={1.5} castShadow />
+          <pointLight position={[-10, -10, -10]} intensity={0.8} color="#3DB5E6" />
 
           <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
             <MobileLayout3D />
@@ -127,7 +139,7 @@ export default function GlassViewer() {
             maxPolarAngle={Math.PI / 1.5}
           />
 
-          <Environment preset="apartment" />
+          <SkyboxEnvironment />
 
           <ContactShadows
             position={[0, -5, 0]}
