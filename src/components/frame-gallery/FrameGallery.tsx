@@ -13,7 +13,7 @@ import type { FrameConfig, TransitionPhase } from './types';
 const FRAMES: FrameConfig[] = [
   {
     id: 'bigbuckbunny',
-    wallPosition: new THREE.Vector3(-5.5, 0, 0),
+    wallPosition: new THREE.Vector3(-5.5, 3.2, 0),
     radius: 2.8,
     borderWidth: 0.25,
     frameDepth: 0.3,
@@ -22,7 +22,7 @@ const FRAMES: FrameConfig[] = [
   },
   {
     id: 'elephantsdream',
-    wallPosition: new THREE.Vector3(5.5, 0, 0),
+    wallPosition: new THREE.Vector3(5.5, -3.2, 0),
     radius: 2.8,
     borderWidth: 0.25,
     frameDepth: 0.3,

@@ -54,7 +54,7 @@ export class CameraDirector {
     const posPoints = [
       new THREE.Vector3(a.x, a.y, IMMERSED_Z),        // P0: immersed in A
       new THREE.Vector3(a.x, a.y + 0.3, 6.0),         // P1: pulled out past wall
-      new THREE.Vector3(midX, midY + 0.2, 12.0),       // P2: overview
+      new THREE.Vector3(midX, midY + 0.2, 15.0),       // P2: overview
       new THREE.Vector3(b.x, b.y + 0.3, 6.0),          // P3: approaching B
       new THREE.Vector3(b.x, b.y, IMMERSED_Z),         // P4: immersed in B
     ];
