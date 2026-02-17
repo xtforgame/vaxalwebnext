@@ -76,6 +76,8 @@ export default function MobileLayout3D() {
     // Subtle overall movement
     group.current.rotation.y = Math.sin(t / 4) / 12;
     group.current.rotation.x = Math.PI / 12 + Math.cos(t / 4) / 18;
+    // Trigger render since we use frameloop="demand"
+    state.invalidate();
   });
 
   return (
