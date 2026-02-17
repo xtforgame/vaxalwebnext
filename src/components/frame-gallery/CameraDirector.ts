@@ -9,34 +9,36 @@ function easeInOutCubic(t: number): number {
 }
 
 /**
- * Camera Z position when immersed.
+ * Camera Z when immersed — behind the wall, looking through video plane.
  *
- * Content plane (10×5.625) at Z=-0.5. To fill the viewport with FOV=50°:
+ * Content plane (10×5.625) fills viewport at distance VIEWPORT_DIST with FOV=50°:
  *   distance = CONTENT_HEIGHT / (2 * tan(FOV/2))
- *            = 5.625 / (2 * tan(25°)) ≈ 6.03
- *   camera Z = -0.5 - 6.03 ≈ -6.5
+ *            = 5.625 / (2 * tan(25°)) ≈ 6.03 → use 6
+ *   camera Z = RESTING_Z - VIEWPORT_DIST ≈ -6
  */
-export const IMMERSED_Z = -6.5;
+export const IMMERSED_Z = -6;
+
+/** Distance from camera to video plane for full-viewport fill */
+export const VIEWPORT_DIST = 6;
+
+/** Z position of video planes when resting against the wall */
+export const RESTING_Z = -0.1;
 
 /**
- * CameraDirector builds a smooth spline path for the camera to travel
- * from close-up on frame A → pull out through wall → overview → pan →
- * push through wall into frame B.
+ * CameraDirector builds a smooth spline path for the camera position.
  *
- * Coordinate system:
- *   Wall at Z = 0 (FrontSide — invisible from behind).
- *   Content planes at Z = -0.5 (behind wall).
- *   Camera immersed at Z ≈ -6.5 (behind wall, content fills viewport).
- *   Camera overview at Z ≈ 14 (in front of wall, both frames visible).
+ * Camera ALWAYS faces -Z (rotation 0,0,0). Only position changes.
+ * The wall at Z=0 naturally appears/disappears as the camera crosses it.
  *
- * The camera physically crosses Z=0 during exiting and entering phases.
- * FrontSide rendering on the wall means:
- *   Z < 0 → wall invisible → full-screen video content
- *   Z > 0 → wall visible → hex holes clip content
+ * Path:
+ *   P0: immersed in A (Z=-6, behind wall)
+ *   P1: pulled out past wall (Z=+6)
+ *   P2: overview (Z=+12, both frames visible)
+ *   P3: aligned with B (Z=+6)
+ *   P4: immersed in B (Z=-6, behind wall)
  */
 export class CameraDirector {
   private positionCurve: THREE.CatmullRomCurve3;
-  private lookAtCurve: THREE.CatmullRomCurve3;
 
   constructor(fromFrame: FrameConfig, toFrame: FrameConfig) {
     const a = fromFrame.wallPosition;
@@ -44,13 +46,12 @@ export class CameraDirector {
     const midX = (a.x + b.x) / 2;
     const midY = (a.y + b.y) / 2;
 
-    // Camera position waypoints — crosses Z=0 wall plane
     const posPoints = [
-      new THREE.Vector3(a.x, a.y, IMMERSED_Z),          // P0: immersed in A (behind wall)
-      new THREE.Vector3(a.x, a.y + 0.3, 3.0),           // P1: pulled out past wall
-      new THREE.Vector3(midX, midY + 0.2, 14.0),        // P2: overview (both frames visible)
-      new THREE.Vector3(b.x, b.y + 0.3, 3.0),           // P3: approaching B from front
-      new THREE.Vector3(b.x, b.y, IMMERSED_Z),          // P4: immersed in B (behind wall)
+      new THREE.Vector3(a.x, a.y, IMMERSED_Z),       // P0: immersed in A
+      new THREE.Vector3(a.x, a.y + 0.3, 6.0),        // P1: pulled out past wall
+      new THREE.Vector3(midX, midY + 0.2, 12.0),      // P2: overview
+      new THREE.Vector3(b.x, b.y + 0.3, 6.0),         // P3: approaching B
+      new THREE.Vector3(b.x, b.y, IMMERSED_Z),        // P4: immersed in B
     ];
 
     this.positionCurve = new THREE.CatmullRomCurve3(
@@ -59,36 +60,16 @@ export class CameraDirector {
       'catmullrom',
       0.35
     );
-
-    // LookAt target waypoints — always toward the wall/content
-    const lookPoints = [
-      new THREE.Vector3(a.x, a.y, 0),    // look at wall/content A
-      new THREE.Vector3(a.x, a.y, 0),    // still at A
-      new THREE.Vector3(midX, midY, 0),   // look at wall center
-      new THREE.Vector3(b.x, b.y, 0),    // look at B
-      new THREE.Vector3(b.x, b.y, 0),    // look at wall/content B
-    ];
-
-    this.lookAtCurve = new THREE.CatmullRomCurve3(
-      lookPoints,
-      false,
-      'catmullrom',
-      0.35
-    );
   }
 
   /**
-   * Given a global progress value 0..1 across the entire transition,
-   * returns the camera position and lookAt target.
+   * Given a global progress value 0..1, returns only the camera position.
+   * Camera rotation is always (0, 0, 0) — set externally.
    */
-  evaluate(globalProgress: number): {
-    position: THREE.Vector3;
-    lookAt: THREE.Vector3;
-  } {
+  evaluate(globalProgress: number): { position: THREE.Vector3 } {
     const t = easeInOutCubic(Math.max(0, Math.min(1, globalProgress)));
     return {
       position: this.positionCurve.getPointAt(t),
-      lookAt: this.lookAtCurve.getPointAt(t),
     };
   }
 

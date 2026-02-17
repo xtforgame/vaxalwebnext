@@ -4,7 +4,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Suspense, useEffect, useRef, useMemo, useCallback, useState } from 'react';
 import * as THREE from 'three';
 import WallScene from './WallScene';
-import { CameraDirector, IMMERSED_Z } from './CameraDirector';
+import { CameraDirector, IMMERSED_Z, VIEWPORT_DIST, RESTING_Z } from './CameraDirector';
 import { TransitionController } from './TransitionController';
 import { FrameSceneManager } from './SceneManager';
 import type { FrameConfig, TransitionPhase } from './types';
@@ -32,6 +32,42 @@ const FRAMES: FrameConfig[] = [
 ];
 
 /**
+ * Compute the Z position for a video plane based on current phase and camera Z.
+ *
+ * During exiting: the "from" video moves WITH the camera (camera.z - VIEWPORT_DIST).
+ * During entering: the "to" video moves WITH the camera.
+ * Otherwise: resting at RESTING_Z (against the wall).
+ * Immersed active frame: camera.z - VIEWPORT_DIST (far behind wall).
+ */
+function computeContentZ(
+  frameIndex: number,
+  phase: TransitionPhase,
+  fromFrame: number,
+  toFrame: number,
+  cameraZ: number
+): number {
+  if (phase === 'immersed') {
+    // Active frame tracks camera; inactive rests at wall
+    return frameIndex === fromFrame
+      ? cameraZ - VIEWPORT_DIST
+      : RESTING_Z;
+  }
+
+  if (phase === 'exiting' && frameIndex === fromFrame) {
+    // From-video moves with camera, clamped so it doesn't go past the wall
+    return Math.min(cameraZ - VIEWPORT_DIST, RESTING_Z);
+  }
+
+  if (phase === 'entering' && frameIndex === toFrame) {
+    // To-video moves with camera, clamped so it doesn't go past the wall
+    return Math.min(cameraZ - VIEWPORT_DIST, RESTING_Z);
+  }
+
+  // Overview, panning, or inactive frame — rest against wall
+  return RESTING_Z;
+}
+
+/**
  * Inner scene component — runs inside Canvas context.
  */
 function GalleryScene({
@@ -57,9 +93,9 @@ function GalleryScene({
   const blendFactorsRef = useRef<number[]>(FRAMES.map(() => 0));
   const [blendFactors, setBlendFactors] = useState<number[]>(FRAMES.map(() => 0));
 
-  // Per-frame content visibility tracking
-  const contentVisibleRef = useRef<boolean[]>([true, false]);
-  const [contentVisible, setContentVisible] = useState<boolean[]>([true, false]);
+  // Per-frame content Z tracking
+  const contentZRef = useRef<number[]>([IMMERSED_Z - VIEWPORT_DIST, RESTING_Z]);
+  const [contentZs, setContentZs] = useState<number[]>([IMMERSED_Z - VIEWPORT_DIST, RESTING_Z]);
 
   useEffect(() => {
     transitionRef.current.onPhaseChange = (phase: TransitionPhase) => {
@@ -74,10 +110,10 @@ function GalleryScene({
     blendFactorsRef.current = [1, 0];
     setBlendFactors([1, 0]);
 
-    // Camera behind wall, content fills viewport
+    // Camera behind wall, facing -Z (never rotates)
     const posA = FRAMES[0].wallPosition;
     camera.position.set(posA.x, posA.y, IMMERSED_Z);
-    camera.lookAt(posA.x, posA.y, 0);
+    camera.rotation.set(0, 0, 0);
 
     return () => {
       sceneManagers.forEach((m) => m.dispose());
@@ -116,39 +152,32 @@ function GalleryScene({
       setBlendFactors([...newBlends]);
     }
 
-    // Camera management
+    // Camera management — always faces -Z, only position changes
     if (phase === 'immersed') {
-      // Clamp camera to immersed position behind wall
       const fp = FRAMES[fromFrame].wallPosition;
       camera.position.set(fp.x, fp.y, IMMERSED_Z);
-      camera.lookAt(fp.x, fp.y, 0);
     } else if (cd) {
-      // Animate camera along spline (crosses Z=0 wall plane)
       const animPhase = phase as 'exiting' | 'overview' | 'panning' | 'entering';
       const globalT = CameraDirector.phaseToGlobal(animPhase, progress);
-      const { position, lookAt } = cd.evaluate(globalT);
+      const { position } = cd.evaluate(globalT);
       camera.position.copy(position);
-      camera.lookAt(lookAt);
     }
 
-    // Content visibility: hide inactive frames when camera is behind wall
+    // Camera always faces -Z — no rotation ever
+    camera.rotation.set(0, 0, 0);
+
+    // Compute dynamic content Z for each frame
     const cameraZ = camera.position.z;
-    let newVisible: boolean[];
-    if (cameraZ >= 0) {
-      // In front of wall — all content visible (wall hexagonal holes mask it)
-      newVisible = FRAMES.map(() => true);
-    } else {
-      // Behind wall — only active frame's content visible
-      const activeIdx = phase === 'entering' ? toFrame : fromFrame;
-      newVisible = FRAMES.map((_, i) => i === activeIdx);
-    }
-
-    const visChanged = newVisible.some(
-      (v, i) => v !== contentVisibleRef.current[i]
+    const newContentZs = FRAMES.map((_, i) =>
+      computeContentZ(i, phase, fromFrame, toFrame, cameraZ)
     );
-    if (visChanged) {
-      contentVisibleRef.current = newVisible;
-      setContentVisible([...newVisible]);
+
+    const zChanged = newContentZs.some(
+      (z, i) => Math.abs(z - contentZRef.current[i]) > 0.001
+    );
+    if (zChanged) {
+      contentZRef.current = [...newContentZs];
+      setContentZs([...newContentZs]);
     }
   });
 
@@ -158,9 +187,9 @@ function GalleryScene({
         videoTexture: mgr.videoTexture as THREE.Texture,
         staticTexture: mgr.staticTexture as THREE.Texture,
         blendFactor: blendFactors[i],
-        contentVisible: contentVisible[i],
+        contentZ: contentZs[i],
       })),
-    [sceneManagers, blendFactors, contentVisible]
+    [sceneManagers, blendFactors, contentZs]
   );
 
   return (

@@ -17,7 +17,7 @@ interface PortalFrameProps {
   videoTexture: THREE.Texture;
   staticTexture: THREE.Texture;
   blendFactor: number; // 0=static, 1=video
-  contentVisible: boolean;
+  contentZ: number; // dynamic Z position of content plane
 }
 
 // Content plane: 16:9 aspect, large enough to fill viewport at immersed Z=-6.5
@@ -38,7 +38,7 @@ export default function PortalFrame({
   videoTexture,
   staticTexture,
   blendFactor,
-  contentVisible,
+  contentZ,
 }: PortalFrameProps) {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const innerRadius = config.radius - config.borderWidth;
@@ -59,8 +59,8 @@ export default function PortalFrame({
 
   return (
     <group position={[pos.x, pos.y, pos.z]}>
-      {/* Content surface — large rectangle BEHIND the wall at Z=-0.5 */}
-      <mesh position={[0, 0, -0.5]} renderOrder={0} visible={contentVisible}>
+      {/* Content surface — large rectangle, Z position is dynamic */}
+      <mesh position={[0, 0, contentZ]} renderOrder={0}>
         <planeGeometry args={[CONTENT_WIDTH, CONTENT_HEIGHT]} />
         <Crossfade
           ref={materialRef}

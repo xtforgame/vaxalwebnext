@@ -12,7 +12,7 @@ interface WallSceneProps {
     videoTexture: THREE.Texture;
     staticTexture: THREE.Texture;
     blendFactor: number;
-    contentVisible: boolean;
+    contentZ: number;
   }[];
 }
 
@@ -47,7 +47,7 @@ export default function WallScene({ frames, sceneTextures }: WallSceneProps) {
           videoTexture={sceneTextures[i].videoTexture}
           staticTexture={sceneTextures[i].staticTexture}
           blendFactor={sceneTextures[i].blendFactor}
-          contentVisible={sceneTextures[i].contentVisible}
+          contentZ={sceneTextures[i].contentZ}
         />
       ))}
     </group>
