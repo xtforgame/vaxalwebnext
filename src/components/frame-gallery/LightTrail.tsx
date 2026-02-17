@@ -68,82 +68,100 @@ function createRibbonGeometry(
 
 const trailVert = /* glsl */ `
   varying vec2 vUv;
+  varying vec3 vWorldPos;
   void main() {
     vUv = uv;
+    vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
 
 /**
- * Fragment shader adapted from Shadertoy reference (light-trail.shader).
+ * Fragment shader for light trail effect.
  *
- * UV.x = position along trail (0..1)
- * UV.y = position across ribbon (0=edge, 0.5=center, 1=edge)
- *
- * Reference techniques:
- *   Inverse-distance glow: .012 * 0.18 / (pSize * length)
- *   Hard core:             smoothstep(0.03, 0.004, pSize * length)
- *   Color:                 sci-fi blue-white (adapted from YELLOW/WHITE)
+ * Key design choices:
+ * - World-space hex masking prevents trail leaking into frame openings
+ * - 2D distance from head point creates round leading edge
+ * - Exponential core decay: white core fades fast → blue glow dominates tail
+ * - exp() radial falloff gives wide, soft glow (vs 1/dist which drops too fast)
  */
 const trailFrag = /* glsl */ `
   uniform float uProgress;
   uniform float uTime;
+  uniform vec2 uFrameA;
+  uniform vec2 uFrameB;
+  uniform float uHexInner;
   varying vec2 vUv;
+  varying vec3 vWorldPos;
 
   void main() {
-    // r = radial distance from center (0 = center, 1 = edge)
-    float r = abs(vUv.y - 0.5) * 2.0;
+    float r = abs(vUv.y - 0.5) * 2.0;   // 0=center, 1=edge
+    float d = uProgress - vUv.x;         // >0 behind head, <0 ahead
 
-    // d = signed distance from head (positive = behind, negative = ahead)
-    float d = uProgress - vUv.x;
+    // Early discard: well ahead of head
+    if (d < -0.05) discard;
 
-    // Aspect-ratio scaling: trail ~14 units long, ribbon ~2.4 wide
-    // UV.x=1 ≈ 14 units, r=1 ≈ 1.2 units → scale factor ≈ 12
+    // === Hex frame masking (world-space distance) ===
+    float distA = length(vWorldPos.xy - uFrameA);
+    float distB = length(vWorldPos.xy - uFrameB);
+    float hexFade = smoothstep(uHexInner, uHexInner + 0.5, min(distA, distB));
+
+    // === Round head shape (2D aspect-corrected distance) ===
+    // curve ~14 units, ribbon half-width 1.2 → aspect ≈ 12
     float dScaled = d * 12.0;
-
-    // 2D distance from head point (for circular head glow)
     float headDist = length(vec2(dScaled, r));
 
-    // Round discard: behind head always renders, ahead uses circular cutoff
-    if (d < 0.0) {
-      float aheadDist = length(vec2((-d) * 12.0, r));
-      if (aheadDist > 0.6) discard;
-    }
+    // Discard ahead fragments outside head radius
+    if (d < 0.0 && headDist > 0.5) discard;
 
     float dBehind = max(0.0, d);
 
-    // === Trail glow (ref: .012 * 0.18 / dist) ===
-    // Slow longitudinal decay for long visible tail
-    float glow = 0.004 / ((r * 0.25 + 0.02) * (dBehind * 0.5 + 0.06));
-    glow = min(glow, 1.5);
+    // === HEAD: bright round point ===
+    float headCore = smoothstep(0.25, 0.02, headDist);
+    float headGlow = 0.04 / (headDist + 0.04);
+    headGlow = min(headGlow, 1.0);
+    float headInfluence = 1.0 - smoothstep(0.0, 0.12, dBehind);
 
-    // === Hard core line ===
-    float core = smoothstep(0.06, 0.008, r) * smoothstep(0.03, 0.002, dBehind);
+    // === TRAIL: elongated glow along path ===
+    // Trail is ONLY behind the head (d > 0). Ahead of head → only headCore/headGlow.
+    // smoothstep(-0.003, 0.01, d): 0 when d < -0.003, 1 when d > 0.01
+    float trailMask = smoothstep(-0.003, 0.01, d);
 
-    // === Circular head glow (ref: smoothstep(0.03, 0.004, dist)) ===
-    float headGlow = smoothstep(0.5, 0.03, headDist);
-    float headSoft = 0.015 / (headDist + 0.04);
-    headSoft = min(headSoft, 1.0);
+    // Radial: exponential falloff (wide, soft)
+    float trailR = exp(-r * 3.0);
+    // Longitudinal: slow inverse-distance decay for long visible tail
+    float trailD = 1.0 / (dBehind * 2.0 + 0.25);
+    float trailGlow = trailR * trailD * 0.18 * trailMask;
+    trailGlow = min(trailGlow, 0.8);
 
-    // Subtle energy pulse
-    float pulse = 1.0 + 0.05 * sin(vUv.x * 60.0 - uTime * 4.0);
+    // Core line — decays fast behind head so tail is pure blue glow
+    float trailCore = smoothstep(0.03, 0.003, r);
+    trailCore *= exp(-dBehind * 15.0) * trailMask;
+    trailCore = min(trailCore, 1.0);
 
-    // Color: white core/head → light blue glow → blue outer
+    // === COMBINE head + trail ===
+    float core = max(trailCore, headCore * headInfluence);
+    float glow = trailGlow + headGlow * headInfluence * 0.25;
+    glow = min(glow, 1.0);
+
+    // Energy pulse
+    float pulse = 1.0 + 0.05 * sin(vUv.x * 50.0 - uTime * 5.0);
+
+    // Color: white core → light blue glow → deep blue outer
     vec3 white     = vec3(1.0);
     vec3 lightBlue = vec3(0.45, 0.75, 1.0);
-    vec3 blue      = vec3(0.15, 0.4, 0.9);
+    vec3 blue      = vec3(0.12, 0.3, 0.85);
 
-    vec3 color = white * (core + headGlow * 0.7)
-               + lightBlue * (glow * 0.5 + headSoft * 0.3) * pulse
-               + blue * glow * 0.2;
+    vec3 color = white * core
+               + lightBlue * glow * pulse
+               + blue * glow * 0.35;
 
-    float alpha = core + headGlow * 0.8 + glow * 0.4 + headSoft * 0.2;
+    float alpha = core * 0.85 + glow * 0.65;
 
-    // Fade to zero at ribbon edges
-    alpha *= smoothstep(1.0, 0.5, r);
-
-    // Smooth entry at trail start
-    alpha *= smoothstep(0.0, 0.01, vUv.x);
+    // Ribbon edge fade
+    alpha *= 1.0 - smoothstep(0.3, 1.0, r);
+    // Hex frame distance fade
+    alpha *= hexFade;
 
     gl_FragColor = vec4(color, alpha);
   }
@@ -191,6 +209,8 @@ export default function LightTrail({
     [trailCurve]
   );
 
+  const hexInner = fromFrame.radius - fromFrame.borderWidth;
+
   const material = useMemo(
     () =>
       new THREE.ShaderMaterial({
@@ -199,13 +219,16 @@ export default function LightTrail({
         uniforms: {
           uProgress: { value: 0 },
           uTime: { value: 0 },
+          uFrameA: { value: new THREE.Vector2(fromFrame.wallPosition.x, fromFrame.wallPosition.y) },
+          uFrameB: { value: new THREE.Vector2(toFrame.wallPosition.x, toFrame.wallPosition.y) },
+          uHexInner: { value: hexInner },
         },
         transparent: true,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
         side: THREE.DoubleSide,
       }),
-    []
+    [fromFrame, toFrame, hexInner]
   );
 
   useFrame((_, delta) => {
