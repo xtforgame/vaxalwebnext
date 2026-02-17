@@ -2,11 +2,69 @@
 
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import type { FrameConfig } from './types';
 import { easeInOutCubic } from './CameraDirector';
 
 const TRAIL_Z = 0.05;
+const RIBBON_HALF_WIDTH = 1.2;
+const RIBBON_SEGMENTS = 200;
+
+/**
+ * Build a flat ribbon geometry along a curve, lying on the wall.
+ * UV.x = 0..1 along the curve (progress direction)
+ * UV.y = 0..1 across the ribbon width (0.5 = center line)
+ */
+function createRibbonGeometry(
+  curve: THREE.CatmullRomCurve3,
+  halfWidth: number,
+  segments: number
+): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    const point = curve.getPointAt(t);
+    const tangent = curve.getTangentAt(t);
+
+    // Perpendicular direction in the XY plane
+    const nx = -tangent.y;
+    const ny = tangent.x;
+    const len = Math.sqrt(nx * nx + ny * ny) || 1;
+    const nnx = nx / len;
+    const nny = ny / len;
+
+    // +side vertex (UV.y = 0)
+    positions.push(
+      point.x + nnx * halfWidth,
+      point.y + nny * halfWidth,
+      point.z
+    );
+    uvs.push(t, 0.0);
+
+    // -side vertex (UV.y = 1)
+    positions.push(
+      point.x - nnx * halfWidth,
+      point.y - nny * halfWidth,
+      point.z
+    );
+    uvs.push(t, 1.0);
+
+    if (i < segments) {
+      const base = i * 2;
+      indices.push(base, base + 1, base + 2);
+      indices.push(base + 1, base + 3, base + 2);
+    }
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setIndex(indices);
+  return geo;
+}
 
 const trailVert = /* glsl */ `
   varying vec2 vUv;
@@ -16,30 +74,58 @@ const trailVert = /* glsl */ `
   }
 `;
 
+/**
+ * Fragment shader adapted from Shadertoy reference (light-trail.shader).
+ *
+ * UV.x = position along trail (0..1)
+ * UV.y = position across ribbon (0=edge, 0.5=center, 1=edge)
+ *
+ * Reference techniques:
+ *   Inverse-distance glow: .012 * 0.18 / (pSize * length)
+ *   Hard core:             smoothstep(0.03, 0.004, pSize * length)
+ *   Color:                 sci-fi blue-white (adapted from YELLOW/WHITE)
+ */
 const trailFrag = /* glsl */ `
   uniform float uProgress;
-  uniform vec3 uColor;
-  uniform float uOpacityScale;
+  uniform float uTime;
   varying vec2 vUv;
 
   void main() {
-    // Don't draw ahead of progress
-    if (vUv.x > uProgress + 0.005) discard;
+    if (vUv.x > uProgress + 0.003) discard;
 
-    float distFromHead = max(0.0, uProgress - vUv.x);
+    // r = radial distance from center line (0 = center, 1 = edge)
+    float r = abs(vUv.y - 0.5) * 2.0;
 
-    // Head glow — intense at leading edge
-    float headGlow = exp(-distFromHead * 15.0);
+    // d = distance behind the head along the trail
+    float d = max(0.0, uProgress - vUv.x);
 
-    // Trail brightness — fades behind head but remains visible
-    float trail = exp(-distFromHead * 1.5) * 0.5 + 0.15;
+    // === Inverse-distance soft glow (ref: .012 * 0.18 / dist) ===
+    // Combined radial × longitudinal falloff
+    float glow = 0.003 / ((r * 0.4 + 0.015) * (d * 1.8 + 0.06));
+    glow = min(glow, 1.5);
 
-    // Color: white at head, tinted elsewhere
-    vec3 color = mix(uColor * trail, vec3(1.0), headGlow * 0.8);
-    float alpha = mix(trail, 1.0, headGlow) * uOpacityScale;
+    // === Hard bright core (ref: smoothstep(0.03, 0.004, dist)) ===
+    float core = smoothstep(0.06, 0.008, r) * smoothstep(0.03, 0.002, d);
 
-    // Smooth entry at start of trail
-    alpha *= smoothstep(0.0, 0.015, vUv.x);
+    // Subtle energy pulse
+    float pulse = 1.0 + 0.05 * sin(vUv.x * 60.0 - uTime * 4.0);
+
+    // Color composition: white core → light blue glow → deep blue outer
+    vec3 white     = vec3(1.0);
+    vec3 lightBlue = vec3(0.45, 0.75, 1.0);
+    vec3 blue      = vec3(0.15, 0.4, 0.9);
+
+    vec3 color = white * core
+               + lightBlue * glow * 0.5 * pulse
+               + blue * glow * 0.15;
+
+    float alpha = core + glow * 0.4;
+
+    // Fade to zero at ribbon edges
+    alpha *= smoothstep(1.0, 0.5, r);
+
+    // Smooth entry at trail start
+    alpha *= smoothstep(0.0, 0.01, vUv.x);
 
     gl_FragColor = vec4(color, alpha);
   }
@@ -48,9 +134,7 @@ const trailFrag = /* glsl */ `
 interface LightTrailProps {
   fromFrame: FrameConfig;
   toFrame: FrameConfig;
-  /** Raw global progress (0..1), before easing */
   progressRef: { current: number };
-  /** Whether the trail should be visible */
   visibleRef: { current: boolean };
 }
 
@@ -60,10 +144,8 @@ export default function LightTrail({
   progressRef,
   visibleRef,
 }: LightTrailProps) {
-  const { camera } = useThree();
   const groupRef = useRef<THREE.Group>(null);
-  const headRef = useRef<THREE.Mesh>(null);
-  const headLightRef = useRef<THREE.PointLight>(null);
+  const elapsedRef = useRef(0);
 
   // Trail curve on wall — same XY waypoints as camera path
   const trailCurve = useMemo(() => {
@@ -85,27 +167,20 @@ export default function LightTrail({
     );
   }, [fromFrame, toFrame]);
 
-  // Core tube — thin, bright
-  const coreGeo = useMemo(
-    () => new THREE.TubeGeometry(trailCurve, 200, 0.03, 8, false),
+  // Flat ribbon on the wall surface
+  const ribbonGeo = useMemo(
+    () => createRibbonGeometry(trailCurve, RIBBON_HALF_WIDTH, RIBBON_SEGMENTS),
     [trailCurve]
   );
 
-  // Glow tube — wider, dimmer
-  const glowGeo = useMemo(
-    () => new THREE.TubeGeometry(trailCurve, 200, 0.12, 8, false),
-    [trailCurve]
-  );
-
-  const coreMat = useMemo(
+  const material = useMemo(
     () =>
       new THREE.ShaderMaterial({
         vertexShader: trailVert,
         fragmentShader: trailFrag,
         uniforms: {
           uProgress: { value: 0 },
-          uColor: { value: new THREE.Color(0x00d4ff) },
-          uOpacityScale: { value: 1.0 },
+          uTime: { value: 0 },
         },
         transparent: true,
         blending: THREE.AdditiveBlending,
@@ -115,82 +190,25 @@ export default function LightTrail({
     []
   );
 
-  const glowMat = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        vertexShader: trailVert,
-        fragmentShader: trailFrag,
-        uniforms: {
-          uProgress: { value: 0 },
-          uColor: { value: new THREE.Color(0x0055cc) },
-          uOpacityScale: { value: 0.35 },
-        },
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-      }),
-    []
-  );
-
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!groupRef.current) return;
 
     const visible = visibleRef.current;
     groupRef.current.visible = visible;
     if (!visible) return;
 
-    // Apply easing to match camera movement speed
+    elapsedRef.current += delta;
+
     const rawProgress = progressRef.current;
     const easedProgress = easeInOutCubic(Math.max(0, Math.min(1, rawProgress)));
 
-    coreMat.uniforms.uProgress.value = easedProgress;
-    glowMat.uniforms.uProgress.value = easedProgress;
-
-    // Head sphere + light follow camera XY on wall plane
-    const hx = camera.position.x;
-    const hy = camera.position.y;
-
-    if (headRef.current) {
-      headRef.current.position.set(hx, hy, TRAIL_Z + 0.01);
-      // Scale down near start/end of trail
-      const edgeDist = Math.min(easedProgress, 1 - easedProgress);
-      headRef.current.scale.setScalar(Math.min(1, edgeDist * 10));
-    }
-
-    if (headLightRef.current) {
-      headLightRef.current.position.set(hx, hy, TRAIL_Z + 0.3);
-      headLightRef.current.intensity = Math.min(1, Math.min(easedProgress, 1 - easedProgress) * 10) * 2;
-    }
+    material.uniforms.uProgress.value = easedProgress;
+    material.uniforms.uTime.value = elapsedRef.current;
   });
 
   return (
     <group ref={groupRef} visible={false}>
-      {/* Core trail — thin, bright cyan */}
-      <mesh geometry={coreGeo} material={coreMat} renderOrder={10} />
-      {/* Outer glow — wider, dimmer blue */}
-      <mesh geometry={glowGeo} material={glowMat} renderOrder={9} />
-
-      {/* Head sphere — bright point at leading edge */}
-      <mesh ref={headRef} renderOrder={11}>
-        <sphereGeometry args={[0.1, 16, 16]} />
-        <meshBasicMaterial
-          color="#ffffff"
-          transparent
-          opacity={0.9}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </mesh>
-
-      {/* Point light at head — illuminates wall around the leading point */}
-      <pointLight
-        ref={headLightRef}
-        color="#00d4ff"
-        intensity={0}
-        distance={3}
-        decay={2}
-      />
+      <mesh geometry={ribbonGeo} material={material} renderOrder={10} />
     </group>
   );
 }
