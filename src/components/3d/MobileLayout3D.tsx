@@ -1,8 +1,10 @@
 'use client';
 
 import { Text } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
 import { useRef, useMemo } from 'react';
 import * as THREE from 'three';
+import { GlassMaterial } from './GlassMaterial';
 
 /**
  * Creates a proper 3D rounded box geometry with beveled edges on all axes
@@ -14,11 +16,9 @@ function createRoundedBoxGeometry(
   radius: number,
   segments: number = 8
 ): THREE.BufferGeometry {
-  // Clamp radius to half the smallest dimension
   const maxRadius = Math.min(width, height, depth) / 2;
   const r = Math.min(radius, maxRadius);
 
-  // Create a 2D rounded rectangle shape
   const shape = new THREE.Shape();
   const w = width / 2 - r;
   const h = height / 2 - r;
@@ -33,7 +33,6 @@ function createRoundedBoxGeometry(
   shape.lineTo(-width / 2, -h);
   shape.quadraticCurveTo(-width / 2, -height / 2, -w, -height / 2);
 
-  // Extrude with bevel to create 3D rounded edges
   const extrudeSettings: THREE.ExtrudeGeometryOptions = {
     depth: depth - r * 2,
     bevelEnabled: true,
@@ -45,10 +44,7 @@ function createRoundedBoxGeometry(
   };
 
   const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-
-  // Center the geometry (ExtrudeGeometry starts at z=0)
   geometry.translate(0, 0, -(depth - r * 2) / 2 - r);
-
   geometry.computeVertexNormals();
 
   return geometry;
@@ -63,6 +59,10 @@ interface GlassPanelProps {
   position?: [number, number, number];
   label?: string;
   opacity?: number;
+  ior?: number;
+  chromaticAberration?: number;
+  reflectivity?: number;
+  absorption?: number;
 }
 
 const GlassPanel = ({
@@ -73,7 +73,11 @@ const GlassPanel = ({
   color = '#ffffff',
   position = [0, 0, 0],
   label = '',
-  opacity = 0.2,
+  opacity = 0.12,
+  ior = 1.45,
+  chromaticAberration = 0.5,
+  reflectivity = 1.0,
+  absorption = 3.0,
 }: GlassPanelProps) => {
   const geometry = useMemo(
     () => createRoundedBoxGeometry(width, height, depth, radius, 6),
@@ -83,20 +87,16 @@ const GlassPanel = ({
   return (
     <group position={position}>
       <mesh geometry={geometry} renderOrder={position[2]}>
-        <meshPhysicalMaterial
+        <GlassMaterial
           color={color}
-          transparent
           opacity={opacity}
-          roughness={0}
-          metalness={0}
-          reflectivity={1}
-          envMapIntensity={1.5}
-          clearcoat={1}
-          clearcoatRoughness={0}
-          ior={1.5}
-          specularIntensity={1}
-          specularColor="#ffffff"
-          side={THREE.DoubleSide}
+          ior={ior}
+          chromaticAberration={chromaticAberration}
+          reflectivity={reflectivity}
+          envMapIntensity={1.2}
+          fresnelPower={1.5}
+          thickness={depth}
+          absorption={absorption}
         />
       </mesh>
       {label && (
@@ -115,102 +115,113 @@ const GlassPanel = ({
   );
 };
 
-const opacity = 0.5;
-
 export default function MobileLayout3D() {
   const group = useRef<THREE.Group>(null);
 
+  useFrame((state) => {
+    if (!group.current) return;
+    const t = state.clock.getElapsedTime();
+    group.current.rotation.y = Math.sin(t / 4) / 12;
+    group.current.rotation.x = Math.PI / 12 + Math.cos(t / 4) / 18;
+    state.invalidate();
+  });
+
   return (
     <group ref={group}>
-      {/* 1. Base Device Frame */}
+      {/* 1. Base Device Frame - 淡紫色 */}
       <GlassPanel
         width={4.2}
         height={8.8}
         depth={0.3}
         radius={0.15}
-        color="#e2e8f0"
+        color="#c4b5fd"
         position={[0, 0, 0]}
-        opacity={opacity}
+        opacity={0.15}
+        chromaticAberration={0.3}
       />
 
-      {/* 2. Main Screen Layer */}
+      {/* 2. Main Screen Layer - 淡藍色 */}
       <GlassPanel
         width={3.8}
         height={8.2}
         depth={0.08}
         radius={0.04}
-        color="#ffffff"
+        color="#bae6fd"
         position={[0, 0, 0.25]}
-        opacity={opacity}
+        opacity={0.1}
+        chromaticAberration={0.4}
       />
 
-      {/* 3. Status Bar */}
+      {/* 3. Status Bar - 淡粉色 */}
       <GlassPanel
         width={3.4}
         height={0.3}
         depth={0.04}
         radius={0.02}
-        color="#f1f5f9"
+        color="#fecdd3"
         position={[0, 3.7, 0.5]}
-        opacity={opacity}
+        opacity={0.12}
       />
 
-      {/* 4. Navigation Header */}
+      {/* 4. Navigation Header - 淡青色 */}
       <GlassPanel
         width={3.4}
         height={0.7}
         depth={0.06}
         radius={0.03}
-        color="#ffffff"
+        color="#a5f3fc"
         position={[0, 3.1, 0.7]}
         label="Vaxal Dashboard"
-        opacity={opacity}
+        opacity={0.12}
       />
 
-      {/* 5. Search Bar */}
+      {/* 5. Search Bar - 淡綠色 */}
       <GlassPanel
         width={3.2}
         height={0.6}
         depth={0.06}
         radius={0.03}
-        color="#f1f5f9"
+        color="#bbf7d0"
         position={[0, 2.2, 0.9]}
         label="Search..."
-        opacity={opacity}
+        opacity={0.12}
       />
 
-      {/* 6. Hero Card */}
+      {/* 6. Hero Card - 天藍色 */}
       <GlassPanel
         width={3.2}
         height={2.0}
         depth={0.12}
         radius={0.06}
-        color="#3DB5E6"
+        color="#38bdf8"
         position={[0, 0.6, 1.1]}
         label="Premium 3D"
-        opacity={opacity}
+        opacity={0.2}
+        chromaticAberration={0.8}
+        reflectivity={1.2}
       />
 
-      {/* 7. Action Grid */}
-      <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#ffffff" position={[-1.2, -1.0, 1.3]} label="AI" opacity={opacity} />
-      <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#ffffff" position={[-0.4, -1.0, 1.3]} label="Web" opacity={opacity} />
-      <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#ffffff" position={[0.4, -1.0, 1.3]} label="App" opacity={opacity} />
-      <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#ffffff" position={[1.2, -1.0, 1.3]} label="Cloud" opacity={opacity} />
+      {/* 7. Action Grid - 各種淡色 */}
+      <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#fca5a5" position={[-1.2, -1.0, 1.3]} label="AI" opacity={0.15} />
+      <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#fdba74" position={[-0.4, -1.0, 1.3]} label="Web" opacity={0.15} />
+      <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#fde047" position={[0.4, -1.0, 1.3]} label="App" opacity={0.15} />
+      <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#86efac" position={[1.2, -1.0, 1.3]} label="Cloud" opacity={0.15} />
 
-      {/* 8. List Items */}
-      <GlassPanel width={3.2} height={0.8} depth={0.06} radius={0.03} color="#ffffff" position={[0, -2.4, 1.5]} label="Item Alpha" opacity={opacity} />
-      <GlassPanel width={3.2} height={0.8} depth={0.06} radius={0.03} color="#ffffff" position={[0, -3.4, 1.7]} label="Item Beta" opacity={opacity} />
+      {/* 8. List Items - 淡紫/淡藍 */}
+      <GlassPanel width={3.2} height={0.8} depth={0.06} radius={0.03} color="#d8b4fe" position={[0, -2.4, 1.5]} label="Item Alpha" opacity={0.12} />
+      <GlassPanel width={3.2} height={0.8} depth={0.06} radius={0.03} color="#93c5fd" position={[0, -3.4, 1.7]} label="Item Beta" opacity={0.12} />
 
-      {/* 9. Bottom Navigation */}
+      {/* 9. Bottom Navigation - 深藍色玻璃 */}
       <GlassPanel
         width={3.6}
         height={0.9}
         depth={0.12}
         radius={0.06}
-        color="#1e293b"
+        color="#1e3a5f"
         position={[0, -4.0, 1.9]}
         label="Home | Search | Settings"
-        opacity={opacity}
+        opacity={0.25}
+        chromaticAberration={0.6}
       />
     </group>
   );
