@@ -32,11 +32,15 @@ const FRAMES: FrameConfig[] = [
 ];
 
 /**
- * Compute the Z position for a video plane based on current phase and camera Z.
+ * Compute the Z position for a video plane.
  *
- * During exiting/entering: the active video moves WITH the camera (camera.z - VIEWPORT_DIST),
- * clamped so it never goes past the resting position at the wall.
- * Otherwise: resting at RESTING_Z.
+ * Key rule: the active frame tracks the camera (camera.z - VIEWPORT_DIST),
+ * clamped to RESTING_Z so it never goes past the wall.
+ *
+ * - immersed: active frame tracks camera, inactive rests at wall
+ * - exiting/overview/panning: fromFrame tracks camera (naturally reaches wall as camera pulls out)
+ * - entering: toFrame tracks camera (naturally peels off wall as camera pushes in)
+ * - inactive frames: always RESTING_Z
  */
 function computeContentZ(
   frameIndex: number,
@@ -45,18 +49,20 @@ function computeContentZ(
   toFrame: number,
   cameraZ: number
 ): number {
+  const tracking = Math.min(cameraZ - VIEWPORT_DIST, RESTING_Z);
+
   if (phase === 'immersed') {
-    return frameIndex === fromFrame
-      ? cameraZ - VIEWPORT_DIST
-      : RESTING_Z;
+    return frameIndex === fromFrame ? cameraZ - VIEWPORT_DIST : RESTING_Z;
   }
 
-  if (phase === 'exiting' && frameIndex === fromFrame) {
-    return Math.min(cameraZ - VIEWPORT_DIST, RESTING_Z);
+  // Outbound journey: fromFrame tracks camera until it reaches the wall
+  if (frameIndex === fromFrame && (phase === 'exiting' || phase === 'overview' || phase === 'panning')) {
+    return tracking;
   }
 
-  if (phase === 'entering' && frameIndex === toFrame) {
-    return Math.min(cameraZ - VIEWPORT_DIST, RESTING_Z);
+  // Inbound journey: toFrame tracks camera (peels off wall as camera descends)
+  if (frameIndex === toFrame && (phase === 'panning' || phase === 'entering')) {
+    return tracking;
   }
 
   return RESTING_Z;
@@ -91,6 +97,10 @@ function GalleryScene({
     }))
   );
 
+  // Debug: throttled logging
+  const debugTimerRef = useRef(0);
+  const lastPhaseRef = useRef<TransitionPhase>('immersed');
+
   useEffect(() => {
     transitionRef.current.onPhaseChange = (phase: TransitionPhase) => {
       onPhaseChange?.(phase);
@@ -119,6 +129,7 @@ function GalleryScene({
 
       cameraDirectorRef.current = new CameraDirector(FRAMES[0], FRAMES[1]);
       transitionRef.current.startTransition(1);
+      console.log('[FrameGallery] Transition started: frame 0 → frame 1');
     }, 3000);
     return () => clearTimeout(timer);
   }, [sceneManagers]);
@@ -136,8 +147,7 @@ function GalleryScene({
       camera.position.set(fp.x, fp.y, IMMERSED_Z);
     } else if (cd) {
       const animPhase = phase as 'exiting' | 'overview' | 'panning' | 'entering';
-      const globalT = CameraDirector.phaseToGlobal(animPhase, progress);
-      const { position } = cd.evaluate(globalT);
+      const { position } = cd.evaluate(animPhase, progress);
       camera.position.copy(position);
     }
 
@@ -149,6 +159,31 @@ function GalleryScene({
     for (let i = 0; i < FRAMES.length; i++) {
       contentZRefs.current[i].current = computeContentZ(
         i, phase, fromFrame, toFrame, cameraZ
+      );
+    }
+
+    // === Debug logging ===
+    // Log on phase change
+    if (phase !== lastPhaseRef.current) {
+      console.log(
+        `[FrameGallery] Phase: ${lastPhaseRef.current} → ${phase} | ` +
+        `camZ=${cameraZ.toFixed(2)} | ` +
+        `v0_Z=${contentZRefs.current[0].current.toFixed(2)} | ` +
+        `v1_Z=${contentZRefs.current[1].current.toFixed(2)}`
+      );
+      lastPhaseRef.current = phase;
+    }
+
+    // Log every 0.5s during transition
+    debugTimerRef.current += delta;
+    if (phase !== 'immersed' && debugTimerRef.current > 0.5) {
+      debugTimerRef.current = 0;
+      console.log(
+        `[FrameGallery] ${phase} p=${progress.toFixed(3)} | ` +
+        `camZ=${cameraZ.toFixed(2)} | ` +
+        `v0_Z=${contentZRefs.current[0].current.toFixed(2)} | ` +
+        `v1_Z=${contentZRefs.current[1].current.toFixed(2)} | ` +
+        `wallVisible=${cameraZ > 0 ? 'YES' : 'NO'}`
       );
     }
   });
