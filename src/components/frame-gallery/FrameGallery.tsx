@@ -4,7 +4,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Suspense, useEffect, useRef, useMemo, useCallback, useState } from 'react';
 import * as THREE from 'three';
 import WallScene from './WallScene';
-import { CameraDirector } from './CameraDirector';
+import { CameraDirector, IMMERSED_Z } from './CameraDirector';
 import { TransitionController } from './TransitionController';
 import { FrameSceneManager } from './SceneManager';
 import type { FrameConfig, TransitionPhase } from './types';
@@ -53,9 +53,13 @@ function GalleryScene({
   const transitionRef = useRef(new TransitionController(0));
   const cameraDirectorRef = useRef<CameraDirector | null>(null);
 
-  // Use ref for per-frame blend tracking, only setState when meaningful change
+  // Per-frame blend tracking
   const blendFactorsRef = useRef<number[]>(FRAMES.map(() => 0));
   const [blendFactors, setBlendFactors] = useState<number[]>(FRAMES.map(() => 0));
+
+  // Per-frame content visibility tracking
+  const contentVisibleRef = useRef<boolean[]>([true, false]);
+  const [contentVisible, setContentVisible] = useState<boolean[]>([true, false]);
 
   useEffect(() => {
     transitionRef.current.onPhaseChange = (phase: TransitionPhase) => {
@@ -63,16 +67,16 @@ function GalleryScene({
     };
   }, [onPhaseChange]);
 
-  // Start first video (immersed in frame 0)
+  // Start first video (immersed in frame 0, behind wall)
   useEffect(() => {
     sceneManagers[0].play();
     sceneManagers[0].blendFactor = 1;
     blendFactorsRef.current = [1, 0];
     setBlendFactors([1, 0]);
 
-    // Camera very close to frame A — hexagon fills viewport
+    // Camera behind wall, content fills viewport
     const posA = FRAMES[0].wallPosition;
-    camera.position.set(posA.x, posA.y, 0.5);
+    camera.position.set(posA.x, posA.y, IMMERSED_Z);
     camera.lookAt(posA.x, posA.y, 0);
 
     return () => {
@@ -104,21 +108,47 @@ function GalleryScene({
 
     // Batch blend factor updates — only when changed
     const newBlends = FRAMES.map((_, i) => sceneManagers[i].blendFactor);
-    const changed = newBlends.some(
+    const blendsChanged = newBlends.some(
       (b, i) => Math.abs(b - blendFactorsRef.current[i]) > 0.01
     );
-    if (changed) {
+    if (blendsChanged) {
       blendFactorsRef.current = [...newBlends];
       setBlendFactors([...newBlends]);
     }
 
-    // Animate camera along spline
-    if (cd && phase !== 'immersed') {
+    // Camera management
+    if (phase === 'immersed') {
+      // Clamp camera to immersed position behind wall
+      const fp = FRAMES[fromFrame].wallPosition;
+      camera.position.set(fp.x, fp.y, IMMERSED_Z);
+      camera.lookAt(fp.x, fp.y, 0);
+    } else if (cd) {
+      // Animate camera along spline (crosses Z=0 wall plane)
       const animPhase = phase as 'exiting' | 'overview' | 'panning' | 'entering';
       const globalT = CameraDirector.phaseToGlobal(animPhase, progress);
       const { position, lookAt } = cd.evaluate(globalT);
       camera.position.copy(position);
       camera.lookAt(lookAt);
+    }
+
+    // Content visibility: hide inactive frames when camera is behind wall
+    const cameraZ = camera.position.z;
+    let newVisible: boolean[];
+    if (cameraZ >= 0) {
+      // In front of wall — all content visible (wall hexagonal holes mask it)
+      newVisible = FRAMES.map(() => true);
+    } else {
+      // Behind wall — only active frame's content visible
+      const activeIdx = phase === 'entering' ? toFrame : fromFrame;
+      newVisible = FRAMES.map((_, i) => i === activeIdx);
+    }
+
+    const visChanged = newVisible.some(
+      (v, i) => v !== contentVisibleRef.current[i]
+    );
+    if (visChanged) {
+      contentVisibleRef.current = newVisible;
+      setContentVisible([...newVisible]);
     }
   });
 
@@ -128,8 +158,9 @@ function GalleryScene({
         videoTexture: mgr.videoTexture as THREE.Texture,
         staticTexture: mgr.staticTexture as THREE.Texture,
         blendFactor: blendFactors[i],
+        contentVisible: contentVisible[i],
       })),
-    [sceneManagers, blendFactors]
+    [sceneManagers, blendFactors, contentVisible]
   );
 
   return (
@@ -176,7 +207,12 @@ export default function FrameGallery() {
             alpha: false,
             powerPreference: 'high-performance',
           }}
-          camera={{ position: [-3.5, 0, 0.5], fov: 50, near: 0.01, far: 100 }}
+          camera={{
+            position: [FRAMES[0].wallPosition.x, 0, IMMERSED_Z],
+            fov: 50,
+            near: 0.01,
+            far: 100,
+          }}
           dpr={[1, 1.5]}
           style={{ width: '100%', height: '100%' }}
           frameloop="always"

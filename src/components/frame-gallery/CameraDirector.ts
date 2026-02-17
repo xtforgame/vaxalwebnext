@@ -9,14 +9,30 @@ function easeInOutCubic(t: number): number {
 }
 
 /**
+ * Camera Z position when immersed.
+ *
+ * Content plane (10×5.625) at Z=-0.5. To fill the viewport with FOV=50°:
+ *   distance = CONTENT_HEIGHT / (2 * tan(FOV/2))
+ *            = 5.625 / (2 * tan(25°)) ≈ 6.03
+ *   camera Z = -0.5 - 6.03 ≈ -6.5
+ */
+export const IMMERSED_Z = -6.5;
+
+/**
  * CameraDirector builds a smooth spline path for the camera to travel
- * from close-up on frame A → pull out → overview → pan → push into frame B.
+ * from close-up on frame A → pull out through wall → overview → pan →
+ * push through wall into frame B.
  *
  * Coordinate system:
- *   Wall at Z = 0.
- *   Camera in front of wall at Z > 0.
- *   Immersed = very close (Z ≈ 0.5), hexagon fills viewport.
- *   Overview = pulled back (Z ≈ 9).
+ *   Wall at Z = 0 (FrontSide — invisible from behind).
+ *   Content planes at Z = -0.5 (behind wall).
+ *   Camera immersed at Z ≈ -6.5 (behind wall, content fills viewport).
+ *   Camera overview at Z ≈ 14 (in front of wall, both frames visible).
+ *
+ * The camera physically crosses Z=0 during exiting and entering phases.
+ * FrontSide rendering on the wall means:
+ *   Z < 0 → wall invisible → full-screen video content
+ *   Z > 0 → wall visible → hex holes clip content
  */
 export class CameraDirector {
   private positionCurve: THREE.CatmullRomCurve3;
@@ -28,13 +44,13 @@ export class CameraDirector {
     const midX = (a.x + b.x) / 2;
     const midY = (a.y + b.y) / 2;
 
-    // Camera position waypoints
+    // Camera position waypoints — crosses Z=0 wall plane
     const posPoints = [
-      new THREE.Vector3(a.x, a.y, 0.5),         // P0: immersed in A (very close)
-      new THREE.Vector3(a.x, a.y + 0.3, 4.5),   // P1: pulling back from A
-      new THREE.Vector3(midX, midY + 0.2, 9.0),  // P2: overview (centered, far)
-      new THREE.Vector3(b.x, b.y + 0.3, 4.5),   // P3: approaching B
-      new THREE.Vector3(b.x, b.y, 0.5),          // P4: immersed in B
+      new THREE.Vector3(a.x, a.y, IMMERSED_Z),          // P0: immersed in A (behind wall)
+      new THREE.Vector3(a.x, a.y + 0.3, 3.0),           // P1: pulled out past wall
+      new THREE.Vector3(midX, midY + 0.2, 14.0),        // P2: overview (both frames visible)
+      new THREE.Vector3(b.x, b.y + 0.3, 3.0),           // P3: approaching B from front
+      new THREE.Vector3(b.x, b.y, IMMERSED_Z),          // P4: immersed in B (behind wall)
     ];
 
     this.positionCurve = new THREE.CatmullRomCurve3(
@@ -44,13 +60,13 @@ export class CameraDirector {
       0.35
     );
 
-    // LookAt target waypoints — always looking at the wall surface
+    // LookAt target waypoints — always toward the wall/content
     const lookPoints = [
-      new THREE.Vector3(a.x, a.y, 0),    // look at A center
+      new THREE.Vector3(a.x, a.y, 0),    // look at wall/content A
       new THREE.Vector3(a.x, a.y, 0),    // still at A
       new THREE.Vector3(midX, midY, 0),   // look at wall center
       new THREE.Vector3(b.x, b.y, 0),    // look at B
-      new THREE.Vector3(b.x, b.y, 0),    // look at B center
+      new THREE.Vector3(b.x, b.y, 0),    // look at wall/content B
     ];
 
     this.lookAtCurve = new THREE.CatmullRomCurve3(

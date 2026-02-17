@@ -3,85 +3,55 @@
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { createHexagonShape, createFrameGeometry } from './FrameShapeUtils';
+import { createFrameGeometry } from './FrameShapeUtils';
+import { CrossfadeShaderMaterial } from './CrossfadeMaterial';
 import type { FrameConfig } from './types';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Crossfade = 'crossfadeShaderMaterial' as any;
+// Side-effect: registers the JSX element via extend()
+void CrossfadeShaderMaterial;
 
 interface PortalFrameProps {
   config: FrameConfig;
   videoTexture: THREE.Texture;
   staticTexture: THREE.Texture;
   blendFactor: number; // 0=static, 1=video
+  contentVisible: boolean;
 }
+
+// Content plane: 16:9 aspect, large enough to fill viewport at immersed Z=-6.5
+const CONTENT_WIDTH = 10;
+const CONTENT_HEIGHT = CONTENT_WIDTH * (9 / 16); // 5.625
 
 /**
  * PortalFrame renders:
- * 1. A hexagonal content surface (video/static texture)
- * 2. The physical frame border (ring extrusion)
+ * 1. A large rectangular content plane BEHIND the wall (crossfade shader)
+ * 2. The physical frame border (ring extrusion) at the wall surface
  *
- * When the camera is very close, the hex fills the viewport → immersive.
- * When pulled back, the frame border and wall become visible.
+ * The wall (in WallScene) has hexagonal holes that physically mask the content.
+ * Camera behind wall (Z<0) → wall invisible (FrontSide) → full-screen content.
+ * Camera in front of wall (Z>0) → wall visible → hex clipping appears.
  */
 export default function PortalFrame({
   config,
   videoTexture,
   staticTexture,
   blendFactor,
+  contentVisible,
 }: PortalFrameProps) {
-  const contentRef = useRef<THREE.Mesh>(null);
+  const materialRef = useRef<THREE.ShaderMaterial>(null);
   const innerRadius = config.radius - config.borderWidth;
 
-  // Hexagonal content surface — the "screen" showing video/image
-  const contentGeo = useMemo(() => {
-    const shape = createHexagonShape(innerRadius);
-    const geo = new THREE.ShapeGeometry(shape);
-    // Compute UVs to map 16:9 video into hexagon
-    // Center the video in the hexagon, clamping to show the widest portion
-    const pos = geo.attributes.position;
-    const uvs = new Float32Array(pos.count * 2);
-    for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i);
-      const y = pos.getY(i);
-      // Map hexagon coords to 0..1 UV space
-      // hexagon width = 2*innerR, height = 2*innerR*sin(60°) = innerR*√3
-      const hexWidth = innerRadius * 2;
-      const hexHeight = innerRadius * Math.sqrt(3);
-      // For 16:9 video, we want to fill the hexagon width
-      // and center vertically
-      const videoAspect = 16 / 9;
-      const hexAspect = hexWidth / hexHeight;
-
-      let u: number, v: number;
-      if (hexAspect > videoAspect) {
-        // Hex is wider than video — fit by width, crop top/bottom
-        u = (x / hexWidth) + 0.5;
-        v = (y / (hexWidth / videoAspect)) + 0.5;
-      } else {
-        // Hex is taller — fit by height, crop left/right
-        u = (x / (hexHeight * videoAspect)) + 0.5;
-        v = (y / hexHeight) + 0.5;
-      }
-      uvs[i * 2] = u;
-      uvs[i * 2 + 1] = v;
-    }
-    geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-    return geo;
-  }, [innerRadius]);
-
-  // Frame border geometry (extruded ring)
   const frameGeo = useMemo(
     () => createFrameGeometry(config.radius, innerRadius, config.frameDepth),
     [config.radius, innerRadius, config.frameDepth]
   );
 
-  const activeTexture = blendFactor > 0.5 ? videoTexture : staticTexture;
-
+  // Update blend uniform every frame for smooth crossfade
   useFrame(() => {
-    if (contentRef.current) {
-      const mat = contentRef.current.material as THREE.MeshBasicMaterial;
-      if (mat.map !== activeTexture) {
-        mat.map = activeTexture;
-        mat.needsUpdate = true;
-      }
+    if (materialRef.current) {
+      materialRef.current.uniforms.uBlend.value = blendFactor;
     }
   });
 
@@ -89,20 +59,21 @@ export default function PortalFrame({
 
   return (
     <group position={[pos.x, pos.y, pos.z]}>
-      {/* Content surface — hexagonal "screen" */}
-      <mesh
-        ref={contentRef}
-        geometry={contentGeo}
-        renderOrder={1}
-      >
-        <meshBasicMaterial
-          map={activeTexture}
-          side={THREE.DoubleSide}
+      {/* Content surface — large rectangle BEHIND the wall at Z=-0.5 */}
+      <mesh position={[0, 0, -0.5]} renderOrder={0} visible={contentVisible}>
+        <planeGeometry args={[CONTENT_WIDTH, CONTENT_HEIGHT]} />
+        <Crossfade
+          ref={materialRef}
+          key={CrossfadeShaderMaterial.key}
+          uTexA={staticTexture}
+          uTexB={videoTexture}
+          uBlend={blendFactor}
           toneMapped={false}
+          side={THREE.DoubleSide}
         />
       </mesh>
 
-      {/* Frame border */}
+      {/* Frame border — at wall surface */}
       <mesh geometry={frameGeo} renderOrder={2}>
         <meshStandardMaterial
           color="#2a2a3e"

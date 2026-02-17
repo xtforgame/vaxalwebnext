@@ -54,6 +54,42 @@ export function createHexagonRingShape(
 }
 
 /**
+ * Create a wall geometry (large rectangle) with hexagonal holes at each frame position.
+ * The holes use innerRadius so the frame border ring covers the gap to outerRadius.
+ */
+export function createWallWithHoles(
+  wallWidth: number,
+  wallHeight: number,
+  holeConfigs: { position: THREE.Vector3; innerRadius: number }[]
+): THREE.ShapeGeometry {
+  const hw = wallWidth / 2;
+  const hh = wallHeight / 2;
+
+  const wallShape = new THREE.Shape();
+  wallShape.moveTo(-hw, -hh);
+  wallShape.lineTo(hw, -hh);
+  wallShape.lineTo(hw, hh);
+  wallShape.lineTo(-hw, hh);
+  wallShape.closePath();
+
+  for (const { position, innerRadius } of holeConfigs) {
+    const hole = new THREE.Path();
+    // Wind in reverse (clockwise) for proper hole subtraction
+    for (let i = 5; i >= 0; i--) {
+      const angle = (i * Math.PI) / 3;
+      const x = position.x + innerRadius * Math.cos(angle);
+      const y = position.y + innerRadius * Math.sin(angle);
+      if (i === 5) hole.moveTo(x, y);
+      else hole.lineTo(x, y);
+    }
+    hole.closePath();
+    wallShape.holes.push(hole);
+  }
+
+  return new THREE.ShapeGeometry(wallShape);
+}
+
+/**
  * Create an extruded hexagonal frame geometry (ring with depth).
  */
 export function createFrameGeometry(
