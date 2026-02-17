@@ -91,35 +91,53 @@ const trailFrag = /* glsl */ `
   varying vec2 vUv;
 
   void main() {
-    if (vUv.x > uProgress + 0.003) discard;
-
-    // r = radial distance from center line (0 = center, 1 = edge)
+    // r = radial distance from center (0 = center, 1 = edge)
     float r = abs(vUv.y - 0.5) * 2.0;
 
-    // d = distance behind the head along the trail
-    float d = max(0.0, uProgress - vUv.x);
+    // d = signed distance from head (positive = behind, negative = ahead)
+    float d = uProgress - vUv.x;
 
-    // === Inverse-distance soft glow (ref: .012 * 0.18 / dist) ===
-    // Combined radial × longitudinal falloff
-    float glow = 0.003 / ((r * 0.4 + 0.015) * (d * 1.8 + 0.06));
+    // Aspect-ratio scaling: trail ~14 units long, ribbon ~2.4 wide
+    // UV.x=1 ≈ 14 units, r=1 ≈ 1.2 units → scale factor ≈ 12
+    float dScaled = d * 12.0;
+
+    // 2D distance from head point (for circular head glow)
+    float headDist = length(vec2(dScaled, r));
+
+    // Round discard: behind head always renders, ahead uses circular cutoff
+    if (d < 0.0) {
+      float aheadDist = length(vec2((-d) * 12.0, r));
+      if (aheadDist > 0.6) discard;
+    }
+
+    float dBehind = max(0.0, d);
+
+    // === Trail glow (ref: .012 * 0.18 / dist) ===
+    // Slow longitudinal decay for long visible tail
+    float glow = 0.004 / ((r * 0.25 + 0.02) * (dBehind * 0.5 + 0.06));
     glow = min(glow, 1.5);
 
-    // === Hard bright core (ref: smoothstep(0.03, 0.004, dist)) ===
-    float core = smoothstep(0.06, 0.008, r) * smoothstep(0.03, 0.002, d);
+    // === Hard core line ===
+    float core = smoothstep(0.06, 0.008, r) * smoothstep(0.03, 0.002, dBehind);
+
+    // === Circular head glow (ref: smoothstep(0.03, 0.004, dist)) ===
+    float headGlow = smoothstep(0.5, 0.03, headDist);
+    float headSoft = 0.015 / (headDist + 0.04);
+    headSoft = min(headSoft, 1.0);
 
     // Subtle energy pulse
     float pulse = 1.0 + 0.05 * sin(vUv.x * 60.0 - uTime * 4.0);
 
-    // Color composition: white core → light blue glow → deep blue outer
+    // Color: white core/head → light blue glow → blue outer
     vec3 white     = vec3(1.0);
     vec3 lightBlue = vec3(0.45, 0.75, 1.0);
     vec3 blue      = vec3(0.15, 0.4, 0.9);
 
-    vec3 color = white * core
-               + lightBlue * glow * 0.5 * pulse
-               + blue * glow * 0.15;
+    vec3 color = white * (core + headGlow * 0.7)
+               + lightBlue * (glow * 0.5 + headSoft * 0.3) * pulse
+               + blue * glow * 0.2;
 
-    float alpha = core + glow * 0.4;
+    float alpha = core + headGlow * 0.8 + glow * 0.4 + headSoft * 0.2;
 
     // Fade to zero at ribbon edges
     alpha *= smoothstep(1.0, 0.5, r);
