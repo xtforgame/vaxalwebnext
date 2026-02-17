@@ -1,4 +1,4 @@
-# Frame Gallery Transition — 技術設計書 v3
+# Frame Gallery Transition — 技術設計書 v4
 
 ## 核心概念：移動的風景畫
 
@@ -30,7 +30,8 @@ Video plane 放在 Z = -0.1（不是 0）避免跟牆面 z-fighting。
 
 **攝影機永遠面向 -Z，全程不旋轉。**
 
-攝影機的 lookAt 永遠指向 Z = 0（牆面），方向永遠是 -Z。
+使用 `camera.rotation.set(0, 0, 0)` 每幀強制設定，不使用 `lookAt()`。
+（`lookAt()` 在 camera 穿越 Z=0 時會造成 180° 翻轉）
 只有位置 (x, y, z) 會改變，朝向不變。
 
 ---
@@ -204,8 +205,8 @@ Camera 在 Z = +12 時：
 ```
 可見高度 = 2 × 12 × tan(25°) = 11.2
 可見寬度 = 11.2 × 16/9 ≈ 19.9
-兩個畫框間距: 7 (x=±3.5)
-畫框跨度: 約 12 → 可見寬度 19.9 > 12 ✓
+兩個畫框間距: 11 (x=±5.5)
+畫框跨度: 約 16.6 → 可見寬度 19.9 > 16.6 ✓
 ```
 
 ### 退場移動量
@@ -215,12 +216,9 @@ Camera 等速移動：Z=-6 到 Z=+5.9（≈+6）。
 
 ### Video plane 重疊檢查
 
-V1 (x=-3.5, width=10): x 範圍 -8.5 ~ +1.5
-V2 (x=+3.5, width=10): x 範圍 -1.5 ~ +8.5
-重疊區間: x = -1.5 ~ +1.5（3 個單位）
-
-但這個區間被牆面的實心部分覆蓋（兩個六角洞之間是實心牆），
-從總覽位置看不到重疊區域。✓
+V1 (x=-5.5, width=10): x 範圍 -10.5 ~ +0.5
+V2 (x=+5.5, width=10): x 範圍 +0.5 ~ +10.5
+重疊: 無 ✓
 
 ---
 
@@ -229,23 +227,34 @@ V2 (x=+3.5, width=10): x 範圍 -1.5 ~ +8.5
 Camera 永遠面向 -Z，只有位置 (x, y, z) 變化：
 
 ```
-路徑點：
-P0: (-3.5, 0, -6)    ← 沉浸 V1
-P1: (-3.5, 0, +6)    ← 退場完成
-P2: (0, 0.2, +12)    ← 總覽
-P3: (+3.5, 0, +6)    ← 準備進場 V2
-P4: (+3.5, 0, -6)    ← 沉浸 V2
+路徑點（CatmullRomCurve3, tension=0.35）：
+P0: (-5.5, 0, -6)      ← 沉浸 V1
+P1: (-5.5, 0.3, +6)    ← 拉出牆面
+P2: (0, 0.2, +12)      ← 總覽
+P3: (+5.5, 0.3, +6)    ← 靠近 V2
+P4: (+5.5, 0, -6)      ← 沉浸 V2
 ```
 
-P0→P1：camera 和 V1 等速移動（退場）
-P1→P2：camera 獨立拉遠（總覽）
-P2→P3：camera 水平平移（橫移到 V2）
-P3→P4：camera 和 V2 等速移動（進場）
+使用 **單一全域 `easeInOutCubic`** 控制整條曲線的進度。
+整段轉場是一個連續的平滑運動，不會在階段邊界停頓。
+
+P0→P4 為一條平滑 CatmullRom 曲線，camera 從頭到尾只有一次加速→勻速→減速。
 
 **Camera Z 全程路線：-6 → +6 → +12 → +6 → -6**
-**Camera 面向：永遠 -Z，零旋轉**
+**Camera 面向：永遠 -Z，`camera.rotation.set(0,0,0)`**
 
-LookAt 點全部在 Z=0（牆面），只有 x 隨相機移動。
+### 階段時間分配
+
+| 階段 | 持續時間 | 全域進度範圍 |
+|------|---------|------------|
+| exiting | 2.5s | 0.000 → 0.294 |
+| overview | 1.5s | 0.294 → 0.471 |
+| panning | 2.0s | 0.471 → 0.706 |
+| entering | 2.5s | 0.706 → 1.000 |
+| **總計** | **8.5s** | |
+
+`phaseToGlobal` 將各階段 progress 映射為時間比例的全域進度，
+再經過 `easeInOutCubic` → `CatmullRomCurve3.getPointAt(t)` 得到 camera 位置。
 
 ---
 
@@ -253,67 +262,64 @@ LookAt 點全部在 Z=0（牆面），只有 x 隨相機移動。
 
 Video plane 的 Z 位置不是固定的，在轉場時會改變：
 
+統一追蹤公式：`tracking = Math.min(cameraZ - 6, -0.1)`
+
+此公式讓 video plane 維持在 camera 前方 6 單位，並自然夾在 -0.1（牆面）。
+camera 離牆面越遠時 plane 自然停在牆面；camera 靠近時 plane 自然跟上。
+
 ### V1 的 Z 位置
 | 階段 | V1 Z 位置 | 計算方式 |
 |------|----------|---------|
-| 沉浸 V1 | -12 | camera.z - 6 |
-| 退場中 | camera.z - 6 | 與 camera 等速移動 |
-| 退場後（總覽/平移/進場） | -0.1 | 固定在牆面 |
+| 沉浸 V1 | -12 | camera.z - 6（追蹤） |
+| 退場 + 總覽 + 平移 | min(camera.z - 6, -0.1) | 追蹤→自然停牆 |
+| 進場 + 沉浸 V2 | -0.1 | 固定在牆面 |
 
 ### V2 的 Z 位置
 | 階段 | V2 Z 位置 | 計算方式 |
 |------|----------|---------|
-| 退場前（沉浸/退場/總覽/平移） | -0.1 | 固定在牆面 |
-| 進場中 | camera.z - 6 | 與 camera 等速移動 |
-| 沉浸 V2 | -12 | camera.z - 6 |
+| 沉浸 V1 + 退場 + 總覽 | -0.1 | 固定在牆面 |
+| 平移 + 進場 | min(camera.z - 6, -0.1) | 自然脫牆→追蹤 |
+| 沉浸 V2 | -12 | camera.z - 6（追蹤） |
 
-簡化公式：
+**注意：平移階段兩者都用追蹤公式。** 但此時 camera Z ≈ +12，
+`min(12-6, -0.1) = -0.1`，兩者實際都在牆面，沒有衝突。
+
+### Content Z 更新機制
+
+使用 **ref-based 更新**（非 React state），避免 1-frame 延遲造成黑閃：
+
 ```
-退場中: V1_Z = camera.z - 6
-進場中: V2_Z = camera.z - 6
-其他時候: 各自在 -0.1（貼牆）或 -12（沉浸）
+FrameGallery (useFrame)                    PortalFrame (useFrame)
+ ├─ 計算 cameraZ                           ├─ 讀取 contentZRef.current
+ ├─ computeContentZ()                      └─ mesh.position.z = contentZRef.current
+ └─ 寫入 contentZRef.current
 ```
 
 ---
 
-## 需要修改的檔案
+## 實作現況
 
-### 1. CameraDirector.ts
-- IMMERSED_Z = -6（camera 在牆後面）
-- 路徑：全部 lookAt Z=0，camera Z 從 -6 到 +12 到 -6
-- 不需要 quaternion，純粹 camera.lookAt(x, y, 0)
-- 退場/進場段落需要與 video plane 同步
+### 檔案清單
 
-### 2. PortalFrame.tsx
-- content plane Z **不再固定**，改為接收動態 `contentZ` prop
-- 尺寸維持 10×5.625
-- FrontSide 渲染（面向 +Z，camera 從 +Z 看進六角洞）
-- 移除 `contentVisible` prop（不需要了）
+| 檔案 | 職責 |
+|------|------|
+| `CameraDirector.ts` | CatmullRomCurve3 路徑 + 全域 easeInOutCubic + phaseToGlobal 映射 |
+| `PortalFrame.tsx` | 單一框：video texture 矩形平面（Z 由 ref 更新）+ 六角邊框 |
+| `WallScene.tsx` | 牆面（打洞 ShapeGeometry, FrontSide）+ 所有 PortalFrame |
+| `FrameGallery.tsx` | 場景編排：camera 控制、computeContentZ、contentZRef 更新 |
+| `TransitionController.ts` | 狀態機：immersed → exiting → overview → panning → entering → immersed |
+| `SceneManager.ts` | 影片 HTMLVideoElement + VideoTexture 管理 |
+| `FrameShapeUtils.ts` | 六角 Shape 建構、牆面打洞幾何、ExtrudeGeometry 邊框 |
+| `CrossfadeMaterial.tsx` | Crossfade shader（目前未使用，保留備用） |
+| `types.ts` | FrameConfig, TransitionPhase, TransitionState 型別 |
 
-### 3. WallScene.tsx
-- 牆面永遠不透明，不需要 opacity
-- 移除 `wallOpacity` prop
-- 傳遞 `contentZ` 給 PortalFrame
+### 已移除的機制
 
-### 4. FrameGallery.tsx
-- 計算每個 video plane 的動態 Z（根據轉場階段和 camera Z）
-- Camera 路徑使用 CatmullRomCurve3
-- 移除 contentVisible 和 wallOpacity 邏輯
-
-### 5. CrossfadeMaterial.tsx
-- 不變
-
-### 6. FrameShapeUtils.ts
-- 不變
-
----
-
-## 實作順序
-
-| 步驟 | 檔案 | 操作 |
-|------|------|------|
-| 1 | CameraDirector.ts | 重寫路徑，IMMERSED_Z=-6 |
-| 2 | PortalFrame.tsx | 動態 contentZ prop |
-| 3 | WallScene.tsx | 傳遞 contentZ，移除 opacity |
-| 4 | FrameGallery.tsx | 動態計算 video Z，移除 visibility/opacity 邏輯 |
-| 5 | 驗證 build + 測試 | — |
+| 機制 | 移除原因 |
+|------|---------|
+| `contentVisible` prop | 不需要。牆面 FrontSide + camera 位置自然控制可見性 |
+| `wallOpacity` prop | 不需要。牆面永遠不透明 |
+| `lookAt()` / lookAt curve | camera 穿越 Z=0 時造成 180° 翻轉。改用 `rotation.set(0,0,0)` |
+| per-phase easing | 每段 start/stop 造成三段斷裂感。改用單一全域 easing |
+| CrossfadeMaterial (blendFactor) | 暫時移除。改用 `meshBasicMaterial` + video texture |
+| React state for contentZ | 1-frame 延遲造成黑閃。改用 ref-based 同步更新 |
