@@ -147,7 +147,8 @@ function GalleryScene({
       camera.position.set(fp.x, fp.y, IMMERSED_Z);
     } else if (cd) {
       const animPhase = phase as 'exiting' | 'overview' | 'panning' | 'entering';
-      const { position } = cd.evaluate(animPhase, progress);
+      const globalT = CameraDirector.phaseToGlobal(animPhase, progress);
+      const { position } = cd.evaluate(globalT);
       camera.position.copy(position);
     }
 
