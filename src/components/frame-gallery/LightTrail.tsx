@@ -2,9 +2,8 @@
 
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import type { FrameConfig } from './types';
-import { easeInOutCubic } from './CameraDirector';
 
 const TRAIL_Z = 0.05;
 const RIBBON_HALF_WIDTH = 1.2;
@@ -194,6 +193,21 @@ export default function LightTrail({
     [trailCurve]
   );
 
+  // Precompute lookup: trail curve XY at uniform arc-length samples
+  // Used to project camera XY → trail parameter each frame
+  const trailLookup = useMemo(() => {
+    const N = 200;
+    const table: { t: number; x: number; y: number }[] = [];
+    for (let i = 0; i <= N; i++) {
+      const t = i / N;
+      const p = trailCurve.getPointAt(t);
+      table.push({ t, x: p.x, y: p.y });
+    }
+    return table;
+  }, [trailCurve]);
+
+  const { camera } = useThree();
+
   const hexInner = fromFrame.radius - fromFrame.borderWidth;
 
   const material = useMemo(
@@ -225,10 +239,22 @@ export default function LightTrail({
 
     elapsedRef.current += delta;
 
-    const rawProgress = progressRef.current;
-    const easedProgress = easeInOutCubic(Math.max(0, Math.min(1, rawProgress)));
+    // Project camera XY onto the trail curve to find matching parameter
+    const cx = camera.position.x;
+    const cy = camera.position.y;
+    let bestT = 0;
+    let bestDist = Infinity;
+    for (const s of trailLookup) {
+      const dx = s.x - cx;
+      const dy = s.y - cy;
+      const dist = dx * dx + dy * dy;
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestT = s.t;
+      }
+    }
 
-    material.uniforms.uProgress.value = easedProgress;
+    material.uniforms.uProgress.value = bestT;
     material.uniforms.uTime.value = elapsedRef.current;
   });
 
