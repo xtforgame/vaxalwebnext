@@ -77,13 +77,13 @@ const trailVert = /* glsl */ `
 `;
 
 /**
- * Fragment shader for light trail effect.
+ * Fragment shader — unified light trail.
  *
- * Key design choices:
- * - World-space hex masking prevents trail leaking into frame openings
- * - 2D distance from head point creates round leading edge
- * - Exponential core decay: white core fades fast → blue glow dominates tail
- * - exp() radial falloff gives wide, soft glow (vs 1/dist which drops too fast)
+ * Single continuous function from head to tail:
+ * - Core (thin white line) and glow (wide blue halo) both peak at head
+ *   and decay smoothly behind — no separate "head" vs "trail" systems.
+ * - Leading edge: soft smoothstep cutoff → naturally tapered point.
+ * - headBloom / trailPersist use max() for seamless handoff near head.
  */
 const trailFrag = /* glsl */ `
   uniform float uProgress;
@@ -99,50 +99,35 @@ const trailFrag = /* glsl */ `
     float d = uProgress - vUv.x;         // >0 behind head, <0 ahead
 
     // Early discard: well ahead of head
-    if (d < -0.05) discard;
+    if (d < -0.03) discard;
 
-    // === Hex frame masking (world-space distance) ===
+    // === Hex frame masking ===
     float distA = length(vWorldPos.xy - uFrameA);
     float distB = length(vWorldPos.xy - uFrameB);
     float hexFade = smoothstep(uHexInner, uHexInner + 0.5, min(distA, distB));
 
-    // === Round head shape (2D aspect-corrected distance) ===
-    // curve ~14 units, ribbon half-width 1.2 → aspect ≈ 12
-    float dScaled = d * 12.0;
-    float headDist = length(vec2(dScaled, r));
-
-    // Discard ahead fragments outside head radius
-    if (d < 0.0 && headDist > 0.5) discard;
+    // === Leading edge: soft taper ahead of head ===
+    float leading = smoothstep(-0.02, 0.003, d);
 
     float dBehind = max(0.0, d);
 
-    // === HEAD: bright round point ===
-    float headCore = smoothstep(0.25, 0.02, headDist);
-    float headGlow = 0.04 / (headDist + 0.04);
-    headGlow = min(headGlow, 1.0);
-    float headInfluence = 1.0 - smoothstep(0.0, 0.12, dBehind);
+    // === CORE: thin bright line, peaks at head, decays behind ===
+    float coreR = exp(-r * r * 600.0);     // tight Gaussian → thin line
+    float coreD = exp(-dBehind * 12.0);    // exponential tail decay
+    float core = coreR * coreD * leading;
 
-    // === TRAIL: elongated glow along path ===
-    // Trail is ONLY behind the head (d > 0). Ahead of head → only headCore/headGlow.
-    // smoothstep(-0.003, 0.01, d): 0 when d < -0.003, 1 when d > 0.01
-    float trailMask = smoothstep(-0.003, 0.01, d);
+    // === GLOW: unified halo from head through trail ===
+    float glowR = exp(-r * 3.0);           // soft radial spread
 
-    // Radial: exponential falloff (wide, soft)
-    float trailR = exp(-r * 3.0);
-    // Longitudinal: slow inverse-distance decay for long visible tail
-    float trailD = 1.0 / (dBehind * 2.0 + 0.25);
-    float trailGlow = trailR * trailD * 0.18 * trailMask;
-    trailGlow = min(trailGlow, 0.8);
+    // Two overlapping curves, take the brighter one at each point:
+    // headBloom: strong near head, drops fast → gives bright halo at tip
+    // trailPersist: weaker but slow 1/x decay → long visible tail
+    float headBloom    = exp(-dBehind * 20.0) * 0.5;
+    float trailPersist = 0.12 / (dBehind * 2.0 + 0.25);
+    float glowD = max(headBloom, trailPersist);
 
-    // Core line — decays fast behind head so tail is pure blue glow
-    float trailCore = smoothstep(0.03, 0.003, r);
-    trailCore *= exp(-dBehind * 15.0) * trailMask;
-    trailCore = min(trailCore, 1.0);
-
-    // === COMBINE head + trail ===
-    float core = max(trailCore, headCore * headInfluence);
-    float glow = trailGlow + headGlow * headInfluence * 0.25;
-    glow = min(glow, 1.0);
+    float glow = glowR * glowD * leading;
+    glow = min(glow, 0.8);
 
     // Energy pulse
     float pulse = 1.0 + 0.05 * sin(vUv.x * 50.0 - uTime * 5.0);
@@ -156,10 +141,10 @@ const trailFrag = /* glsl */ `
                + lightBlue * glow * pulse
                + blue * glow * 0.35;
 
-    float alpha = core * 0.85 + glow * 0.65;
+    float alpha = core * 0.9 + glow * 0.7;
 
     // Ribbon edge fade
-    alpha *= 1.0 - smoothstep(0.3, 1.0, r);
+    alpha *= 1.0 - smoothstep(0.35, 1.0, r);
     // Hex frame distance fade
     alpha *= hexFade;
 
