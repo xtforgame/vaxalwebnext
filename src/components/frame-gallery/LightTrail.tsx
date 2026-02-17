@@ -113,7 +113,7 @@ const trailFrag = /* glsl */ `
 
     // === CORE: thin bright line, peaks at head, decays behind ===
     float coreR = exp(-r * r * 600.0);     // tight Gaussian → thin line
-    float coreD = exp(-dBehind * 12.0);    // exponential tail decay
+    float coreD = exp(-dBehind * 8.0);     // exponential tail decay
     float core = coreR * coreD * leading;
 
     // === GLOW: unified halo from head through trail ===
@@ -123,7 +123,7 @@ const trailFrag = /* glsl */ `
     // headBloom: strong near head, drops fast → gives bright halo at tip
     // trailPersist: weaker but slow 1/x decay → long visible tail
     float headBloom    = exp(-dBehind * 20.0) * 0.5;
-    float trailPersist = 0.12 / (dBehind * 2.0 + 0.25);
+    float trailPersist = 0.15 / (dBehind * 1.2 + 0.25);
     float glowD = max(headBloom, trailPersist);
 
     float glow = glowR * glowD * leading;
