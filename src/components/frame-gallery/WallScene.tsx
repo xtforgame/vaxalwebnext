@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import PortalFrame from './PortalFrame';
+import LightTrail from './LightTrail';
 import { createWallWithHoles } from './FrameShapeUtils';
 import type { FrameConfig } from './types';
 
@@ -12,6 +13,8 @@ interface WallSceneProps {
     videoTexture: THREE.Texture;
     contentZRef: { current: number };
   }[];
+  trailProgressRef: { current: number };
+  trailVisibleRef: { current: boolean };
 }
 
 /**
@@ -19,7 +22,7 @@ interface WallSceneProps {
  * - A wall with hexagonal holes (FrontSide — invisible from behind)
  * - All portal frames (content behind wall + frame border on wall surface)
  */
-export default function WallScene({ frames, sceneTextures }: WallSceneProps) {
+export default function WallScene({ frames, sceneTextures, trailProgressRef, trailVisibleRef }: WallSceneProps) {
   const wallGeo = useMemo(() => {
     const holeConfigs = frames.map((f) => ({
       position: f.wallPosition,
@@ -44,6 +47,14 @@ export default function WallScene({ frames, sceneTextures }: WallSceneProps) {
           contentZRef={sceneTextures[i].contentZRef}
         />
       ))}
+
+      {/* Light trail connecting frames during transition */}
+      <LightTrail
+        fromFrame={frames[0]}
+        toFrame={frames[1]}
+        progressRef={trailProgressRef}
+        visibleRef={trailVisibleRef}
+      />
     </group>
   );
 }

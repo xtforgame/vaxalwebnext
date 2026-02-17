@@ -97,6 +97,10 @@ function GalleryScene({
     }))
   );
 
+  // Light trail refs — updated every frame, read by LightTrail component
+  const trailProgressRef = useRef(0);
+  const trailVisibleRef = useRef(false);
+
   // Debug: throttled logging
   const debugTimerRef = useRef(0);
   const lastPhaseRef = useRef<TransitionPhase>('immersed');
@@ -142,15 +146,20 @@ function GalleryScene({
     const { phase, progress, fromFrame, toFrame } = tc.state;
 
     // Camera management — always faces -Z, only position changes
+    let globalT = 0;
     if (phase === 'immersed') {
       const fp = FRAMES[fromFrame].wallPosition;
       camera.position.set(fp.x, fp.y, IMMERSED_Z);
     } else if (cd) {
       const animPhase = phase as 'exiting' | 'overview' | 'panning' | 'entering';
-      const globalT = CameraDirector.phaseToGlobal(animPhase, progress);
+      globalT = CameraDirector.phaseToGlobal(animPhase, progress);
       const { position } = cd.evaluate(globalT);
       camera.position.copy(position);
     }
+
+    // Update light trail refs
+    trailProgressRef.current = globalT;
+    trailVisibleRef.current = phase !== 'immersed';
 
     // Camera always faces -Z — no rotation ever
     camera.rotation.set(0, 0, 0);
@@ -203,7 +212,12 @@ function GalleryScene({
     <>
       <ambientLight intensity={0.6} />
       <pointLight position={[0, 5, 8]} intensity={1.0} />
-      <WallScene frames={FRAMES} sceneTextures={sceneTextures} />
+      <WallScene
+        frames={FRAMES}
+        sceneTextures={sceneTextures}
+        trailProgressRef={trailProgressRef}
+        trailVisibleRef={trailVisibleRef}
+      />
     </>
   );
 }
