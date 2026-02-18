@@ -7,7 +7,7 @@ const PHASE_DURATIONS: Record<TransitionPhase, number> = {
   immersed: Infinity, // stays until triggered
   exiting: 2.5,
   overview: 1.5,
-  panning: 2.0,
+  panning: 4.0,
   entering: 2.5,
 };
 

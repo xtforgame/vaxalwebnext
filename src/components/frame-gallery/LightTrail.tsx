@@ -4,54 +4,86 @@ import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { FrameConfig } from './types';
+import { PCB_WAYPOINTS, pcbClosestT } from './PcbPath';
 
 const TRAIL_Z = 0.05;
 const RIBBON_HALF_WIDTH = 1.2;
-const RIBBON_SEGMENTS = 200;
 
 /**
- * Build a flat ribbon geometry along a curve, lying on the wall.
- * UV.x = 0..1 along the curve (progress direction)
+ * Build a flat ribbon along a polyline with proper miter joints at corners.
+ * UV.x = 0..1 along the path (arc-length normalized)
  * UV.y = 0..1 across the ribbon width (0.5 = center line)
  */
-function createRibbonGeometry(
-  curve: THREE.CatmullRomCurve3,
+function createPolylineRibbon(
+  waypoints: THREE.Vector2[],
   halfWidth: number,
-  segments: number
+  z: number
 ): THREE.BufferGeometry {
+  const n = waypoints.length;
   const positions: number[] = [];
   const uvs: number[] = [];
   const indices: number[] = [];
 
-  for (let i = 0; i <= segments; i++) {
-    const t = i / segments;
-    const point = curve.getPointAt(t);
-    const tangent = curve.getTangentAt(t);
+  // Cumulative distances for UV.x
+  const cumDist: number[] = [0];
+  for (let i = 1; i < n; i++) {
+    cumDist.push(cumDist[i - 1] + waypoints[i].distanceTo(waypoints[i - 1]));
+  }
+  const totalLen = cumDist[n - 1];
 
-    // Perpendicular direction in the XY plane
-    const nx = -tangent.y;
-    const ny = tangent.x;
-    const len = Math.sqrt(nx * nx + ny * ny) || 1;
-    const nnx = nx / len;
-    const nny = ny / len;
+  // Segment normals (perpendicular, rotated 90° CCW from direction)
+  const segNormals: THREE.Vector2[] = [];
+  for (let i = 0; i < n - 1; i++) {
+    const dx = waypoints[i + 1].x - waypoints[i].x;
+    const dy = waypoints[i + 1].y - waypoints[i].y;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    segNormals.push(new THREE.Vector2(-dy / len, dx / len));
+  }
+
+  for (let i = 0; i < n; i++) {
+    const uX = totalLen > 0 ? cumDist[i] / totalLen : 0;
+    let nx: number, ny: number;
+
+    if (i === 0) {
+      // First point: use first segment's normal
+      nx = segNormals[0].x;
+      ny = segNormals[0].y;
+    } else if (i === n - 1) {
+      // Last point: use last segment's normal
+      nx = segNormals[n - 2].x;
+      ny = segNormals[n - 2].y;
+    } else {
+      // Interior point: miter joint
+      const n1 = segNormals[i - 1];
+      const n2 = segNormals[i];
+      const mx = n1.x + n2.x;
+      const my = n1.y + n2.y;
+      const mLen = Math.sqrt(mx * mx + my * my);
+      if (mLen < 0.001) {
+        // Degenerate (180° turn): fallback to first normal
+        nx = n1.x;
+        ny = n1.y;
+      } else {
+        // Scale by 1/cos(halfAngle) for correct miter width
+        const dot = (mx * n1.x + my * n1.y) / mLen;
+        const scale = dot > 0.01 ? 1 / dot : 1;
+        nx = (mx / mLen) * scale;
+        ny = (my / mLen) * scale;
+      }
+    }
+
+    const wx = waypoints[i].x;
+    const wy = waypoints[i].y;
 
     // +side vertex (UV.y = 0)
-    positions.push(
-      point.x + nnx * halfWidth,
-      point.y + nny * halfWidth,
-      point.z
-    );
-    uvs.push(t, 0.0);
+    positions.push(wx + nx * halfWidth, wy + ny * halfWidth, z);
+    uvs.push(uX, 0.0);
 
     // -side vertex (UV.y = 1)
-    positions.push(
-      point.x - nnx * halfWidth,
-      point.y - nny * halfWidth,
-      point.z
-    );
-    uvs.push(t, 1.0);
+    positions.push(wx - nx * halfWidth, wy - ny * halfWidth, z);
+    uvs.push(uX, 1.0);
 
-    if (i < segments) {
+    if (i < n - 1) {
       const base = i * 2;
       indices.push(base, base + 1, base + 2);
       indices.push(base + 1, base + 3, base + 2);
@@ -167,44 +199,11 @@ export default function LightTrail({
   const groupRef = useRef<THREE.Group>(null);
   const elapsedRef = useRef(0);
 
-  // Trail curve on wall — same XY waypoints as camera path
-  const trailCurve = useMemo(() => {
-    const a = fromFrame.wallPosition;
-    const b = toFrame.wallPosition;
-    const midX = (a.x + b.x) / 2;
-    const midY = (a.y + b.y) / 2;
-    return new THREE.CatmullRomCurve3(
-      [
-        new THREE.Vector3(a.x, a.y, TRAIL_Z),
-        new THREE.Vector3(a.x, a.y + 0.3, TRAIL_Z),
-        new THREE.Vector3(midX, midY + 0.2, TRAIL_Z),
-        new THREE.Vector3(b.x, b.y + 0.3, TRAIL_Z),
-        new THREE.Vector3(b.x, b.y, TRAIL_Z),
-      ],
-      false,
-      'catmullrom',
-      0.35
-    );
-  }, [fromFrame, toFrame]);
-
-  // Flat ribbon on the wall surface
+  // Polyline ribbon on the wall surface
   const ribbonGeo = useMemo(
-    () => createRibbonGeometry(trailCurve, RIBBON_HALF_WIDTH, RIBBON_SEGMENTS),
-    [trailCurve]
+    () => createPolylineRibbon(PCB_WAYPOINTS, RIBBON_HALF_WIDTH, TRAIL_Z),
+    []
   );
-
-  // Precompute lookup: trail curve XY at uniform arc-length samples
-  // Used to project camera XY → trail parameter each frame
-  const trailLookup = useMemo(() => {
-    const N = 200;
-    const table: { t: number; x: number; y: number }[] = [];
-    for (let i = 0; i <= N; i++) {
-      const t = i / N;
-      const p = trailCurve.getPointAt(t);
-      table.push({ t, x: p.x, y: p.y });
-    }
-    return table;
-  }, [trailCurve]);
 
   const { camera } = useThree();
 
@@ -239,20 +238,8 @@ export default function LightTrail({
 
     elapsedRef.current += delta;
 
-    // Project camera XY onto the trail curve to find matching parameter
-    const cx = camera.position.x;
-    const cy = camera.position.y;
-    let bestT = 0;
-    let bestDist = Infinity;
-    for (const s of trailLookup) {
-      const dx = s.x - cx;
-      const dy = s.y - cy;
-      const dist = dx * dx + dy * dy;
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestT = s.t;
-      }
-    }
+    // Exact projection of camera XY onto the PCB polyline
+    const bestT = pcbClosestT(camera.position.x, camera.position.y);
 
     material.uniforms.uProgress.value = bestT;
     material.uniforms.uTime.value = elapsedRef.current;

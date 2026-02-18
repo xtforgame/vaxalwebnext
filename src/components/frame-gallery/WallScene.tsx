@@ -28,7 +28,7 @@ export default function WallScene({ frames, sceneTextures, trailProgressRef, tra
       position: f.wallPosition,
       innerRadius: f.radius - f.borderWidth,
     }));
-    return createWallWithHoles(30, 15, holeConfigs);
+    return createWallWithHoles(35, 22, holeConfigs);
   }, [frames]);
 
   return (
