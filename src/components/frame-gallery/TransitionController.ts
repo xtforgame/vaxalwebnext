@@ -6,7 +6,7 @@ import type { TransitionPhase, TransitionState } from './types';
 const PHASE_DURATIONS: Record<TransitionPhase, number> = {
   immersed: Infinity, // stays until triggered
   exiting: 2.5,
-  overview: 1.5,
+  overview: 0.3,
   panning: 4.0,
   entering: 2.5,
 };
