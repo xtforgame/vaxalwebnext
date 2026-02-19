@@ -4,7 +4,8 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 import PortalFrame from './PortalFrame';
 import LightTrail from './LightTrail';
-import { createWallWithHoles } from './FrameShapeUtils';
+import { createFrameGeometry } from './FrameShapeUtils';
+import { createPuzzleShape } from './PuzzleShapeUtils';
 import type { FrameConfig } from './types';
 
 interface WallSceneProps {
@@ -18,43 +19,48 @@ interface WallSceneProps {
 }
 
 /**
- * WallScene renders:
- * - A wall with hexagonal holes (FrontSide — invisible from behind)
- * - All portal frames (content behind wall + frame border on wall surface)
+ * DIAGNOSTIC — incrementally testing each piece.
+ * Step 1 (confirmed OK): flat puzzle shape in white
+ * Step 2 (current):      new manually-triangulated ring in white
  */
 export default function WallScene({ frames, sceneTextures, trailProgressRef, trailVisibleRef }: WallSceneProps) {
-  const wallGeo = useMemo(() => {
-    const holeConfigs = frames.map((f) => ({
-      position: f.wallPosition,
-      innerRadius: f.radius - f.borderWidth,
-    }));
-    return createWallWithHoles(35, 22, holeConfigs);
-  }, [frames]);
+  const posA = frames[0].wallPosition;
+  const posB = frames[1].wallPosition;
+
+  // Step 1: flat puzzle shape (already confirmed clean)
+  const diagFlatGeo = useMemo(() => {
+    const shape = createPuzzleShape(2.55);
+    return new THREE.ShapeGeometry(shape, 24);
+  }, []);
+
+  // Step 2: NEW manually-triangulated ring (bypasses earcut)
+  const diagRingGeo = useMemo(() => {
+    return createFrameGeometry(2.8, 2.55, 0.3);
+  }, []);
 
   return (
     <group>
-      {/* Wall with hexagonal holes — at Z=0, FrontSide only */}
-      <mesh position={[0, 0, 0]} renderOrder={1}>
-        <primitive object={wallGeo} attach="geometry" />
-        <meshStandardMaterial color="#1a1a2e" side={THREE.FrontSide} />
+      {/* Step 1: flat puzzle shape — white (confirmed OK) */}
+      <mesh position={[posA.x, posA.y, 0]}>
+        <primitive object={diagFlatGeo} attach="geometry" />
+        <meshBasicMaterial color="white" side={THREE.DoubleSide} />
       </mesh>
 
-      {frames.map((frame, i) => (
-        <PortalFrame
-          key={frame.id}
-          config={frame}
-          videoTexture={sceneTextures[i].videoTexture}
-          contentZRef={sceneTextures[i].contentZRef}
-        />
-      ))}
+      {/* Step 3: ring with meshStandardMaterial (confirmed OK) */}
+      <mesh position={[posB.x, posB.y, 0]}>
+        <primitive object={diagRingGeo} attach="geometry" />
+        <meshStandardMaterial color="#8888ff" metalness={0.3} roughness={0.6} />
+      </mesh>
 
-      {/* Light trail connecting frames during transition */}
-      <LightTrail
-        fromFrame={frames[0]}
-        toFrame={frames[1]}
-        progressRef={trailProgressRef}
-        visibleRef={trailVisibleRef}
-      />
+      {/* Step 4: video content plane behind the ring */}
+      <mesh position={[posB.x, posB.y, -0.2]}>
+        <planeGeometry args={[10, 10 * (9 / 16)]} />
+        <meshBasicMaterial
+          map={sceneTextures[1].videoTexture}
+          toneMapped={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
     </group>
   );
 }
