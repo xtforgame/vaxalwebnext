@@ -7,17 +7,19 @@ import * as THREE from 'three';
  * Angles used: 0° (right), 270° (down), 315° (down-right diagonal).
  */
 export const PCB_WAYPOINTS: THREE.Vector2[] = [
-  new THREE.Vector2(-10, 6),
-  new THREE.Vector2(-7, 6), // right,  dx=3
-  new THREE.Vector2(-5, 4), // diag ↘, dx=2, dy=-2
-  new THREE.Vector2(-1, 4), // right,  dx=4
-  new THREE.Vector2(-1, 2), // down,   dy=-2
-  new THREE.Vector2(1, 0), // diag ↘, dx=2, dy=-2
-  new THREE.Vector2(1, -2), // down,   dy=-2
-  new THREE.Vector2(4, -2), // right,  dx=3
-  new THREE.Vector2(6, -4), // diag ↘, dx=2, dy=-2
-  new THREE.Vector2(8, -4), // right,  dx=2
-  new THREE.Vector2(10, -6), // diag ↘, dx=2, dy=-2
+  new THREE.Vector2(-10, 6),       // frame A center (hidden by mask)
+  new THREE.Vector2(-10, 4.75),    // drop down to avoid socket indent
+  new THREE.Vector2(-7, 4.75),     // right, dx=3
+  new THREE.Vector2(-5, 4),        // diag ↘, gentle slope
+  new THREE.Vector2(-1, 4),        // right, dx=4
+  new THREE.Vector2(-1, 2),        // down,  dy=-2
+  new THREE.Vector2(1, 0),         // diag ↘, dx=2, dy=-2
+  new THREE.Vector2(1, -2),        // down,  dy=-2
+  new THREE.Vector2(4, -2),        // right, dx=3
+  new THREE.Vector2(6, -4),        // diag ↘, dx=2, dy=-2
+  new THREE.Vector2(8, -4),        // right, dx=2
+  new THREE.Vector2(10, -4.75),    // approach frame B avoiding socket
+  new THREE.Vector2(10, -6),       // frame B center (hidden by mask)
 ];
 
 /** Cumulative arc-length at each waypoint (precomputed). */

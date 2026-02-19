@@ -207,7 +207,9 @@ export default function LightTrail({
 
   const { camera } = useThree();
 
-  const hexInner = fromFrame.radius - fromFrame.borderWidth;
+  // Puzzle shape is taller than wide (SVG aspect ~0.71).
+  // Use the narrower half-width so the trail starts at the puzzle edge.
+  const hexInner = (fromFrame.radius - fromFrame.borderWidth) * 0.71;
 
   const material = useMemo(
     () =>
