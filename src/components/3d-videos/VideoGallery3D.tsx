@@ -6,6 +6,7 @@ import { OrbitControls, useTexture } from '@react-three/drei';
 import { Suspense, useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import VideoPlane from './VideoPlane';
+import GlassVideoPanel from './GlassVideoPanel';
 
 // ─── Video sources (only 2 unique videos) ────────────────────────
 const VIDEO_SOURCES = [
@@ -23,6 +24,13 @@ const PLANES = [
   { id: '6', pos: [3, 6, -6] as [number, number, number], rot: [0, -0.1, 0] as [number, number, number], videoIdx: 1 },
   { id: '7', pos: [0, -5, -3] as [number, number, number], rot: [0, 0.05, 0] as [number, number, number], videoIdx: 0 },
   { id: '8', pos: [-2, 1, -8] as [number, number, number], rot: [0, 0.2, 0] as [number, number, number], videoIdx: 1 },
+];
+
+// ─── Glass video panels ──────────────────────────────────────────
+const GLASS_PANELS = [
+  { id: 'g1', pos: [2, 0, 2] as [number, number, number], rot: [0, -0.15, 0] as [number, number, number], videoIdx: 0, w: 5, h: 3, color: '#fca5a5' },
+  { id: 'g2', pos: [-5, 4, -3] as [number, number, number], rot: [0, 0.25, 0] as [number, number, number], videoIdx: 1, w: 4, h: 2.5, color: '#bbf7d0' },
+  { id: 'g3', pos: [6, -4, 0] as [number, number, number], rot: [0, -0.3, 0] as [number, number, number], videoIdx: 0, w: 4.5, h: 2.8, color: '#d8b4fe' },
 ];
 
 const INITIAL_CAM_POS = new THREE.Vector3(0, 0, 20);
@@ -104,9 +112,10 @@ interface CameraControllerProps {
   target: THREE.Vector3 | null;
   lookAt: THREE.Vector3 | null;
   controlsRef: React.RefObject<typeof OrbitControls | null>;
+  onAnimationEnd?: () => void;
 }
 
-function CameraController({ target, lookAt, controlsRef }: CameraControllerProps) {
+function CameraController({ target, lookAt, controlsRef, onAnimationEnd }: CameraControllerProps) {
   const { camera } = useThree();
   const currentLookAt = useRef(new THREE.Vector3(0, 0, 0));
   const isAnimating = useRef(false);
@@ -132,13 +141,14 @@ function CameraController({ target, lookAt, controlsRef }: CameraControllerProps
       camera.lookAt(look);
       isAnimating.current = false;
 
-      // Re-sync OrbitControls target
+      // Re-sync OrbitControls target, then notify parent
       if (controlsRef.current) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const controls = controlsRef.current as any;
         controls.target.copy(look);
         controls.update();
       }
+      onAnimationEnd?.();
     }
   });
 
@@ -170,6 +180,20 @@ function GalleryScene({
           onFocus={onFocus}
         />
       ))}
+
+      {GLASS_PANELS.map((g) => (
+        <GlassVideoPanel
+          key={g.id}
+          id={g.id}
+          position={g.pos}
+          rotation={g.rot}
+          width={g.w}
+          height={g.h}
+          color={g.color}
+          material={materials[g.videoIdx]}
+          onFocus={onFocus}
+        />
+      ))}
     </>
   );
 }
@@ -177,8 +201,10 @@ function GalleryScene({
 // ─── Main component ──────────────────────────────────────────────
 export default function VideoGallery3D() {
   const [focusedId, setFocusedId] = useState<string | null>(null);
+  const focusedIdRef = useRef<string | null>(null);
   const [cameraTarget, setCameraTarget] = useState<THREE.Vector3 | null>(null);
   const [cameraLookAt, setCameraLookAt] = useState<THREE.Vector3 | null>(null);
+  const [controlsEnabled, setControlsEnabled] = useState(true);
   const controlsRef = useRef(null);
 
   // ─── WebGL context recovery (same pattern as GlassViewer) ──────
@@ -216,6 +242,8 @@ export default function VideoGallery3D() {
 
   const handleFocus = useCallback((id: string, planePos: THREE.Vector3, planeNormal: THREE.Vector3) => {
     setFocusedId(id);
+    focusedIdRef.current = id;
+    setControlsEnabled(false);
     const camPos = planePos.clone().add(planeNormal.clone().multiplyScalar(5));
     setCameraTarget(camPos);
     setCameraLookAt(planePos.clone());
@@ -223,8 +251,17 @@ export default function VideoGallery3D() {
 
   const handleBack = useCallback(() => {
     setFocusedId(null);
+    focusedIdRef.current = null;
+    // Controls stay disabled — CameraController re-enables via onAnimationEnd
     setCameraTarget(null);
     setCameraLookAt(null);
+  }, []);
+
+  const handleAnimationEnd = useCallback(() => {
+    // Re-enable controls only when returning to overview (no focused video)
+    if (focusedIdRef.current === null) {
+      setControlsEnabled(true);
+    }
   }, []);
 
   if (contextLost) {
@@ -289,13 +326,14 @@ export default function VideoGallery3D() {
             target={cameraTarget}
             lookAt={cameraLookAt}
             controlsRef={controlsRef}
+            onAnimationEnd={handleAnimationEnd}
           />
 
           <OrbitControls
             ref={controlsRef}
             makeDefault
             enableDamping
-            enabled={focusedId === null}
+            enabled={controlsEnabled}
           />
         </Canvas>
       </Suspense>
