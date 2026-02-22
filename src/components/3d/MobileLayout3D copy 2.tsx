@@ -391,21 +391,21 @@ export default function MobileLayout3D() {
         radius={0.06}
         color="#38bdf8"
         position={[0, 0.6, 1.1]}
-        label="Hero Section"
+        label="Premium 3D"
         opacity={0.2}
         chromaticAberration={0.8}
         reflectivity={1.2}
       />
 
       {/* 7. Action Grid - 各種淡色 */}
-      <AnimatedGlassPanel delay={theFirstDealy + (deltaDelay * 5)} fromLeft={false} width={0.7} height={0.7} depth={0.06} radius={0.03} color="#fca5a5" position={[-1.2, -1.0, 1.3]} label="Look 1" opacity={0.15} />
-      <AnimatedGlassPanel delay={theFirstDealy + (deltaDelay * 5) + 0.1} fromLeft={false} width={0.7} height={0.7} depth={0.06} radius={0.03} color="#fdba74" position={[-0.4, -1.0, 1.3]} label="Look 2" opacity={0.15} />
-      <AnimatedGlassPanel delay={theFirstDealy + (deltaDelay * 5) + 0.2} fromLeft={false} width={0.7} height={0.7} depth={0.06} radius={0.03} color="#fde047" position={[0.4, -1.0, 1.3]} label="Look 3" opacity={0.15} />
-      <AnimatedGlassPanel delay={theFirstDealy + (deltaDelay * 5) + 0.3} fromLeft={false} width={0.7} height={0.7} depth={0.06} radius={0.03} color="#86efac" position={[1.2, -1.0, 1.3]} label="Look 4" opacity={0.15} />
+      <AnimatedGlassPanel delay={theFirstDealy + (deltaDelay * 5)} fromLeft={false} width={0.7} height={0.7} depth={0.06} radius={0.03} color="#fca5a5" position={[-1.2, -1.0, 1.3]} label="AI" opacity={0.15} />
+      <AnimatedGlassPanel delay={theFirstDealy + (deltaDelay * 5) + 0.1} fromLeft={false} width={0.7} height={0.7} depth={0.06} radius={0.03} color="#fdba74" position={[-0.4, -1.0, 1.3]} label="Web" opacity={0.15} />
+      <AnimatedGlassPanel delay={theFirstDealy + (deltaDelay * 5) + 0.2} fromLeft={false} width={0.7} height={0.7} depth={0.06} radius={0.03} color="#fde047" position={[0.4, -1.0, 1.3]} label="App" opacity={0.15} />
+      <AnimatedGlassPanel delay={theFirstDealy + (deltaDelay * 5) + 0.3} fromLeft={false} width={0.7} height={0.7} depth={0.06} radius={0.03} color="#86efac" position={[1.2, -1.0, 1.3]} label="Cloud" opacity={0.15} />
 
       {/* 8. List Items - 淡紫/淡藍 */}
-      <AnimatedGlassPanel delay={theFirstDealy + (deltaDelay * 6)} fromLeft={true} width={3.2} height={0.8} depth={0.06} radius={0.03} color="#d8b4fe" position={[0, -2.4, 1.5]} label="New Arrivals" opacity={0.12} />
-      <AnimatedGlassPanel delay={theFirstDealy + (deltaDelay * 7)} fromLeft={false} width={3.2} height={0.8} depth={0.06} radius={0.03} color="#93c5fd" position={[0, -3.4, 1.7]} label="Best Sellers" opacity={0.12} />
+      <AnimatedGlassPanel delay={theFirstDealy + (deltaDelay * 6)} fromLeft={true} width={3.2} height={0.8} depth={0.06} radius={0.03} color="#d8b4fe" position={[0, -2.4, 1.5]} label="Item Alpha" opacity={0.12} />
+      <AnimatedGlassPanel delay={theFirstDealy + (deltaDelay * 7)} fromLeft={false} width={3.2} height={0.8} depth={0.06} radius={0.03} color="#93c5fd" position={[0, -3.4, 1.7]} label="Item Beta" opacity={0.12} />
 
       {/* 9. Bottom Navigation - 深藍色玻璃 */}
       {/* <AnimatedGlassPanel
