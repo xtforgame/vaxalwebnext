@@ -286,18 +286,25 @@ export default function MobileLayout3D() {
         state.camera.position.lerpVectors(CAMERA_END, closePos, p);
         state.camera.lookAt(CAMERA_TARGET);
       } else if (t < spinEnd) {
-        // Phase 3: Whip spin — fast start, natural deceleration, multi-axis
-        state.camera.position.copy(closePos);
-        state.camera.lookAt(CAMERA_TARGET);
+        // Phase 3: Whip spin via camera orbit — background moves with camera
         const p = easeOutCubic((t - spinStart) / spinDuration);
-        group.current!.rotation.y = p * Math.PI * 6;
-        group.current!.rotation.x = -Math.PI / 6 + p * Math.PI * 0.8;
-        group.current!.rotation.z = Math.sin(p * Math.PI * 2) * 0.3;
+        const deltaQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+          p * Math.PI * 0.8,
+          p * Math.PI * 6,
+          Math.sin(p * Math.PI * 2) * 0.3,
+          'XYZ'
+        ));
+        deltaQ.invert();
+        state.camera.position.copy(closePos.clone().applyQuaternion(deltaQ));
+        state.camera.lookAt(CAMERA_TARGET);
       } else {
-        // Done — lock in final spin rotation (float code may have overwritten it this frame)
-        group.current!.rotation.y = Math.PI * 6;
-        group.current!.rotation.x = -Math.PI / 6 + Math.PI * 0.8;
-        group.current!.rotation.z = 0;
+        // Done — lock final camera orbit position
+        const finalQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+          Math.PI * 0.8, Math.PI * 6, 0, 'XYZ'
+        ));
+        finalQ.invert();
+        state.camera.position.copy(closePos.clone().applyQuaternion(finalQ));
+        state.camera.lookAt(CAMERA_TARGET);
 
         controls.target.copy(CAMERA_TARGET);
         controls.enabled = true;
