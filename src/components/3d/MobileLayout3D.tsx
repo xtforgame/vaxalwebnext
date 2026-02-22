@@ -10,6 +10,10 @@ function easeOutCubic(t: number): number {
   return 1 - Math.pow(1 - t, 3);
 }
 
+function easeInCubic(t: number): number {
+  return t * t * t;
+}
+
 /**
  * Creates a proper 3D rounded box geometry with beveled edges on all axes
  */
@@ -207,6 +211,13 @@ const CAMERA_END = new THREE.Vector3(
   CAMERA_DISTANCE * Math.cos(Math.PI / 6),  // 15.6
 );
 const CAMERA_TARGET = new THREE.Vector3(0, 0, 0);
+const CAMERA_DIR = CAMERA_END.clone().normalize();
+
+// Zoom-in + spin transition
+const zoomDelay = 0.5;       // 轉正後等多久開始拉近（可為負數＝提前開始）
+const zoomDuration = 1.5;    // 拉近動畫時間
+const zoomIn = 3;            // 拉近後鏡頭距離（越小越近）
+const spinDuration = 0.3;    // 旋轉過場時間（短而猛）
 
 export default function MobileLayout3D() {
   const group = useRef<THREE.Group>(null);
@@ -248,16 +259,37 @@ export default function MobileLayout3D() {
     }
 
     if (cameraAnimActive.current && cameraStartPos.current) {
-      const p = Math.min(1, easeOutCubic((t - fadeStart) / (fadeDuration / 2)));
+      const straightenDur = fadeDuration / 2;
+      const straightenEnd = fadeStart + straightenDur;
+      const zoomStart = straightenEnd + zoomDelay;
+      const zoomEnd = zoomStart + zoomDuration;
+      const spinStart = zoomEnd;
+      const spinEnd = spinStart + spinDuration;
+      const closePos = CAMERA_DIR.clone().multiplyScalar(zoomIn);
 
-      state.camera.position.lerpVectors(cameraStartPos.current, CAMERA_END, p);
-      const lerpTarget = cameraStartTarget.current!.clone().lerp(CAMERA_TARGET, p);
-      state.camera.lookAt(lerpTarget);
-
-      if (p >= 1) {
-        controls.target.copy(CAMERA_TARGET);
-        controls.enabled = true;
-        controls.update();
+      if (t < straightenEnd) {
+        // Phase 1: Straighten
+        const p = Math.min(1, easeOutCubic((t - fadeStart) / straightenDur));
+        state.camera.position.lerpVectors(cameraStartPos.current, CAMERA_END, p);
+        const lerpTarget = cameraStartTarget.current!.clone().lerp(CAMERA_TARGET, p);
+        state.camera.lookAt(lerpTarget);
+      } else if (t < zoomStart) {
+        // Hold: wait between straighten and zoom
+        state.camera.position.copy(CAMERA_END);
+        state.camera.lookAt(CAMERA_TARGET);
+      } else if (t < zoomEnd) {
+        // Phase 2: Zoom in
+        const p = easeOutCubic((t - zoomStart) / zoomDuration);
+        state.camera.position.lerpVectors(CAMERA_END, closePos, p);
+        state.camera.lookAt(CAMERA_TARGET);
+      } else if (t < spinEnd) {
+        // Phase 3: Fast aggressive spin (transition whip)
+        state.camera.position.copy(closePos);
+        state.camera.lookAt(CAMERA_TARGET);
+        const p = easeInCubic((t - spinStart) / spinDuration);
+        group.current!.rotation.y = p * Math.PI * 4;
+      } else {
+        // Done — cinematic sequence complete
         cameraAnimActive.current = false;
         cameraAnimDone.current = true;
       }
