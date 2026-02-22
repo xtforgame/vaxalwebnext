@@ -1,6 +1,6 @@
 'use client';
 
-import { Text } from '@react-three/drei';
+import { Text, useTexture } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useRef, useMemo } from 'react';
 import * as THREE from 'three';
@@ -58,11 +58,40 @@ interface GlassPanelProps {
   color?: string;
   position?: [number, number, number];
   label?: string;
+  image?: string;
+  imageScale?: number;
   opacity?: number;
   ior?: number;
   chromaticAberration?: number;
   reflectivity?: number;
   absorption?: number;
+}
+
+function ImagePlane({ src, panelWidth, panelHeight, depth, scale = 0.8 }: {
+  src: string;
+  panelWidth: number;
+  panelHeight: number;
+  depth: number;
+  scale?: number;
+}) {
+  const texture = useTexture(src);
+  const img = texture.image as HTMLImageElement;
+  const aspect = img.width / img.height;
+  const maxW = panelWidth * scale;
+  const maxH = panelHeight * scale;
+  let w = maxW;
+  let h = w / aspect;
+  if (h > maxH) {
+    h = maxH;
+    w = h * aspect;
+  }
+
+  return (
+    <mesh position={[0, 0, depth / 2 + 0.01]}>
+      <planeGeometry args={[w, h]} />
+      <meshBasicMaterial map={texture} transparent />
+    </mesh>
+  );
 }
 
 const GlassPanel = ({
@@ -73,6 +102,8 @@ const GlassPanel = ({
   color = '#ffffff',
   position = [0, 0, 0],
   label = '',
+  image,
+  imageScale,
   opacity = 0.12,
   ior = 1.45,
   chromaticAberration = 0.5,
@@ -99,7 +130,9 @@ const GlassPanel = ({
           absorption={absorption}
         />
       </mesh>
-      {label && (
+      {image ? (
+        <ImagePlane src={image} panelWidth={width} panelHeight={height} depth={depth} scale={imageScale} />
+      ) : label ? (
         <Text
           position={[0, 0, depth / 2 + 0.01]}
           fontSize={0.15}
@@ -110,7 +143,7 @@ const GlassPanel = ({
         >
           {label}
         </Text>
-      )}
+      ) : null}
     </group>
   );
 };
@@ -120,10 +153,10 @@ export default function MobileLayout3D() {
 
   useFrame((state) => {
     if (!group.current) return;
-    // const t = state.clock.getElapsedTime();
-    // group.current.rotation.y = Math.sin(t / 4) / 12;
-    // group.current.rotation.x = Math.PI / 12 + Math.cos(t / 4) / 18;
-    // state.invalidate();
+    const t = state.clock.getElapsedTime();
+    group.current.rotation.y = Math.sin(t / 4) / 12;
+    group.current.rotation.x = -Math.PI / 6 + Math.cos(t / 4) / 18;
+    state.invalidate();
   });
 
   return (
@@ -171,7 +204,8 @@ export default function MobileLayout3D() {
         radius={0.03}
         color="#a5f3fc"
         position={[0, 3.1, 0.7]}
-        label="Vaxal Dashboard"
+        image="/studiodoe.png"
+        imageScale={0.75}
         opacity={0.12}
       />
 

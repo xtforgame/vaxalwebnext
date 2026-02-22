@@ -1,7 +1,7 @@
 'use client';
 
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, ContactShadows, Float, useCubeTexture } from '@react-three/drei';
+import { OrbitControls, ContactShadows, Float, useCubeTexture, useTexture } from '@react-three/drei';
 import { Suspense, useEffect, useState, useCallback } from 'react';
 import MobileLayout3D from './MobileLayout3D';
 import type { RootState } from '@react-three/fiber';
@@ -17,6 +17,18 @@ function SkyboxEnvironment() {
   cubeTexture.colorSpace = THREE.SRGBColorSpace;
   scene.background = cubeTexture;
   scene.environment = cubeTexture;
+
+  return null;
+}
+
+function PanoramaEnvironment() {
+  const { scene } = useThree();
+  const texture = useTexture('/panas/scifi_dark_scary_laboratory_metallic_doors (4).jpg');
+
+  texture.mapping = THREE.EquirectangularReflectionMapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  scene.background = texture;
+  scene.environment = texture;
 
   return null;
 }
@@ -139,7 +151,7 @@ export default function GlassViewer() {
             maxPolarAngle={Math.PI / 1.5}
           />
 
-          <SkyboxEnvironment />
+          <PanoramaEnvironment />
 
           <ContactShadows
             position={[0, -5, 0]}
