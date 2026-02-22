@@ -214,10 +214,10 @@ const CAMERA_TARGET = new THREE.Vector3(0, 0, 0);
 const CAMERA_DIR = CAMERA_END.clone().normalize();
 
 // Zoom-in + spin transition
-const zoomDelay = 0.5;       // 轉正後等多久開始拉近（可為負數＝提前開始）
-const zoomDuration = 1.5;    // 拉近動畫時間
-const zoomIn = 3;            // 拉近後鏡頭距離（越小越近）
-const spinDuration = 0.3;    // 旋轉過場時間（短而猛）
+const zoomDelay = 0;       // 轉正後等多久開始拉近（可為負數＝提前開始）
+const zoomDuration = 0.8;    // 拉近動畫時間
+const zoomIn = 2;            // 拉近後鏡頭距離（越小越近）
+const spinDuration = 0.6;    // 旋轉過場時間（含減速尾巴）
 
 export default function MobileLayout3D() {
   const group = useRef<THREE.Group>(null);
@@ -229,7 +229,7 @@ export default function MobileLayout3D() {
   // Replicate Float{speed=2, rotationIntensity=0.5, floatIntensity=0.5}
   // then fade out after assembly completes
   const assemblyEnd = theFirstDealy + (deltaDelay * 7) + 1.8;
-  const fadeDelay = 1.5; // 組裝完成後等待多久才開始歸位
+  const fadeDelay = 0.5; // 組裝完成後等待多久才開始歸位
   const fadeDuration = 2.0;
 
   useFrame((state) => {
@@ -238,16 +238,19 @@ export default function MobileLayout3D() {
 
     const fadeStart = assemblyEnd + fadeDelay;
 
-    let intensity = 1.0;
-    if (t > fadeStart) {
-      intensity = Math.max(0, 1 - easeOutCubic((t - fadeStart) / fadeDuration));
-    }
+    // Float oscillation — skip after cinematic ends to preserve spin rotation
+    if (!cameraAnimDone.current) {
+      let intensity = 1.0;
+      if (t > fadeStart) {
+        intensity = Math.max(0, 1 - easeOutCubic((t - fadeStart) / fadeDuration));
+      }
 
-    // Exact Float formula: speed=2 → t/4*2 = t/2
-    group.current.rotation.x = -Math.PI / 6 + Math.cos(t / 2) / 16 * intensity;
-    group.current.rotation.y = Math.sin(t / 2) / 16 * intensity;
-    group.current.rotation.z = Math.sin(t / 2) / 40 * intensity;
-    group.current.position.y = Math.sin(t / 2) / 20 * intensity;
+      // Exact Float formula: speed=2 → t/4*2 = t/2
+      group.current.rotation.x = -Math.PI / 6 + Math.cos(t / 2) / 16 * intensity;
+      group.current.rotation.y = Math.sin(t / 2) / 16 * intensity;
+      group.current.rotation.z = Math.sin(t / 2) / 40 * intensity;
+      group.current.position.y = Math.sin(t / 2) / 20 * intensity;
+    }
 
     // Camera animation: move to head-on view in sync with fade
     const controls = state.controls as any;
@@ -278,18 +281,27 @@ export default function MobileLayout3D() {
         state.camera.position.copy(CAMERA_END);
         state.camera.lookAt(CAMERA_TARGET);
       } else if (t < zoomEnd) {
-        // Phase 2: Zoom in
-        const p = easeOutCubic((t - zoomStart) / zoomDuration);
+        // Phase 2: Zoom in (accelerating rush)
+        const p = easeInCubic((t - zoomStart) / zoomDuration);
         state.camera.position.lerpVectors(CAMERA_END, closePos, p);
         state.camera.lookAt(CAMERA_TARGET);
       } else if (t < spinEnd) {
-        // Phase 3: Fast aggressive spin (transition whip)
+        // Phase 3: Whip spin — fast start, natural deceleration, multi-axis
         state.camera.position.copy(closePos);
         state.camera.lookAt(CAMERA_TARGET);
-        const p = easeInCubic((t - spinStart) / spinDuration);
-        group.current!.rotation.y = p * Math.PI * 4;
+        const p = easeOutCubic((t - spinStart) / spinDuration);
+        group.current!.rotation.y = p * Math.PI * 3;
+        group.current!.rotation.x = -Math.PI / 6 + p * Math.PI * 0.4;
+        group.current!.rotation.z = Math.sin(p * Math.PI) * 0.3;
       } else {
-        // Done — cinematic sequence complete
+        // Done — lock in final spin rotation (float code may have overwritten it this frame)
+        group.current!.rotation.y = Math.PI * 3;
+        group.current!.rotation.x = -Math.PI / 6 + Math.PI * 0.4;
+        group.current!.rotation.z = 0;
+
+        controls.target.copy(CAMERA_TARGET);
+        controls.enabled = true;
+        controls.update();
         cameraAnimActive.current = false;
         cameraAnimDone.current = true;
       }
