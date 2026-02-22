@@ -217,7 +217,7 @@ const CAMERA_DIR = CAMERA_END.clone().normalize();
 const zoomDelay = 0;       // 轉正後等多久開始拉近（可為負數＝提前開始）
 const zoomDuration = 0.8;    // 拉近動畫時間
 const zoomIn = 2;            // 拉近後鏡頭距離（越小越近）
-const spinDuration = 0.6;    // 旋轉過場時間（含減速尾巴）
+const spinDuration = 1.2;    // 旋轉過場時間（含減速尾巴）
 
 export default function MobileLayout3D() {
   const group = useRef<THREE.Group>(null);
@@ -290,13 +290,13 @@ export default function MobileLayout3D() {
         state.camera.position.copy(closePos);
         state.camera.lookAt(CAMERA_TARGET);
         const p = easeOutCubic((t - spinStart) / spinDuration);
-        group.current!.rotation.y = p * Math.PI * 3;
-        group.current!.rotation.x = -Math.PI / 6 + p * Math.PI * 0.4;
-        group.current!.rotation.z = Math.sin(p * Math.PI) * 0.3;
+        group.current!.rotation.y = p * Math.PI * 6;
+        group.current!.rotation.x = -Math.PI / 6 + p * Math.PI * 0.8;
+        group.current!.rotation.z = Math.sin(p * Math.PI * 2) * 0.3;
       } else {
         // Done — lock in final spin rotation (float code may have overwritten it this frame)
-        group.current!.rotation.y = Math.PI * 3;
-        group.current!.rotation.x = -Math.PI / 6 + Math.PI * 0.4;
+        group.current!.rotation.y = Math.PI * 6;
+        group.current!.rotation.x = -Math.PI / 6 + Math.PI * 0.8;
         group.current!.rotation.z = 0;
 
         controls.target.copy(CAMERA_TARGET);
