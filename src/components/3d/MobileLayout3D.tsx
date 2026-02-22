@@ -6,6 +6,10 @@ import { useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { GlassMaterial } from './GlassMaterial';
 
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
+}
+
 /**
  * Creates a proper 3D rounded box geometry with beveled edges on all axes
  */
@@ -148,6 +152,53 @@ const GlassPanel = ({
   );
 };
 
+function AnimatedGlassPanel({
+  delay,
+  fromLeft,
+  ...panelProps
+}: GlassPanelProps & { delay: number; fromLeft?: boolean }) {
+  const ref = useRef<THREE.Group>(null);
+  const pos = panelProps.position ?? [0, 0, 0];
+  const finalX = pos[0];
+  const finalZ = pos[2];
+  const startX = fromLeft ? -8 : 8;
+  const settleOffset = 0.4;
+
+  useFrame((state) => {
+    if (!ref.current) return;
+    const t = state.clock.getElapsedTime() - delay;
+
+    if (t < 0) {
+      ref.current.position.set(startX, pos[1], finalZ + settleOffset);
+      return;
+    }
+
+    if (t < 0.6) {
+      const p = easeOutCubic(t / 0.6);
+      ref.current.position.x = startX + (finalX - startX) * p;
+      ref.current.position.z = finalZ + settleOffset;
+    } else if (t < 1.4) {
+      ref.current.position.x = finalX;
+      ref.current.position.z = finalZ + settleOffset;
+    } else if (t < 1.8) {
+      const p = easeOutCubic((t - 1.4) / 0.4);
+      ref.current.position.x = finalX;
+      ref.current.position.z = finalZ + settleOffset * (1 - p);
+    } else {
+      ref.current.position.set(finalX, pos[1], finalZ);
+    }
+  });
+
+  return (
+    <group ref={ref} position={[startX, pos[1], finalZ + settleOffset]}>
+      <GlassPanel {...panelProps} position={[0, 0, 0]} />
+    </group>
+  );
+}
+
+const theFirstDealy = 2.5;
+const deltaDelay = 0.5;
+
 export default function MobileLayout3D() {
   const group = useRef<THREE.Group>(null);
 
@@ -186,7 +237,8 @@ export default function MobileLayout3D() {
       />
 
       {/* 3. Status Bar - 淡粉色 */}
-      <GlassPanel
+      <AnimatedGlassPanel
+        delay={theFirstDealy + (deltaDelay * 1)} fromLeft={false}
         width={3.4}
         height={0.3}
         depth={0.04}
@@ -197,7 +249,8 @@ export default function MobileLayout3D() {
       />
 
       {/* 4. Navigation Header - 淡青色 */}
-      <GlassPanel
+      <AnimatedGlassPanel
+        delay={theFirstDealy + (deltaDelay * 2)} fromLeft={true}
         width={3.4}
         height={0.7}
         depth={0.06}
@@ -210,7 +263,8 @@ export default function MobileLayout3D() {
       />
 
       {/* 5. Search Bar - 淡綠色 */}
-      <GlassPanel
+      <AnimatedGlassPanel
+        delay={theFirstDealy + (deltaDelay * 3)} fromLeft={false}
         width={3.2}
         height={0.6}
         depth={0.06}
@@ -222,7 +276,8 @@ export default function MobileLayout3D() {
       />
 
       {/* 6. Hero Card - 天藍色 */}
-      <GlassPanel
+      <AnimatedGlassPanel
+        delay={theFirstDealy + (deltaDelay * 4)} fromLeft={true}
         width={3.2}
         height={2.0}
         depth={0.12}
@@ -236,17 +291,18 @@ export default function MobileLayout3D() {
       />
 
       {/* 7. Action Grid - 各種淡色 */}
-      <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#fca5a5" position={[-1.2, -1.0, 1.3]} label="AI" opacity={0.15} />
-      <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#fdba74" position={[-0.4, -1.0, 1.3]} label="Web" opacity={0.15} />
-      <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#fde047" position={[0.4, -1.0, 1.3]} label="App" opacity={0.15} />
-      <GlassPanel width={0.7} height={0.7} depth={0.06} radius={0.03} color="#86efac" position={[1.2, -1.0, 1.3]} label="Cloud" opacity={0.15} />
+      <AnimatedGlassPanel delay={theFirstDealy + (deltaDelay * 5)} fromLeft={false} width={0.7} height={0.7} depth={0.06} radius={0.03} color="#fca5a5" position={[-1.2, -1.0, 1.3]} label="AI" opacity={0.15} />
+      <AnimatedGlassPanel delay={theFirstDealy + (deltaDelay * 5) + 0.1} fromLeft={false} width={0.7} height={0.7} depth={0.06} radius={0.03} color="#fdba74" position={[-0.4, -1.0, 1.3]} label="Web" opacity={0.15} />
+      <AnimatedGlassPanel delay={theFirstDealy + (deltaDelay * 5) + 0.2} fromLeft={false} width={0.7} height={0.7} depth={0.06} radius={0.03} color="#fde047" position={[0.4, -1.0, 1.3]} label="App" opacity={0.15} />
+      <AnimatedGlassPanel delay={theFirstDealy + (deltaDelay * 5) + 0.3} fromLeft={false} width={0.7} height={0.7} depth={0.06} radius={0.03} color="#86efac" position={[1.2, -1.0, 1.3]} label="Cloud" opacity={0.15} />
 
       {/* 8. List Items - 淡紫/淡藍 */}
-      <GlassPanel width={3.2} height={0.8} depth={0.06} radius={0.03} color="#d8b4fe" position={[0, -2.4, 1.5]} label="Item Alpha" opacity={0.12} />
-      <GlassPanel width={3.2} height={0.8} depth={0.06} radius={0.03} color="#93c5fd" position={[0, -3.4, 1.7]} label="Item Beta" opacity={0.12} />
+      <AnimatedGlassPanel delay={theFirstDealy + (deltaDelay * 6)} fromLeft={true} width={3.2} height={0.8} depth={0.06} radius={0.03} color="#d8b4fe" position={[0, -2.4, 1.5]} label="Item Alpha" opacity={0.12} />
+      <AnimatedGlassPanel delay={theFirstDealy + (deltaDelay * 7)} fromLeft={false} width={3.2} height={0.8} depth={0.06} radius={0.03} color="#93c5fd" position={[0, -3.4, 1.7]} label="Item Beta" opacity={0.12} />
 
       {/* 9. Bottom Navigation - 深藍色玻璃 */}
-      <GlassPanel
+      {/* <AnimatedGlassPanel
+        delay={theFirstDealy + (deltaDelay * 8)} fromLeft={true}
         width={3.6}
         height={0.9}
         depth={0.12}
@@ -256,7 +312,7 @@ export default function MobileLayout3D() {
         label="Home | Search | Settings"
         opacity={0.25}
         chromaticAberration={0.6}
-      />
+      /> */}
     </group>
   );
 }
