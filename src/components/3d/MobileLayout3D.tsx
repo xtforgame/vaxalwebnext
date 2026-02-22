@@ -1,7 +1,7 @@
 'use client';
 
 import { Text, useTexture } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { GlassMaterial } from './GlassMaterial';
@@ -199,8 +199,21 @@ function AnimatedGlassPanel({
 const theFirstDealy = 2.5;
 const deltaDelay = 0.5;
 
+// Camera end position: along panel normal (-PI/6 tilt → normal = (0, sin30, cos30))
+const CAMERA_DISTANCE = 18;
+const CAMERA_END = new THREE.Vector3(
+  0,
+  CAMERA_DISTANCE * Math.sin(Math.PI / 6),  // 9
+  CAMERA_DISTANCE * Math.cos(Math.PI / 6),  // 15.6
+);
+const CAMERA_TARGET = new THREE.Vector3(0, 0, 0);
+
 export default function MobileLayout3D() {
   const group = useRef<THREE.Group>(null);
+  const cameraStartPos = useRef<THREE.Vector3 | null>(null);
+  const cameraStartTarget = useRef<THREE.Vector3 | null>(null);
+  const cameraAnimActive = useRef(false);
+  const cameraAnimDone = useRef(false);
 
   // Replicate Float{speed=2, rotationIntensity=0.5, floatIntensity=0.5}
   // then fade out after assembly completes
@@ -212,8 +225,9 @@ export default function MobileLayout3D() {
     if (!group.current) return;
     const t = state.clock.getElapsedTime();
 
-    let intensity = 1.0;
     const fadeStart = assemblyEnd + fadeDelay;
+
+    let intensity = 1.0;
     if (t > fadeStart) {
       intensity = Math.max(0, 1 - easeOutCubic((t - fadeStart) / fadeDuration));
     }
@@ -223,6 +237,31 @@ export default function MobileLayout3D() {
     group.current.rotation.y = Math.sin(t / 2) / 16 * intensity;
     group.current.rotation.z = Math.sin(t / 2) / 40 * intensity;
     group.current.position.y = Math.sin(t / 2) / 20 * intensity;
+
+    // Camera animation: move to head-on view in sync with fade
+    const controls = state.controls as any;
+    if (t > fadeStart && controls && !cameraAnimActive.current && !cameraAnimDone.current) {
+      cameraStartPos.current = state.camera.position.clone();
+      cameraStartTarget.current = controls.target.clone();
+      controls.enabled = false;
+      cameraAnimActive.current = true;
+    }
+
+    if (cameraAnimActive.current && cameraStartPos.current) {
+      const p = Math.min(1, easeOutCubic((t - fadeStart) / fadeDuration));
+
+      state.camera.position.lerpVectors(cameraStartPos.current, CAMERA_END, p);
+      const lerpTarget = cameraStartTarget.current!.clone().lerp(CAMERA_TARGET, p);
+      state.camera.lookAt(lerpTarget);
+
+      if (p >= 1) {
+        controls.target.copy(CAMERA_TARGET);
+        controls.enabled = true;
+        controls.update();
+        cameraAnimActive.current = false;
+        cameraAnimDone.current = true;
+      }
+    }
 
     state.invalidate();
   });
