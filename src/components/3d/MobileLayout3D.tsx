@@ -120,14 +120,14 @@ export default function MobileLayout3D() {
 
   useFrame((state) => {
     if (!group.current) return;
-    const t = state.clock.getElapsedTime();
-    group.current.rotation.y = Math.sin(t / 4) / 12;
-    group.current.rotation.x = Math.PI / 12 + Math.cos(t / 4) / 18;
-    state.invalidate();
+    // const t = state.clock.getElapsedTime();
+    // group.current.rotation.y = Math.sin(t / 4) / 12;
+    // group.current.rotation.x = Math.PI / 12 + Math.cos(t / 4) / 18;
+    // state.invalidate();
   });
 
   return (
-    <group ref={group}>
+    <group ref={group} rotation={[-Math.PI / 6, 0, 0]}>
       {/* 1. Base Device Frame - 淡紫色 */}
       <GlassPanel
         width={4.2}
