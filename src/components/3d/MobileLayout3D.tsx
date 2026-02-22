@@ -248,7 +248,7 @@ export default function MobileLayout3D() {
     }
 
     if (cameraAnimActive.current && cameraStartPos.current) {
-      const p = Math.min(1, easeOutCubic((t - fadeStart) / fadeDuration));
+      const p = Math.min(1, easeOutCubic((t - fadeStart) / (fadeDuration / 2)));
 
       state.camera.position.lerpVectors(cameraStartPos.current, CAMERA_END, p);
       const lerpTarget = cameraStartTarget.current!.clone().lerp(CAMERA_TARGET, p);
