@@ -202,11 +202,28 @@ const deltaDelay = 0.5;
 export default function MobileLayout3D() {
   const group = useRef<THREE.Group>(null);
 
+  // Replicate Float{speed=2, rotationIntensity=0.5, floatIntensity=0.5}
+  // then fade out after assembly completes
+  const assemblyEnd = theFirstDealy + (deltaDelay * 7) + 1.8;
+  const fadeDelay = 1.5; // 組裝完成後等待多久才開始歸位
+  const fadeDuration = 2.0;
+
   useFrame((state) => {
     if (!group.current) return;
     const t = state.clock.getElapsedTime();
-    group.current.rotation.y = Math.sin(t / 4) / 12;
-    group.current.rotation.x = -Math.PI / 6 + Math.cos(t / 4) / 18;
+
+    let intensity = 1.0;
+    const fadeStart = assemblyEnd + fadeDelay;
+    if (t > fadeStart) {
+      intensity = Math.max(0, 1 - easeOutCubic((t - fadeStart) / fadeDuration));
+    }
+
+    // Exact Float formula: speed=2 → t/4*2 = t/2
+    group.current.rotation.x = -Math.PI / 6 + Math.cos(t / 2) / 16 * intensity;
+    group.current.rotation.y = Math.sin(t / 2) / 16 * intensity;
+    group.current.rotation.z = Math.sin(t / 2) / 40 * intensity;
+    group.current.position.y = Math.sin(t / 2) / 20 * intensity;
+
     state.invalidate();
   });
 

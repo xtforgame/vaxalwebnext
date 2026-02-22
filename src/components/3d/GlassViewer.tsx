@@ -140,9 +140,7 @@ export default function GlassViewer() {
           <spotLight position={[10, 15, 10]} angle={0.3} penumbra={1} intensity={1.5} castShadow />
           <pointLight position={[-10, -10, -10]} intensity={0.8} color="#3DB5E6" />
 
-          <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
-            <MobileLayout3D />
-          </Float>
+          <MobileLayout3D />
 
           <OrbitControls
             makeDefault
