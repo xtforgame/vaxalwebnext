@@ -73,7 +73,17 @@ function PanoramaEnvironment() {
   texture.mapping = THREE.EquirectangularReflectionMapping;
   texture.colorSpace = THREE.SRGBColorSpace;
   scene.background = texture;
-  scene.environment = texture;
+
+  // Use a cloned texture for environment to avoid WebGL
+  // "textures can not be used with multiple targets" error
+  // (background and environment conversions bind to different targets)
+  const envTexture = useMemo(() => {
+    const t = texture.clone();
+    t.mapping = THREE.EquirectangularReflectionMapping;
+    return t;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [texture.id]);
+  scene.environment = envTexture;
 
   return null;
 }
@@ -287,6 +297,16 @@ function getFragmentCameraTarget(fragment: FragmentDef): { camPos: THREE.Vector3
 // rotated relative to the camera view, so the text plane recedes into
 // depth — left side near camera (big), right side far (small).
 
+// ─── Title tunables (adjust these to reposition / restyle) ────
+const TITLE_OFFSET_X = -2.8;   // camera-local X: negative = left
+const TITLE_OFFSET_Y = 1.4;    // camera-local Y: positive = up
+const TITLE_OFFSET_Z = -5.0;   // camera-local Z: negative = further from camera
+const TITLE_ROTATE_Y = 0.8;    // radians – perspective depth
+const TITLE_ROTATE_Z = 0.5;    // radians – diagonal tilt
+const TITLE_ENTER_DURATION = 800; // ms
+const TITLE_EXIT_DURATION = 600;
+const TITLE_SLIDE_DISTANCE = 3; // local-X units along diagonal
+
 function FragmentTitle3D({ activeId }: { activeId: string | null }) {
   const groupRef = useRef<THREE.Group>(null!);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -296,49 +316,78 @@ function FragmentTitle3D({ activeId }: { activeId: string | null }) {
   const { camera } = useThree();
   const [displayId, setDisplayId] = useState<string | null>(null);
   const displayIdRef = useRef<string | null>(null);
-  const opacityRef = useRef(0);
+
+  // Animation state
+  const animProgress = useRef(0); // 0 = hidden (offset), 1 = visible (rest)
+  const animPhase = useRef<'idle' | 'entering' | 'exiting'>('idle');
+  const animStartTime = useRef(0);
 
   // Pre-allocate reusable objects
   const offsetVec = useRef(new THREE.Vector3());
-  // Extra rotation applied ON TOP of camera quaternion (in camera-local space):
-  // Y = 0.8 rad (~46°) → text plane angled so left is near, right is far → perspective
-  // Z = -0.5 rad (~-29°) → diagonal tilt
+  const slideVec = useRef(new THREE.Vector3());
+  // Extra rotation: Y for perspective depth, Z for diagonal tilt
   const extraQuat = useRef(
-    new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0.8, -0.5))
+    new THREE.Quaternion().setFromEuler(new THREE.Euler(0, TITLE_ROTATE_Y, TITLE_ROTATE_Z))
   );
 
   useEffect(() => {
     if (activeId) {
-      opacityRef.current = 0;
       displayIdRef.current = activeId;
       setDisplayId(activeId);
+      animProgress.current = 0;
+      animPhase.current = 'entering';
+      animStartTime.current = performance.now();
+    } else if (displayIdRef.current) {
+      animPhase.current = 'exiting';
+      animStartTime.current = performance.now();
     }
   }, [activeId]);
 
-  useFrame((_, delta) => {
+  useFrame(() => {
     if (!groupRef.current) return;
 
-    // Position: camera-relative offset, then rotate by camera orientation
-    offsetVec.current.set(-1.5, 0.5, -3).applyQuaternion(camera.quaternion);
-    groupRef.current.position.copy(camera.position).add(offsetVec.current);
+    // ── Animation progress ──
+    const elapsed = performance.now() - animStartTime.current;
 
-    // Orientation: camera-aligned + extra rotation for perspective depth
-    groupRef.current.quaternion.copy(camera.quaternion).multiply(extraQuat.current);
-
-    // Opacity fade
-    const target = activeId ? 1 : 0;
-    opacityRef.current += (target - opacityRef.current) * Math.min(1, delta * 6);
-
-    // Clear display after fade out
-    if (!activeId && opacityRef.current < 0.01 && displayIdRef.current !== null) {
-      opacityRef.current = 0;
-      displayIdRef.current = null;
-      setDisplayId(null);
+    if (animPhase.current === 'entering') {
+      const t = Math.min(1, elapsed / TITLE_ENTER_DURATION);
+      animProgress.current = 1 - Math.pow(1 - t, 3); // easeOutCubic
+      if (t >= 1) animPhase.current = 'idle';
+    } else if (animPhase.current === 'exiting') {
+      const t = Math.min(1, elapsed / TITLE_EXIT_DURATION);
+      animProgress.current = 1 - t * t * t; // easeInCubic (reverse)
+      if (t >= 1) {
+        animPhase.current = 'idle';
+        animProgress.current = 0;
+        displayIdRef.current = null;
+        setDisplayId(null);
+      }
     }
 
-    // Update text materials
+    // ── Position: camera-relative, upper area ──
+    offsetVec.current.set(TITLE_OFFSET_X, TITLE_OFFSET_Y, TITLE_OFFSET_Z).applyQuaternion(camera.quaternion);
+    groupRef.current.position.copy(camera.position).add(offsetVec.current);
+
+    // ── Orientation: camera + perspective rotation ──
+    groupRef.current.quaternion.copy(camera.quaternion).multiply(extraQuat.current);
+
+    // ── Slide: one-directional flow (like water) ──
+    // Entry: starts at +X (lower-right off-screen) → slides to rest (0)
+    // Exit:  slides from rest (0) → continues to -X (upper-left off-screen)
+    // Both move in the same -X direction through the rest position.
+    let slideX: number;
+    if (animPhase.current === 'exiting') {
+      slideX = -(1 - animProgress.current) * TITLE_SLIDE_DISTANCE;
+    } else {
+      slideX = (1 - animProgress.current) * TITLE_SLIDE_DISTANCE;
+    }
+    slideVec.current.set(slideX, 0, 0).applyQuaternion(groupRef.current.quaternion);
+    groupRef.current.position.add(slideVec.current);
+
+    // ── Update text opacity + material ──
+    const opacity = animProgress.current;
     if (titleRef.current) {
-      titleRef.current.fillOpacity = opacityRef.current;
+      titleRef.current.fillOpacity = opacity;
       if (titleRef.current.material) {
         titleRef.current.material.depthTest = false;
         titleRef.current.material.depthWrite = false;
@@ -346,7 +395,7 @@ function FragmentTitle3D({ activeId }: { activeId: string | null }) {
       titleRef.current.renderOrder = 10000;
     }
     if (subtitleRef.current) {
-      subtitleRef.current.fillOpacity = opacityRef.current * 0.85;
+      subtitleRef.current.fillOpacity = opacity * 0.85;
       if (subtitleRef.current.material) {
         subtitleRef.current.material.depthTest = false;
         subtitleRef.current.material.depthWrite = false;
