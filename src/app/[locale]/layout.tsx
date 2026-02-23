@@ -69,6 +69,9 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   return (
     <html lang={locale}>
+      <head>
+        <link rel="stylesheet" href="https://use.typekit.net/why1lhi.css" />
+      </head>
       <body className={`${outfit.variable} ${workSans.variable} ${notoSansTC.variable} ${jetbrainsMono.variable}`}>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <a href="#main-content" className="skip-link">

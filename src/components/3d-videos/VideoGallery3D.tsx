@@ -339,6 +339,7 @@ function TitleBlock({ id, phase }: { id: string; phase: CharPhase }) {
             key={i}
             style={{
               ...charTransitionStyle(phase, getTitleCharDelay(i, titleLen)),
+              // fontFamily: "'widescreen-uex', sans-serif",
               fontSize: '4vw',
               fontWeight: 700,
               color: 'white',
@@ -358,10 +359,103 @@ function TitleBlock({ id, phase }: { id: string; phase: CharPhase }) {
             key={i}
             style={{
               ...charTransitionStyle(phase, getSubtitleCharDelay(i, arr.length, titleLen)),
+              // fontFamily: "'widescreen-uex', sans-serif",
               fontSize: '1.25vw',
               fontWeight: 300,
               color: 'rgba(255,255,255,0.85)',
               textShadow: '0 0 6px rgba(0,0,0,0.9), 0 0 16px rgba(0,0,0,0.5), 0 2px 20px rgba(0,0,0,0.4)',
+              lineHeight: 1.4,
+            }}
+          >
+            {char === ' ' ? '\u00A0' : char}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── 3D Swoosh title mode ────────────────────────────────────────
+// The entire text block sits on a 3D-tilted plane (rotateY makes right=near,
+// left=far). Characters slide in along that tilted surface with simple translateX.
+// Container perspective + rotation creates the depth and visual impact.
+
+const SWOOSH_DURATION = '0.35s';
+const SWOOSH_OFFSET = 120; // px — slide distance along the tilted plane
+const EASE_OUT_3D = 'cubic-bezier(0.22, 1, 0.36, 1)';
+const EASE_IN_3D = 'cubic-bezier(0.55, 0, 1, 0.45)';
+
+function charSwooshStyle(phase: CharPhase, delay: number): React.CSSProperties {
+  const active = phase === 'enter';
+  const ease = phase === 'exit' ? EASE_IN_3D : EASE_OUT_3D;
+
+  // Characters slide along the tilted plane's local X axis:
+  // Enter from the right (near/big side) → rest → exit to the left (far/small side)
+  return {
+    display: 'inline-block',
+    opacity: active ? 1 : 0,
+    transform: active
+      ? 'translateX(0)'
+      : phase === 'exit'
+        ? `translateX(-${SWOOSH_OFFSET}px)`   // exit towards far side (left)
+        : `translateX(${SWOOSH_OFFSET}px)`,    // enter from near side (right)
+    transitionProperty: 'opacity, transform',
+    transitionDuration: SWOOSH_DURATION,
+    transitionTimingFunction: ease,
+    transitionDelay: `${delay}ms`,
+  };
+}
+
+function TitleBlock3D({ id, phase }: { id: string; phase: CharPhase }) {
+  const meta = FRAGMENT_META[id];
+  if (!meta) return null;
+
+  const titleLen = meta.title.length;
+
+  return (
+    <div
+      style={{
+        gridArea: '1 / 1',
+        pointerEvents: 'none',
+        // Tilt the whole text block in 3D:
+        // rotateY(-30deg) → right side closer to camera (appears bigger)
+        // rotateX(4deg)   → top tilts slightly back
+        // rotateZ(-2deg)  → subtle diagonal slant
+        transform: 'rotateY(-30deg) rotateX(4deg) rotateZ(-2deg)',
+        transformStyle: 'preserve-3d',
+        transformOrigin: 'left center',
+      }}
+    >
+      {/* Title */}
+      <div style={{ marginBottom: '8px', whiteSpace: 'nowrap' }}>
+        {meta.title.split('').map((char, i) => (
+          <span
+            key={i}
+            style={{
+              ...charSwooshStyle(phase, getTitleCharDelay(i, titleLen)),
+              fontSize: '4.5vw',
+              fontWeight: 700,
+              color: 'white',
+              textShadow: '0 0 10px rgba(0,0,0,0.95), 0 0 30px rgba(0,0,0,0.6), 0 4px 40px rgba(0,0,0,0.5)',
+              letterSpacing: '-0.025em',
+              lineHeight: 1.1,
+            }}
+          >
+            {char === ' ' ? '\u00A0' : char}
+          </span>
+        ))}
+      </div>
+      {/* Subtitle */}
+      <div style={{ whiteSpace: 'nowrap' }}>
+        {meta.subtitle.split('').map((char, i, arr) => (
+          <span
+            key={i}
+            style={{
+              ...charSwooshStyle(phase, getSubtitleCharDelay(i, arr.length, titleLen)),
+              fontSize: '1.4vw',
+              fontWeight: 300,
+              color: 'rgba(255,255,255,0.85)',
+              textShadow: '0 0 8px rgba(0,0,0,0.95), 0 0 20px rgba(0,0,0,0.5), 0 2px 25px rgba(0,0,0,0.4)',
               lineHeight: 1.4,
             }}
           >
@@ -427,10 +521,12 @@ function FragmentTitleOverlay({ activeId }: { activeId: string | null }) {
         left: '5rem',
         display: 'grid',
         pointerEvents: 'none',
+        perspective: '800px',
+        perspectiveOrigin: '0% 50%',
       }}
     >
       {layers.map((layer) => (
-        <TitleBlock key={layer.key} id={layer.id} phase={layer.phase} />
+        <TitleBlock3D key={layer.key} id={layer.id} phase={layer.phase} />
       ))}
     </div>
   );
