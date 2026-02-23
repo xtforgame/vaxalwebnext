@@ -2,7 +2,7 @@
 
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import type { RootState } from '@react-three/fiber';
-import { OrbitControls, useTexture } from '@react-three/drei';
+import { OrbitControls, useTexture, Text } from '@react-three/drei';
 import { Suspense, useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import VideoPlane from './VideoPlane';
@@ -282,253 +282,106 @@ function getFragmentCameraTarget(fragment: FragmentDef): { camPos: THREE.Vector3
   return { camPos, lookAt: pos, up };
 }
 
-// ─── Char-by-char text animation (matches variant-2 reference) ──
-// Reference: GSAP SplitText with [subtitleChars, titleChars] + negative stagger
-// → title chars animate FIRST (from last to first), then subtitle follows
-// Entry: x -100→0, opacity 0→1, 0.25s, power2.out
-// Exit:  x 0→100, opacity 1→0, 0.25s, power2.in
-type CharPhase = 'pre-enter' | 'enter' | 'exit';
-const CHAR_STAGGER = 20; // ms between chars (reference: 0.02s)
-const CHAR_DURATION = '0.25s';
-const CHAR_X_OFFSET = 100; // px (reference: 100)
-const EASE_OUT = 'cubic-bezier(0.33, 1, 0.68, 1)'; // power2.out
-const EASE_IN = 'cubic-bezier(0.32, 0, 0.67, 0)'; // power2.in
+// ─── 3D Fragment title (perspective depth like expect2.png) ─────
+// Single Text mesh per line. The group follows camera position but is
+// rotated relative to the camera view, so the text plane recedes into
+// depth — left side near camera (big), right side far (small).
 
-function getTitleCharDelay(charIndex: number, titleLength: number): number {
-  // Title chars: reverse stagger, starting from 0 delay for last char
-  return (titleLength - 1 - charIndex) * CHAR_STAGGER;
-}
+function FragmentTitle3D({ activeId }: { activeId: string | null }) {
+  const groupRef = useRef<THREE.Group>(null!);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const titleRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const subtitleRef = useRef<any>(null);
+  const { camera } = useThree();
+  const [displayId, setDisplayId] = useState<string | null>(null);
+  const displayIdRef = useRef<string | null>(null);
+  const opacityRef = useRef(0);
 
-function getSubtitleCharDelay(charIndex: number, subtitleLength: number, titleLength: number): number {
-  // Subtitle chars: come AFTER all title chars in the stagger sequence
-  return titleLength * CHAR_STAGGER + (subtitleLength - 1 - charIndex) * CHAR_STAGGER;
-}
-
-function charTransitionStyle(phase: CharPhase, delay: number): React.CSSProperties {
-  const active = phase === 'enter';
-  const ease = phase === 'exit' ? EASE_IN : EASE_OUT;
-
-  return {
-    display: 'inline-block',
-    opacity: active ? 1 : 0,
-    transform: active
-      ? 'translateX(0)'
-      : phase === 'exit'
-        ? `translateX(${CHAR_X_OFFSET}px)`
-        : `translateX(-${CHAR_X_OFFSET}px)`,
-    transitionProperty: 'opacity, transform',
-    transitionDuration: CHAR_DURATION,
-    transitionTimingFunction: ease,
-    transitionDelay: `${delay}ms`,
-  };
-}
-
-// Single title+subtitle block with animation phase
-function TitleBlock({ id, phase }: { id: string; phase: CharPhase }) {
-  const meta = FRAGMENT_META[id];
-  if (!meta) return null;
-
-  const titleLen = meta.title.length;
-
-  return (
-    <div style={{ gridArea: '1 / 1', pointerEvents: 'none' }}>
-      {/* Title */}
-      <div style={{ marginBottom: '8px', whiteSpace: 'nowrap' }}>
-        {meta.title.split('').map((char, i) => (
-          <span
-            key={i}
-            style={{
-              ...charTransitionStyle(phase, getTitleCharDelay(i, titleLen)),
-              // fontFamily: "'widescreen-uex', sans-serif",
-              fontSize: '4vw',
-              fontWeight: 700,
-              color: 'white',
-              textShadow: '0 0 8px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.6), 0 4px 30px rgba(0,0,0,0.5)',
-              letterSpacing: '-0.025em',
-              lineHeight: 1.1,
-            }}
-          >
-            {char === ' ' ? '\u00A0' : char}
-          </span>
-        ))}
-      </div>
-      {/* Subtitle */}
-      <div style={{ whiteSpace: 'nowrap' }}>
-        {meta.subtitle.split('').map((char, i, arr) => (
-          <span
-            key={i}
-            style={{
-              ...charTransitionStyle(phase, getSubtitleCharDelay(i, arr.length, titleLen)),
-              // fontFamily: "'widescreen-uex', sans-serif",
-              fontSize: '1.25vw',
-              fontWeight: 300,
-              color: 'rgba(255,255,255,0.85)',
-              textShadow: '0 0 6px rgba(0,0,0,0.9), 0 0 16px rgba(0,0,0,0.5), 0 2px 20px rgba(0,0,0,0.4)',
-              lineHeight: 1.4,
-            }}
-          >
-            {char === ' ' ? '\u00A0' : char}
-          </span>
-        ))}
-      </div>
-    </div>
+  // Pre-allocate reusable objects
+  const offsetVec = useRef(new THREE.Vector3());
+  // Extra rotation applied ON TOP of camera quaternion (in camera-local space):
+  // Y = 0.8 rad (~46°) → text plane angled so left is near, right is far → perspective
+  // Z = -0.5 rad (~-29°) → diagonal tilt
+  const extraQuat = useRef(
+    new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0.8, -0.5))
   );
-}
-
-// ─── 3D Swoosh title mode ────────────────────────────────────────
-// The entire text block sits on a 3D-tilted plane (rotateY makes right=near,
-// left=far). Characters slide in along that tilted surface with simple translateX.
-// Container perspective + rotation creates the depth and visual impact.
-
-const SWOOSH_DURATION = '0.35s';
-const SWOOSH_OFFSET = 120; // px — slide distance along the tilted plane
-const EASE_OUT_3D = 'cubic-bezier(0.22, 1, 0.36, 1)';
-const EASE_IN_3D = 'cubic-bezier(0.55, 0, 1, 0.45)';
-
-function charSwooshStyle(phase: CharPhase, delay: number): React.CSSProperties {
-  const active = phase === 'enter';
-  const ease = phase === 'exit' ? EASE_IN_3D : EASE_OUT_3D;
-
-  // Characters slide along the tilted plane's local X axis:
-  // Enter from the right (near/big side) → rest → exit to the left (far/small side)
-  return {
-    display: 'inline-block',
-    opacity: active ? 1 : 0,
-    transform: active
-      ? 'translateX(0)'
-      : phase === 'exit'
-        ? `translateX(-${SWOOSH_OFFSET}px)`   // exit towards far side (left)
-        : `translateX(${SWOOSH_OFFSET}px)`,    // enter from near side (right)
-    transitionProperty: 'opacity, transform',
-    transitionDuration: SWOOSH_DURATION,
-    transitionTimingFunction: ease,
-    transitionDelay: `${delay}ms`,
-  };
-}
-
-function TitleBlock3D({ id, phase }: { id: string; phase: CharPhase }) {
-  const meta = FRAGMENT_META[id];
-  if (!meta) return null;
-
-  const titleLen = meta.title.length;
-
-  return (
-    <div
-      style={{
-        gridArea: '1 / 1',
-        pointerEvents: 'none',
-        // Tilt the whole text block in 3D:
-        // rotateY(-30deg) → right side closer to camera (appears bigger)
-        // rotateX(4deg)   → top tilts slightly back
-        // rotateZ(-2deg)  → subtle diagonal slant
-        transform: 'rotateY(-30deg) rotateX(4deg) rotateZ(-2deg)',
-        transformStyle: 'preserve-3d',
-        transformOrigin: 'left center',
-      }}
-    >
-      {/* Title */}
-      <div style={{ marginBottom: '8px', whiteSpace: 'nowrap' }}>
-        {meta.title.split('').map((char, i) => (
-          <span
-            key={i}
-            style={{
-              ...charSwooshStyle(phase, getTitleCharDelay(i, titleLen)),
-              fontSize: '4.5vw',
-              fontWeight: 700,
-              color: 'white',
-              textShadow: '0 0 10px rgba(0,0,0,0.95), 0 0 30px rgba(0,0,0,0.6), 0 4px 40px rgba(0,0,0,0.5)',
-              letterSpacing: '-0.025em',
-              lineHeight: 1.1,
-            }}
-          >
-            {char === ' ' ? '\u00A0' : char}
-          </span>
-        ))}
-      </div>
-      {/* Subtitle */}
-      <div style={{ whiteSpace: 'nowrap' }}>
-        {meta.subtitle.split('').map((char, i, arr) => (
-          <span
-            key={i}
-            style={{
-              ...charSwooshStyle(phase, getSubtitleCharDelay(i, arr.length, titleLen)),
-              fontSize: '1.4vw',
-              fontWeight: 300,
-              color: 'rgba(255,255,255,0.85)',
-              textShadow: '0 0 8px rgba(0,0,0,0.95), 0 0 20px rgba(0,0,0,0.5), 0 2px 25px rgba(0,0,0,0.4)',
-              lineHeight: 1.4,
-            }}
-          >
-            {char === ' ' ? '\u00A0' : char}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// Multi-layer overlay: supports old text exiting while new text enters
-function FragmentTitleOverlay({ activeId }: { activeId: string | null }) {
-  const [layers, setLayers] = useState<{ id: string; phase: CharPhase; key: number }[]>([]);
-  const keyCounter = useRef(0);
 
   useEffect(() => {
     if (activeId) {
-      // Exit all existing layers
-      setLayers((prev) => prev.map((l) => ({ ...l, phase: 'exit' as const })));
-
-      // Add new entering layer (pre-enter first for CSS transition)
-      keyCounter.current++;
-      const newKey = keyCounter.current;
-      setLayers((prev) => [...prev, { id: activeId, phase: 'pre-enter' as const, key: newKey }]);
-
-      // Trigger enter on next paint
-      const raf1 = requestAnimationFrame(() => {
-        const raf2 = requestAnimationFrame(() => {
-          setLayers((prev) =>
-            prev.map((l) => (l.key === newKey ? { ...l, phase: 'enter' } : l)),
-          );
-        });
-        // Store raf2 for cleanup
-        void raf2;
-      });
-
-      return () => cancelAnimationFrame(raf1);
-    } else {
-      // Exit all layers
-      setLayers((prev) => prev.map((l) => ({ ...l, phase: 'exit' as const })));
+      opacityRef.current = 0;
+      displayIdRef.current = activeId;
+      setDisplayId(activeId);
     }
   }, [activeId]);
 
-  // Remove fully exited layers after animation completes
-  useEffect(() => {
-    const hasExiting = layers.some((l) => l.phase === 'exit');
-    if (hasExiting) {
-      const timer = setTimeout(() => {
-        setLayers((prev) => prev.filter((l) => l.phase !== 'exit'));
-      }, 900);
-      return () => clearTimeout(timer);
-    }
-  }, [layers]);
+  useFrame((_, delta) => {
+    if (!groupRef.current) return;
 
-  if (layers.length === 0) return null;
+    // Position: camera-relative offset, then rotate by camera orientation
+    offsetVec.current.set(-1.5, 0.5, -3).applyQuaternion(camera.quaternion);
+    groupRef.current.position.copy(camera.position).add(offsetVec.current);
+
+    // Orientation: camera-aligned + extra rotation for perspective depth
+    groupRef.current.quaternion.copy(camera.quaternion).multiply(extraQuat.current);
+
+    // Opacity fade
+    const target = activeId ? 1 : 0;
+    opacityRef.current += (target - opacityRef.current) * Math.min(1, delta * 6);
+
+    // Clear display after fade out
+    if (!activeId && opacityRef.current < 0.01 && displayIdRef.current !== null) {
+      opacityRef.current = 0;
+      displayIdRef.current = null;
+      setDisplayId(null);
+    }
+
+    // Update text materials
+    if (titleRef.current) {
+      titleRef.current.fillOpacity = opacityRef.current;
+      if (titleRef.current.material) {
+        titleRef.current.material.depthTest = false;
+        titleRef.current.material.depthWrite = false;
+      }
+      titleRef.current.renderOrder = 10000;
+    }
+    if (subtitleRef.current) {
+      subtitleRef.current.fillOpacity = opacityRef.current * 0.85;
+      if (subtitleRef.current.material) {
+        subtitleRef.current.material.depthTest = false;
+        subtitleRef.current.material.depthWrite = false;
+      }
+      subtitleRef.current.renderOrder = 10000;
+    }
+  });
+
+  const meta = displayId ? FRAGMENT_META[displayId] : null;
+  if (!meta) return null;
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: '10vh',
-        left: '5rem',
-        display: 'grid',
-        pointerEvents: 'none',
-        perspective: '800px',
-        perspectiveOrigin: '0% 50%',
-      }}
-    >
-      {layers.map((layer) => (
-        <TitleBlock3D key={layer.key} id={layer.id} phase={layer.phase} />
-      ))}
-    </div>
+    <group ref={groupRef}>
+      <Text
+        ref={titleRef}
+        fontSize={0.8}
+        color="white"
+        anchorX="left"
+        anchorY="top"
+        fillOpacity={0}
+      >
+        {meta.title}
+      </Text>
+      <Text
+        ref={subtitleRef}
+        position={[0, -0.9, 0]}
+        fontSize={0.22}
+        color="white"
+        anchorX="left"
+        anchorY="top"
+        fillOpacity={0}
+      >
+        {meta.subtitle}
+      </Text>
+    </group>
   );
 }
 
@@ -820,6 +673,8 @@ export default function VideoGallery3D() {
             />
           )}
 
+          <FragmentTitle3D activeId={activeTitle} />
+
           <OrbitControls
             ref={controlsRef}
             makeDefault
@@ -842,9 +697,6 @@ export default function VideoGallery3D() {
         pointerEvents: 'none',
       }}
     >
-      {/* Title overlay */}
-      <FragmentTitleOverlay activeId={activeTitle} />
-
       {/* Back button (manual focus, not during tour) */}
       {focusedId !== null && !isTourActive && (
         <button
