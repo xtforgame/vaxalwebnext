@@ -37,11 +37,26 @@ const GLASS_PANELS = [
 type FragmentDef = { id: string; pos: [number, number, number]; rot: [number, number, number] };
 const ALL_FRAGMENTS: FragmentDef[] = [...PLANES, ...GLASS_PANELS];
 
+// ─── Fragment titles (random) ───────────────────────────────────
+const FRAGMENT_META: Record<string, { title: string; subtitle: string }> = {
+  '1': { title: 'Distant Echo', subtitle: 'A memory fading into silence' },
+  '2': { title: 'Neon Drift', subtitle: 'Lights bleeding through the void' },
+  '3': { title: 'Frozen Pulse', subtitle: 'Time suspended in crystal' },
+  '4': { title: 'Solar Wind', subtitle: 'Particles dancing at light speed' },
+  '5': { title: 'Deep Current', subtitle: 'Waves beneath the surface' },
+  '6': { title: 'Ghost Signal', subtitle: 'Transmission from another world' },
+  '7': { title: 'Void Bloom', subtitle: 'Flowers growing in zero gravity' },
+  '8': { title: 'Static Dream', subtitle: 'Consciousness between channels' },
+  'g1': { title: 'Crystal Memory', subtitle: 'Fragments preserved in glass' },
+  'g2': { title: 'Emerald Gate', subtitle: 'Portal to forgotten realms' },
+  'g3': { title: 'Amethyst Core', subtitle: 'Energy crystallized in time' },
+};
+
 const INITIAL_CAM_POS = new THREE.Vector3(0, 0, 20);
 const INITIAL_LOOK_AT = new THREE.Vector3(0, 0, 0);
 const LERP_SPEED = 3;
 const TOUR_FLIGHT_DURATION = 2; // seconds per flight
-const TOUR_DWELL_TIME = 500; // ms
+const TOUR_DWELL_TIME = 2500; // ms — enough time to read the title
 const TOUR_VIEW_DISTANCE = 5; // how far camera sits from fragment
 
 type TourPhase = 'idle' | 'flying-to' | 'dwelling' | 'flying-back';
@@ -125,11 +140,12 @@ function useSharedVideoTextures() {
 interface CameraControllerProps {
   target: THREE.Vector3 | null;
   lookAt: THREE.Vector3 | null;
+  targetUp: THREE.Vector3 | null;
   controlsRef: React.RefObject<typeof OrbitControls | null>;
   onAnimationEnd?: () => void;
 }
 
-function CameraController({ target, lookAt, controlsRef, onAnimationEnd }: CameraControllerProps) {
+function CameraController({ target, lookAt, targetUp, controlsRef, onAnimationEnd }: CameraControllerProps) {
   const { camera } = useThree();
   const currentLookAt = useRef(new THREE.Vector3(0, 0, 0));
   const isAnimating = useRef(false);
@@ -143,14 +159,18 @@ function CameraController({ target, lookAt, controlsRef, onAnimationEnd }: Camer
 
     const dest = target ?? INITIAL_CAM_POS;
     const look = lookAt ?? new THREE.Vector3(0, 0, 0);
+    const up = targetUp ?? new THREE.Vector3(0, 1, 0);
+    const t = Math.min(1, delta * LERP_SPEED);
 
-    camera.position.lerp(dest, Math.min(1, delta * LERP_SPEED));
-    currentLookAt.current.lerp(look, Math.min(1, delta * LERP_SPEED));
+    camera.position.lerp(dest, t);
+    camera.up.lerp(up, t).normalize();
+    currentLookAt.current.lerp(look, t);
     camera.lookAt(currentLookAt.current);
 
     // Check if close enough to stop
     if (camera.position.distanceTo(dest) < 0.01) {
       camera.position.copy(dest);
+      camera.up.copy(up).normalize();
       currentLookAt.current.copy(look);
       camera.lookAt(look);
       isAnimating.current = false;
@@ -177,9 +197,10 @@ interface TourCameraControllerProps {
   targetUp: THREE.Vector3;
   controlsRef: React.RefObject<typeof OrbitControls | null>;
   onArrive: () => void;
+  onMidpoint?: () => void;
 }
 
-function TourCameraController({ phase, targetPos, targetLookAt, targetUp, controlsRef, onArrive }: TourCameraControllerProps) {
+function TourCameraController({ phase, targetPos, targetLookAt, targetUp, controlsRef, onArrive, onMidpoint }: TourCameraControllerProps) {
   const { camera } = useThree();
   const progress = useRef(0);
   const startPos = useRef(new THREE.Vector3());
@@ -188,6 +209,7 @@ function TourCameraController({ phase, targetPos, targetLookAt, targetUp, contro
   const currentLookAt = useRef(new THREE.Vector3());
   const prevTargetId = useRef('');
   const arrivedRef = useRef(false);
+  const midpointFired = useRef(false);
 
   // Reset animation when target changes
   useEffect(() => {
@@ -205,6 +227,7 @@ function TourCameraController({ phase, targetPos, targetLookAt, targetUp, contro
     currentLookAt.current.copy(startLookAt.current);
     progress.current = 0;
     arrivedRef.current = false;
+    midpointFired.current = false;
   }, [phase, targetPos, camera]);
 
   useFrame((_, delta) => {
@@ -221,6 +244,12 @@ function TourCameraController({ phase, targetPos, targetLookAt, targetUp, contro
     // Interpolate lookAt
     currentLookAt.current.lerpVectors(startLookAt.current, targetLookAt, t);
     camera.lookAt(currentLookAt.current);
+
+    // Fire midpoint callback when easeIn transitions to easeOut
+    if (!midpointFired.current && progress.current >= 0.5) {
+      midpointFired.current = true;
+      onMidpoint?.();
+    }
 
     if (progress.current >= 1) {
       camera.position.copy(targetPos);
@@ -251,6 +280,160 @@ function getFragmentCameraTarget(fragment: FragmentDef): { camPos: THREE.Vector3
   const up = new THREE.Vector3(0, 1, 0).applyQuaternion(quat);
   const camPos = pos.clone().add(normal.clone().multiplyScalar(TOUR_VIEW_DISTANCE));
   return { camPos, lookAt: pos, up };
+}
+
+// ─── Char-by-char text animation (matches variant-2 reference) ──
+// Reference: GSAP SplitText with [subtitleChars, titleChars] + negative stagger
+// → title chars animate FIRST (from last to first), then subtitle follows
+// Entry: x -100→0, opacity 0→1, 0.25s, power2.out
+// Exit:  x 0→100, opacity 1→0, 0.25s, power2.in
+type CharPhase = 'pre-enter' | 'enter' | 'exit';
+const CHAR_STAGGER = 20; // ms between chars (reference: 0.02s)
+const CHAR_DURATION = '0.25s';
+const CHAR_X_OFFSET = 100; // px (reference: 100)
+const EASE_OUT = 'cubic-bezier(0.33, 1, 0.68, 1)'; // power2.out
+const EASE_IN = 'cubic-bezier(0.32, 0, 0.67, 0)'; // power2.in
+
+function getTitleCharDelay(charIndex: number, titleLength: number): number {
+  // Title chars: reverse stagger, starting from 0 delay for last char
+  return (titleLength - 1 - charIndex) * CHAR_STAGGER;
+}
+
+function getSubtitleCharDelay(charIndex: number, subtitleLength: number, titleLength: number): number {
+  // Subtitle chars: come AFTER all title chars in the stagger sequence
+  return titleLength * CHAR_STAGGER + (subtitleLength - 1 - charIndex) * CHAR_STAGGER;
+}
+
+function charTransitionStyle(phase: CharPhase, delay: number): React.CSSProperties {
+  const active = phase === 'enter';
+  const ease = phase === 'exit' ? EASE_IN : EASE_OUT;
+
+  return {
+    display: 'inline-block',
+    opacity: active ? 1 : 0,
+    transform: active
+      ? 'translateX(0)'
+      : phase === 'exit'
+        ? `translateX(${CHAR_X_OFFSET}px)`
+        : `translateX(-${CHAR_X_OFFSET}px)`,
+    transitionProperty: 'opacity, transform',
+    transitionDuration: CHAR_DURATION,
+    transitionTimingFunction: ease,
+    transitionDelay: `${delay}ms`,
+  };
+}
+
+// Single title+subtitle block with animation phase
+function TitleBlock({ id, phase }: { id: string; phase: CharPhase }) {
+  const meta = FRAGMENT_META[id];
+  if (!meta) return null;
+
+  const titleLen = meta.title.length;
+
+  return (
+    <div style={{ gridArea: '1 / 1', pointerEvents: 'none' }}>
+      {/* Title */}
+      <div style={{ marginBottom: '8px', whiteSpace: 'nowrap' }}>
+        {meta.title.split('').map((char, i) => (
+          <span
+            key={i}
+            style={{
+              ...charTransitionStyle(phase, getTitleCharDelay(i, titleLen)),
+              fontSize: '4vw',
+              fontWeight: 700,
+              color: 'white',
+              textShadow: '0 0 8px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.6), 0 4px 30px rgba(0,0,0,0.5)',
+              letterSpacing: '-0.025em',
+              lineHeight: 1.1,
+            }}
+          >
+            {char === ' ' ? '\u00A0' : char}
+          </span>
+        ))}
+      </div>
+      {/* Subtitle */}
+      <div style={{ whiteSpace: 'nowrap' }}>
+        {meta.subtitle.split('').map((char, i, arr) => (
+          <span
+            key={i}
+            style={{
+              ...charTransitionStyle(phase, getSubtitleCharDelay(i, arr.length, titleLen)),
+              fontSize: '1.25vw',
+              fontWeight: 300,
+              color: 'rgba(255,255,255,0.85)',
+              textShadow: '0 0 6px rgba(0,0,0,0.9), 0 0 16px rgba(0,0,0,0.5), 0 2px 20px rgba(0,0,0,0.4)',
+              lineHeight: 1.4,
+            }}
+          >
+            {char === ' ' ? '\u00A0' : char}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Multi-layer overlay: supports old text exiting while new text enters
+function FragmentTitleOverlay({ activeId }: { activeId: string | null }) {
+  const [layers, setLayers] = useState<{ id: string; phase: CharPhase; key: number }[]>([]);
+  const keyCounter = useRef(0);
+
+  useEffect(() => {
+    if (activeId) {
+      // Exit all existing layers
+      setLayers((prev) => prev.map((l) => ({ ...l, phase: 'exit' as const })));
+
+      // Add new entering layer (pre-enter first for CSS transition)
+      keyCounter.current++;
+      const newKey = keyCounter.current;
+      setLayers((prev) => [...prev, { id: activeId, phase: 'pre-enter' as const, key: newKey }]);
+
+      // Trigger enter on next paint
+      const raf1 = requestAnimationFrame(() => {
+        const raf2 = requestAnimationFrame(() => {
+          setLayers((prev) =>
+            prev.map((l) => (l.key === newKey ? { ...l, phase: 'enter' } : l)),
+          );
+        });
+        // Store raf2 for cleanup
+        void raf2;
+      });
+
+      return () => cancelAnimationFrame(raf1);
+    } else {
+      // Exit all layers
+      setLayers((prev) => prev.map((l) => ({ ...l, phase: 'exit' as const })));
+    }
+  }, [activeId]);
+
+  // Remove fully exited layers after animation completes
+  useEffect(() => {
+    const hasExiting = layers.some((l) => l.phase === 'exit');
+    if (hasExiting) {
+      const timer = setTimeout(() => {
+        setLayers((prev) => prev.filter((l) => l.phase !== 'exit'));
+      }, 900);
+      return () => clearTimeout(timer);
+    }
+  }, [layers]);
+
+  if (layers.length === 0) return null;
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: '10vh',
+        left: '5rem',
+        display: 'grid',
+        pointerEvents: 'none',
+      }}
+    >
+      {layers.map((layer) => (
+        <TitleBlock key={layer.key} id={layer.id} phase={layer.phase} />
+      ))}
+    </div>
+  );
 }
 
 // ─── Scene (inside Canvas) ───────────────────────────────────────
@@ -302,13 +485,18 @@ export default function VideoGallery3D() {
   const focusedIdRef = useRef<string | null>(null);
   const [cameraTarget, setCameraTarget] = useState<THREE.Vector3 | null>(null);
   const [cameraLookAt, setCameraLookAt] = useState<THREE.Vector3 | null>(null);
+  const [cameraUp, setCameraUp] = useState<THREE.Vector3 | null>(null);
   const [controlsEnabled, setControlsEnabled] = useState(true);
   const controlsRef = useRef(null);
+
+  // ─── Title overlay ─────────────────────────────────────────────
+  const [activeTitle, setActiveTitle] = useState<string | null>(null);
 
   // ─── Tour state ───────────────────────────────────────────────
   const [tourPhase, setTourPhase] = useState<TourPhase>('idle');
   const [tourIndex, setTourIndex] = useState(0);
   const tourPhaseRef = useRef<TourPhase>('idle');
+  const tourIndexRef = useRef(0);
 
   const tourTarget = useMemo(() => {
     if (tourPhase === 'flying-back') {
@@ -325,11 +513,14 @@ export default function VideoGallery3D() {
     focusedIdRef.current = null;
     setControlsEnabled(false);
     setTourIndex(0);
+    tourIndexRef.current = 0;
     setTourPhase('flying-to');
     tourPhaseRef.current = 'flying-to';
+    // Title will enter at flight midpoint via onMidpoint callback
   }, []);
 
   const handleCancelTour = useCallback(() => {
+    setActiveTitle(null);
     setTourPhase('flying-back');
     tourPhaseRef.current = 'flying-back';
   }, []);
@@ -337,7 +528,6 @@ export default function VideoGallery3D() {
   const handleTourArrive = useCallback(() => {
     const phase = tourPhaseRef.current;
     if (phase === 'flying-back') {
-      // Returned home
       setTourPhase('idle');
       tourPhaseRef.current = 'idle';
       setControlsEnabled(true);
@@ -345,28 +535,37 @@ export default function VideoGallery3D() {
     }
 
     if (phase === 'flying-to') {
-      // Arrived at a fragment — dwell
+      // Title is already showing (set at start of flight) — hold during dwell
       setTourPhase('dwelling');
       tourPhaseRef.current = 'dwelling';
 
       setTimeout(() => {
-        // Check if tour was cancelled during dwell
         if (tourPhaseRef.current !== 'dwelling') return;
 
         setTourIndex((prev) => {
           const next = prev + 1;
           if (next >= ALL_FRAGMENTS.length) {
-            // Tour complete — fly back
+            // Tour complete — exit title and fly back
+            setActiveTitle(null);
             setTourPhase('flying-back');
             tourPhaseRef.current = 'flying-back';
             return prev;
           }
-          // Advance to next fragment
+          tourIndexRef.current = next;
+          // Exit old title now; new title enters at flight midpoint
+          setActiveTitle(null);
           setTourPhase('flying-to');
           tourPhaseRef.current = 'flying-to';
           return next;
         });
       }, TOUR_DWELL_TIME);
+    }
+  }, []);
+
+  const handleTourMidpoint = useCallback(() => {
+    // New title enters at the easeIn→easeOut inflection point
+    if (tourPhaseRef.current === 'flying-to' && tourIndexRef.current < ALL_FRAGMENTS.length) {
+      setActiveTitle(ALL_FRAGMENTS[tourIndexRef.current].id);
     }
   }, []);
 
@@ -410,16 +609,29 @@ export default function VideoGallery3D() {
     setFocusedId(id);
     focusedIdRef.current = id;
     setControlsEnabled(false);
+    // Show title at start of flight (easeIn)
+    setActiveTitle(id);
     const camPos = planePos.clone().add(planeNormal.clone().multiplyScalar(5));
     setCameraTarget(camPos);
     setCameraLookAt(planePos.clone());
+
+    // Compute up vector from fragment's rotation
+    const fragment = ALL_FRAGMENTS.find((f) => f.id === id);
+    if (fragment) {
+      const euler = new THREE.Euler(...fragment.rot);
+      const quat = new THREE.Quaternion().setFromEuler(euler);
+      const up = new THREE.Vector3(0, 1, 0).applyQuaternion(quat);
+      setCameraUp(up);
+    }
   }, []);
 
   const handleBack = useCallback(() => {
+    setActiveTitle(null);
     setFocusedId(null);
     focusedIdRef.current = null;
     setCameraTarget(null);
     setCameraLookAt(null);
+    setCameraUp(null);
   }, []);
 
   const handleAnimationEnd = useCallback(() => {
@@ -493,6 +705,7 @@ export default function VideoGallery3D() {
             <CameraController
               target={cameraTarget}
               lookAt={cameraLookAt}
+              targetUp={cameraUp}
               controlsRef={controlsRef}
               onAnimationEnd={handleAnimationEnd}
             />
@@ -507,6 +720,7 @@ export default function VideoGallery3D() {
               targetUp={tourTarget.up}
               controlsRef={controlsRef}
               onArrive={handleTourArrive}
+              onMidpoint={handleTourMidpoint}
             />
           )}
 
@@ -532,6 +746,9 @@ export default function VideoGallery3D() {
         pointerEvents: 'none',
       }}
     >
+      {/* Title overlay */}
+      <FragmentTitleOverlay activeId={activeTitle} />
+
       {/* Back button (manual focus, not during tour) */}
       {focusedId !== null && !isTourActive && (
         <button
