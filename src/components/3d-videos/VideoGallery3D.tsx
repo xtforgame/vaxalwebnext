@@ -9,7 +9,7 @@ import * as THREE from 'three';
 import GalleryScene from './GalleryScene';
 import CameraController from './CameraController';
 import TourCameraController from './TourCameraController';
-import FragmentTitle3D from './FragmentTitle3D';
+import RingTitle3D from './RingTitle3D';
 import {
   ALL_FRAGMENTS,
   INITIAL_CAM_POS,
@@ -257,7 +257,7 @@ export default function VideoGallery3D() {
             />
           )}
 
-          <FragmentTitle3D activeId={activeTitle} />
+          <RingTitle3D activeId={activeTitle} />
 
           <OrbitControls
             ref={controlsRef}
