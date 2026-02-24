@@ -301,8 +301,8 @@ function getFragmentCameraTarget(fragment: FragmentDef): { camPos: THREE.Vector3
 // depth — left side near camera (big), right side far (small).
 
 // ─── Title tunables (adjust these to reposition / restyle) ────
-const TITLE_OFFSET_X = -2.8;   // camera-local X: negative = left
-const TITLE_OFFSET_Y = 1.4;    // camera-local Y: positive = up
+const TITLE_OFFSET_X = -3.8;   // camera-local X: negative = left
+const TITLE_OFFSET_Y = 0.4;    // camera-local Y: positive = up
 const TITLE_OFFSET_Z = -5.0;   // camera-local Z: negative = further from camera
 const TITLE_ROTATE_Y = 0.8;    // radians – perspective depth
 const TITLE_ROTATE_Z = 0.5;    // radians – diagonal tilt
