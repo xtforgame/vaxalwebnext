@@ -14,6 +14,7 @@ const RING_OFFSET_Z     = 0.0;       // center Z offset from camera (+ = forward
 const RING_TILT_X       = 0.0;       // radians — pitch tilt (lean forward/back)
 const RING_TILT_Z       = 0.0;       // radians — roll tilt (lean sideways)
 const SUBTITLE_Y_OFFSET = -0.35;     // Y gap between title and subtitle on ring
+const RING_REST_ANGLE   = 0.0;       // radians — where text stops (0 = dead center, + = right, - = left)
 const ENTER_START_ANGLE = -Math.PI;  // radians — text starts behind camera (opposite side)
 const EXIT_END_ANGLE    = Math.PI;   // radians — text exits past front to behind (opposite side)
 const ENTER_DURATION    = 1000;      // ms
@@ -142,13 +143,13 @@ export default function RingTitle3D({ activeId }: { activeId: string | null }) {
     ringGroupRef.current.position.copy(camera.position).add(offsetVec.current);
 
     // 3. Compute Y rotation from animation progress
+    //    Enter: ENTER_START_ANGLE → RING_REST_ANGLE
+    //    Exit:  RING_REST_ANGLE  → EXIT_END_ANGLE
     let yAngle: number;
     if (animPhase.current === 'exiting') {
-      // Exit: 0 → EXIT_END_ANGLE (same spin direction, continues past)
-      yAngle = EXIT_END_ANGLE * (1 - animProgress.current);
+      yAngle = EXIT_END_ANGLE + (RING_REST_ANGLE - EXIT_END_ANGLE) * animProgress.current;
     } else {
-      // Enter / idle: ENTER_START_ANGLE → 0
-      yAngle = ENTER_START_ANGLE * (1 - animProgress.current);
+      yAngle = ENTER_START_ANGLE + (RING_REST_ANGLE - ENTER_START_ANGLE) * animProgress.current;
     }
 
     // 4. Compose orientation: camera × tilt × Y-spin
