@@ -1,8 +1,9 @@
 'use client';
 
-import { Canvas, useThree, useFrame } from '@react-three/fiber';
+import { Canvas, useThree, useFrame, useLoader } from '@react-three/fiber';
 import type { RootState } from '@react-three/fiber';
-import { OrbitControls, useTexture, Text } from '@react-three/drei';
+import { OrbitControls, useTexture } from '@react-three/drei';
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { Suspense, useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import VideoPlane from './VideoPlane';
@@ -164,6 +165,7 @@ function CameraController({ target, lookAt, targetUp, controlsRef, onAnimationEn
     isAnimating.current = true;
   }, [target]);
 
+  // Priority -1: run BEFORE title useFrame (priority 0) so camera is updated first
   useFrame((_, delta) => {
     if (!isAnimating.current) return;
 
@@ -194,7 +196,7 @@ function CameraController({ target, lookAt, targetUp, controlsRef, onAnimationEn
       }
       onAnimationEnd?.();
     }
-  });
+  }, -1);
 
   return null;
 }
@@ -240,6 +242,7 @@ function TourCameraController({ phase, targetPos, targetLookAt, targetUp, contro
     midpointFired.current = false;
   }, [phase, targetPos, camera]);
 
+  // Priority -1: run BEFORE title useFrame (priority 0) so camera is updated first
   useFrame((_, delta) => {
     if (phase === 'idle' || phase === 'dwelling') return;
     if (arrivedRef.current) return;
@@ -276,7 +279,7 @@ function TourCameraController({ phase, targetPos, targetLookAt, targetUp, contro
       }
       onArrive();
     }
-  });
+  }, -1);
 
   return null;
 }
@@ -307,13 +310,19 @@ const TITLE_ENTER_DURATION = 800; // ms
 const TITLE_EXIT_DURATION = 600;
 const TITLE_SLIDE_DISTANCE = 3; // local-X units along diagonal
 
+const FONT_URL = '/fonts/MPLUSRounded1c-Regular.typeface.json';
+const TITLE_FONT_SIZE = 0.8;
+const SUBTITLE_FONT_SIZE = 0.22;
+
 function FragmentTitle3D({ activeId }: { activeId: string | null }) {
   const groupRef = useRef<THREE.Group>(null!);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const titleRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const subtitleRef = useRef<any>(null);
+  const titleMatRef = useRef<THREE.MeshBasicMaterial>(null!);
+  const subtitleMatRef = useRef<THREE.MeshBasicMaterial>(null!);
   const { camera } = useThree();
+
+  // Load font via Three.js FontLoader (no troika — no GPOS/GSUB crashes)
+  const font = useLoader(FontLoader, FONT_URL);
+
   const [displayId, setDisplayId] = useState<string | null>(null);
   const displayIdRef = useRef<string | null>(null);
 
@@ -343,6 +352,27 @@ function FragmentTitle3D({ activeId }: { activeId: string | null }) {
     }
   }, [activeId]);
 
+  const meta = displayId ? FRAGMENT_META[displayId] : null;
+
+  // Generate ShapeGeometry from font (native Three.js — no troika)
+  const titleGeo = useMemo(() => {
+    if (!meta) return null;
+    const shapes = font.generateShapes(meta.title, TITLE_FONT_SIZE);
+    const geo = new THREE.ShapeGeometry(shapes);
+    geo.computeBoundingBox();
+    return geo;
+  }, [font, meta]);
+
+  const subtitleGeo = useMemo(() => {
+    if (!meta) return null;
+    const shapes = font.generateShapes(meta.subtitle, SUBTITLE_FONT_SIZE);
+    const geo = new THREE.ShapeGeometry(shapes);
+    geo.computeBoundingBox();
+    return geo;
+  }, [font, meta]);
+
+  // Priority 0 (default): runs AFTER camera controllers (priority -1),
+  // so camera.position/quaternion are already up-to-date this frame.
   useFrame(() => {
     if (!groupRef.current) return;
 
@@ -372,9 +402,6 @@ function FragmentTitle3D({ activeId }: { activeId: string | null }) {
     groupRef.current.quaternion.copy(camera.quaternion).multiply(extraQuat.current);
 
     // ── Slide: one-directional flow (like water) ──
-    // Entry: starts at +X (lower-right off-screen) → slides to rest (0)
-    // Exit:  slides from rest (0) → continues to -X (upper-left off-screen)
-    // Both move in the same -X direction through the rest position.
     let slideX: number;
     if (animPhase.current === 'exiting') {
       slideX = -(1 - animProgress.current) * TITLE_SLIDE_DISTANCE;
@@ -384,52 +411,40 @@ function FragmentTitle3D({ activeId }: { activeId: string | null }) {
     slideVec.current.set(slideX, 0, 0).applyQuaternion(groupRef.current.quaternion);
     groupRef.current.position.add(slideVec.current);
 
-    // ── Update text opacity + material ──
+    // ── Update material opacity ──
     const opacity = animProgress.current;
-    if (titleRef.current) {
-      titleRef.current.fillOpacity = opacity;
-      if (titleRef.current.material) {
-        titleRef.current.material.depthTest = false;
-        titleRef.current.material.depthWrite = false;
-      }
-      titleRef.current.renderOrder = 10000;
-    }
-    if (subtitleRef.current) {
-      subtitleRef.current.fillOpacity = opacity * 0.85;
-      if (subtitleRef.current.material) {
-        subtitleRef.current.material.depthTest = false;
-        subtitleRef.current.material.depthWrite = false;
-      }
-      subtitleRef.current.renderOrder = 10000;
-    }
+    if (titleMatRef.current) titleMatRef.current.opacity = opacity;
+    if (subtitleMatRef.current) subtitleMatRef.current.opacity = opacity * 0.85;
   });
 
-  const meta = displayId ? FRAGMENT_META[displayId] : null;
-  if (!meta) return null;
+  if (!meta || !titleGeo) return null;
 
   return (
     <group ref={groupRef}>
-      <Text
-        ref={titleRef}
-        fontSize={0.8}
-        color="white"
-        anchorX="left"
-        anchorY="top"
-        fillOpacity={0}
-      >
-        {meta.title}
-      </Text>
-      <Text
-        ref={subtitleRef}
-        position={[0, -0.9, 0]}
-        fontSize={0.22}
-        color="white"
-        anchorX="left"
-        anchorY="top"
-        fillOpacity={0}
-      >
-        {meta.subtitle}
-      </Text>
+      <mesh geometry={titleGeo} renderOrder={10000}>
+        <meshBasicMaterial
+          ref={titleMatRef}
+          color="white"
+          side={THREE.DoubleSide}
+          transparent
+          opacity={0}
+          depthTest={false}
+          depthWrite={false}
+        />
+      </mesh>
+      {subtitleGeo && (
+        <mesh geometry={subtitleGeo} position={[0, -0.3, 0]} renderOrder={10000}>
+          <meshBasicMaterial
+            ref={subtitleMatRef}
+            color="white"
+            side={THREE.DoubleSide}
+            transparent
+            opacity={0}
+            depthTest={false}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
     </group>
   );
 }
