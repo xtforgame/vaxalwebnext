@@ -5,6 +5,7 @@ import type { RootState } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { Suspense, useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
+import { Leva } from 'leva';
 
 import GalleryScene from './GalleryScene';
 import CameraController from './CameraController';
@@ -30,6 +31,21 @@ export default function VideoGallery3D() {
 
   // ─── Title overlay ─────────────────────────────────────────────
   const [activeTitle, setActiveTitle] = useState<string | null>(null);
+
+  // ─── Debug mode ─────────────────────────────────────────────────
+  const [debugMode, setDebugMode] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        setDebugMode((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // ─── Tour state ───────────────────────────────────────────────
   const [tourPhase, setTourPhase] = useState<TourPhase>('idle');
@@ -257,7 +273,7 @@ export default function VideoGallery3D() {
             />
           )}
 
-          <RingTitle3D activeId={activeTitle} />
+          <RingTitle3D activeId={activeTitle} debug={debugMode} />
 
           <OrbitControls
             ref={controlsRef}
@@ -268,6 +284,8 @@ export default function VideoGallery3D() {
         </Canvas>
       </Suspense>
     </div>
+
+    <Leva hidden={!debugMode} collapsed={false} />
 
     {/* UI overlay — own stacking context above everything (z-200) */}
     <div
@@ -281,6 +299,19 @@ export default function VideoGallery3D() {
         pointerEvents: 'none',
       }}
     >
+      {/* Debug toggle (Shift+D) */}
+      <button
+        onClick={() => setDebugMode((prev) => !prev)}
+        style={{ pointerEvents: 'auto' }}
+        className={`absolute top-8 left-8 px-3 py-1.5 rounded-full border text-xs font-mono transition-colors cursor-pointer ${
+          debugMode
+            ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+            : 'bg-white/5 border-white/10 text-white/30 hover:bg-white/10 hover:text-white/50'
+        }`}
+      >
+        {debugMode ? 'DEBUG ON' : 'DEBUG'}
+      </button>
+
       {/* Back button (manual focus, not during tour) */}
       {focusedId !== null && !isTourActive && (
         <button

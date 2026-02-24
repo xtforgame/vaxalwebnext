@@ -44,6 +44,98 @@ export const FRAGMENT_META: Record<string, { title: string; subtitle: string }> 
   'g3': { title: 'Amethyst Core', subtitle: 'Energy crystallized in time' },
 };
 
+// ─── Easing helpers ─────────────────────────────────────────────
+export type EasingFn = (t: number) => number;
+export const easeOutCubic: EasingFn = (t) => 1 - Math.pow(1 - t, 3);
+export const easeInCubic: EasingFn = (t) => t * t * t;
+export const easeOutQuad: EasingFn = (t) => 1 - (1 - t) * (1 - t);
+export const easeInQuad: EasingFn = (t) => t * t;
+export const linear: EasingFn = (t) => t;
+
+/** Name → function map (used by debug panel easing dropdown) */
+export const EASING_MAP: Record<string, EasingFn> = {
+  easeOutCubic,
+  easeInCubic,
+  easeOutQuad,
+  easeInQuad,
+  linear,
+};
+
+// ─── Ring title config (per-fragment) ───────────────────────────
+export interface RingConfig {
+  radius: number;
+  offsetX: number;
+  offsetY: number;
+  offsetZ: number;
+  tiltX: number;          // radians — pitch
+  tiltZ: number;          // radians — roll
+  subtitleYOffset: number;
+  restAngle: number;      // radians — where text stops (0 = dead center)
+  enterStartAngle: number;
+  exitEndAngle: number;
+  enterDuration: number;  // ms
+  exitDuration: number;   // ms
+  opacityRamp: number;    // fraction of animation for opacity fade
+  titleFontSize: number;
+  subtitleFontSize: number;
+  enterEasing: EasingFn;  // maps raw t (0→1) to eased progress
+  exitEasing: EasingFn;   // maps raw t (0→1) to eased progress (result used as 1→0)
+}
+
+export const DEFAULT_RING_CONFIG: RingConfig = {
+  radius: 4.0,
+  offsetX: 0.0,
+  offsetY: 0.0,
+  offsetZ: 0.0,
+  tiltX: 0.0,
+  tiltZ: 0.0,
+  subtitleYOffset: -0.35,
+  restAngle: 0.0,
+  enterStartAngle: -Math.PI,
+  exitEndAngle: Math.PI,
+  enterDuration: 1000,
+  exitDuration: 800,
+  opacityRamp: 0.2,
+  titleFontSize: 0.8,
+  subtitleFontSize: 0.22,
+  enterEasing: easeOutCubic,
+  exitEasing: easeInCubic,
+
+  // radius: 16.0,
+  // titleFontSize: 1.6,
+  // subtitleFontSize: 0.44,
+  // restAngle: Math.PI / 3,
+
+  // offsetX: 10.4,
+  // offsetY: 0.2,
+  // tiltZ: -0.25,
+
+  radius: 7.1, titleFontSize: 0.3, subtitleFontSize: 0.11, subtitleYOffset: -0.15, offsetX: 4.9, offsetY: -1.3, offsetZ: -0.1, tiltX: 0.71, tiltZ: 0.08, restAngle: 1,
+};
+
+/** Per-fragment overrides — omitted fields fall back to DEFAULT_RING_CONFIG */
+export const RING_CONFIGS: Record<string, Partial<RingConfig>> = {
+  // Example:
+  // '1': { radius: 5.0, tiltZ: 0.15, enterDuration: 1200 },
+  // 'g1': { enterEasing: easeOutQuad, exitEasing: easeInQuad },
+  '1': {},
+  '2': {},
+  '3': {},
+  '4': {},
+  '5': {},
+  '6': {},
+  '7': {},
+  '8': {},
+  'g1': {},
+  'g2': {},
+  'g3': {},
+};
+
+/** Merge per-fragment overrides with defaults */
+export function getRingConfig(id: string): RingConfig {
+  return { ...DEFAULT_RING_CONFIG, ...RING_CONFIGS[id] };
+}
+
 // ─── Camera / tour constants ────────────────────────────────────
 export const INITIAL_CAM_POS = new THREE.Vector3(0, 0, 20);
 export const INITIAL_LOOK_AT = new THREE.Vector3(0, 0, 0);
