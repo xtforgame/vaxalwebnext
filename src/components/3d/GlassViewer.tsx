@@ -2,10 +2,10 @@
 
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, Float, useCubeTexture, useTexture } from '@react-three/drei';
-import { Suspense, useEffect, useState, useCallback } from 'react';
+import { Suspense } from 'react';
 import MobileLayout3D from './MobileLayout3D';
-import type { RootState } from '@react-three/fiber';
 import * as THREE from 'three';
+import { useWebGLRecovery } from '@/hooks/useWebGLRecovery';
 
 function SkyboxEnvironment() {
   const { scene } = useThree();
@@ -34,64 +34,7 @@ function PanoramaEnvironment() {
 }
 
 export default function GlassViewer() {
-  const [contextLost, setContextLost] = useState(false);
-  const [canvasKey, setCanvasKey] = useState(0);
-
-  const handleCreated = useCallback((state: RootState) => {
-    const canvas = state.gl.domElement;
-
-    const handleContextLost = (event: Event) => {
-      event.preventDefault();
-      console.warn('WebGL context lost. Attempting recovery...');
-      setContextLost(true);
-    };
-
-    const handleContextRestored = () => {
-      console.log('WebGL context restored.');
-      setContextLost(false);
-    };
-
-    canvas.addEventListener('webglcontextlost', handleContextLost);
-    canvas.addEventListener('webglcontextrestored', handleContextRestored);
-
-    interface RecoverableRenderer extends THREE.WebGLRenderer {
-      __cleanupListeners?: () => void;
-    }
-
-    // Cleanup function - store in state.gl for disposal
-    (state.gl as RecoverableRenderer).__cleanupListeners = () => {
-      canvas.removeEventListener('webglcontextlost', handleContextLost);
-      canvas.removeEventListener('webglcontextrestored', handleContextRestored);
-    };
-  }, []);
-
-  // Force re-mount canvas when context is lost
-  useEffect(() => {
-    if (contextLost) {
-      const timer = setTimeout(() => {
-        setCanvasKey(prev => prev + 1);
-        setContextLost(false);
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [contextLost]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      // Force garbage collection hint
-      if (typeof window !== 'undefined') {
-        const canvases = document.querySelectorAll('canvas');
-        canvases.forEach(canvas => {
-          const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-          if (gl) {
-            const ext = gl.getExtension('WEBGL_lose_context');
-            if (ext) ext.loseContext();
-          }
-        });
-      }
-    };
-  }, []);
+  const { contextLost, canvasKey, handleCreated } = useWebGLRecovery('GlassViewer');
 
   if (contextLost) {
     return (

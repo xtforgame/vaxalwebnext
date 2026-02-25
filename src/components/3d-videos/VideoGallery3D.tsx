@@ -1,11 +1,11 @@
 'use client';
 
 import { Canvas } from '@react-three/fiber';
-import type { RootState } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { Suspense, useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { Leva } from 'leva';
+import { useWebGLRecovery } from '@/hooks/useWebGLRecovery';
 
 import GalleryScene from './GalleryScene';
 import CameraController from './CameraController';
@@ -120,36 +120,7 @@ export default function VideoGallery3D() {
   }, []);
 
   // ─── WebGL context recovery ───────────────────────────────────
-  const [contextLost, setContextLost] = useState(false);
-  const [canvasKey, setCanvasKey] = useState(0);
-
-  const handleCreated = useCallback((state: RootState) => {
-    const canvas = state.gl.domElement;
-
-    const handleContextLost = (event: Event) => {
-      event.preventDefault();
-      console.warn('[VideoGallery] WebGL context lost. Recovering...');
-      setContextLost(true);
-    };
-
-    const handleContextRestored = () => {
-      console.log('[VideoGallery] WebGL context restored.');
-      setContextLost(false);
-    };
-
-    canvas.addEventListener('webglcontextlost', handleContextLost);
-    canvas.addEventListener('webglcontextrestored', handleContextRestored);
-  }, []);
-
-  useEffect(() => {
-    if (contextLost) {
-      const timer = setTimeout(() => {
-        setCanvasKey((prev) => prev + 1);
-        setContextLost(false);
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [contextLost]);
+  const { contextLost, canvasKey, handleCreated } = useWebGLRecovery('VideoGallery');
 
   // ─── Focus / back handlers ────────────────────────────────────
   const handleFocus = useCallback((id: string, planePos: THREE.Vector3, planeNormal: THREE.Vector3) => {
