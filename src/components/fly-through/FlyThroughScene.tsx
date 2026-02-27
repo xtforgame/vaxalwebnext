@@ -9,16 +9,43 @@ import { FlyThroughCamera, DEFAULT_WAYPOINTS } from './FlyThroughCamera';
 
 // ============ Constants ============
 
-const CUBE_COUNT = 200;
+const CUBE_COUNT = 500;
 const SPEED = 0.02;
-const SCATTER_RADIUS = 25;
+const SCATTER_RADIUS = 50;
+
+const DIAGONAL_DURATION = 7;
 
 // Timeline phases (seconds within each loop)
-const PHASE_A_END = 15; // fly-through only
-const PHASE_B_END = 18; // transition → hacker (3s)
-const PHASE_C_END = 19; // hacker only
-const PHASE_D_END = 22; // transition → fly-through (3s)
+const PHASE_A_END = 95; // fly-through only
+const PHASE_B_END = PHASE_A_END + 3; // transition fly → hacker (3s)
+const PHASE_C_END = PHASE_B_END + 1; // hacker only
+const PHASE_D_END = PHASE_C_END + 3; // transition hacker → card (3s)
+const PHASE_E_END = PHASE_D_END + DIAGONAL_DURATION - 1; // card display with DIAGONAL (7s)
+const PHASE_F_END = PHASE_E_END + 3; // transition card → fly (3s)
 const LOOP_DURATION = 50;
+
+// Card display
+const CARD_WIDTH = 2.5;
+const CARD_HEIGHT = CARD_WIDTH * (6000 / 900);
+const CARD_H = CARD_HEIGHT / 2;
+const DIAG_POSITIONS = [
+  new THREE.Vector3(-1.5, CARD_H * 0.95, 3.8),
+  new THREE.Vector3(-1.0, CARD_H * 0.5, 3.2),
+  new THREE.Vector3(-0.5, CARD_H * 0.2, 3.2),
+  new THREE.Vector3(0, 0, 3.2),
+  new THREE.Vector3(0.5, -CARD_H * 0.2, 3.2),
+  new THREE.Vector3(1.0, -CARD_H * 0.5, 3.2),
+  new THREE.Vector3(1.5, -CARD_H * 0.8, 3.8),
+];
+const DIAG_LOOK_ATS = [
+  new THREE.Vector3(0, CARD_H * 0.85, 0),
+  new THREE.Vector3(0, CARD_H * 0.4, 0),
+  new THREE.Vector3(0, CARD_H * 0.1, 0),
+  new THREE.Vector3(0, 0, 0),
+  new THREE.Vector3(0, -CARD_H * 0.1, 0),
+  new THREE.Vector3(0, -CARD_H * 0.4, 0),
+  new THREE.Vector3(0, -CARD_H * 0.7, 0),
+];
 
 // ============ GLSL Shaders ============
 
@@ -216,6 +243,7 @@ const compositorFrag = /* glsl */ `precision highp float;
 
 uniform vec2 iResolution;
 uniform float uProgress;
+uniform float uBrightness;
 uniform sampler2D iChannel0;
 uniform sampler2D iChannel1;
 
@@ -252,11 +280,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
   // Fast path: no transition
   if (progress <= 0.0) {
-    fragColor = vec4(texture(iChannel0, texCoord).rgb, 1.0);
+    fragColor = vec4(texture(iChannel0, texCoord).rgb * uBrightness, 1.0);
     return;
   }
   if (progress >= 1.0) {
-    fragColor = vec4(texture(iChannel1, texCoord).rgb, 1.0);
+    fragColor = vec4(texture(iChannel1, texCoord).rgb * uBrightness, 1.0);
     return;
   }
 
@@ -277,7 +305,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     total += weight;
   }
 
-  fragColor = vec4(color / total, 1.0);
+  fragColor = vec4((color / total) * uBrightness, 1.0);
 }
 
 out vec4 outColor;
@@ -294,23 +322,16 @@ function smoothstep01(t: number): number {
   return c * c * (3 - 2 * c);
 }
 
-function computeProgress(loopTime: number): number {
-  if (loopTime < PHASE_A_END) return 0;
-  if (loopTime < PHASE_B_END)
-    return smoothstep01((loopTime - PHASE_A_END) / (PHASE_B_END - PHASE_A_END));
-  if (loopTime < PHASE_C_END) return 1;
-  if (loopTime < PHASE_D_END)
-    return 1 - smoothstep01((loopTime - PHASE_C_END) / (PHASE_D_END - PHASE_C_END));
-  return 0;
-}
-
 // ============ All-in-One Renderer ============
 
 function Renderer({ showPath }: { showPath: boolean }) {
   const { gl, size, camera } = useThree();
   const fontTexture = useTexture('/codepage12.png');
+  const cardTexture = useTexture('/ai-answer.png');
+  const panoTexture = useTexture('/equirectangular-png_15019635.png');
+  const skyboxTexture = useTexture('/5e495b5311fab.jpg');
 
-  // Configure font texture mipmaps (needed by textureGrad / textureLod)
+  // Configure textures
   useMemo(() => {
     fontTexture.minFilter = THREE.LinearMipMapLinearFilter;
     fontTexture.magFilter = THREE.LinearFilter;
@@ -318,7 +339,11 @@ function Renderer({ showPath }: { showPath: boolean }) {
     fontTexture.wrapS = THREE.ClampToEdgeWrapping;
     fontTexture.wrapT = THREE.ClampToEdgeWrapping;
     fontTexture.needsUpdate = true;
-  }, [fontTexture]);
+
+    cardTexture.colorSpace = THREE.SRGBColorSpace;
+    panoTexture.mapping = THREE.EquirectangularReflectionMapping;
+    panoTexture.colorSpace = THREE.SRGBColorSpace;
+  }, [fontTexture, cardTexture, panoTexture]);
 
   // Create all resources (scenes, FBOs, materials) once
   const res = useMemo(() => {
@@ -348,13 +373,55 @@ function Renderer({ showPath }: { showPath: boolean }) {
     const orthoCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     const fsGeo = new THREE.PlaneGeometry(2, 2);
 
+    // ---- Fly-through skybox (horizontal cross layout: 4×3, top/bottom at col 3) ----
+    // Layout:  [blank][blank][blank][top ]
+    //          [right][back ][left ][front]
+    //          [blank][blank][blank][bottom]
+    const skyImg = skyboxTexture.image as HTMLImageElement;
+    const faceW = Math.floor(skyImg.width / 4);
+    const faceH = Math.floor(skyImg.height / 3);
+    const extractFace = (
+      col: number, row: number,
+      opts: { flipH?: boolean; flipV?: boolean; rotate180?: boolean } = {}
+    ) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = faceW;
+      canvas.height = faceH;
+      const ctx = canvas.getContext('2d')!;
+      if (opts.rotate180) {
+        ctx.translate(faceW, faceH);
+        ctx.rotate(Math.PI);
+      } else {
+        if (opts.flipH) { ctx.translate(faceW, 0); ctx.scale(-1, 1); }
+        if (opts.flipV) { ctx.translate(0, faceH); ctx.scale(1, -1); }
+      }
+      ctx.drawImage(skyImg, col * faceW, row * faceH, faceW, faceH, 0, 0, faceW, faceH);
+      return canvas;
+    };
+    // CubeTexture order: +X(right), -X(left), +Y(top), -Y(bottom), +Z(back), -Z(front)
+    // Side faces need horizontal flip (cross shows outside view, cubemap needs inside view)
+    const skyboxCube = new THREE.CubeTexture([
+      extractFace(0, 1, { flipH: true }),   // +X right
+      extractFace(2, 1, { flipH: true }),   // -X left
+      extractFace(3, 0, { flipV: true }), // +Y top
+      extractFace(3, 2, { flipV: true }), // -Y bottom
+      extractFace(1, 1, { flipH: true }),   // +Z back
+      extractFace(3, 1, { flipH: true }),   // -Z front
+    ]);
+    skyboxCube.colorSpace = THREE.SRGBColorSpace;
+    skyboxCube.needsUpdate = true;
+
     // ---- Fly-through scene ----
     const flyScene = new THREE.Scene();
+    flyScene.background = skyboxCube;
+    flyScene.backgroundIntensity = 2.5;
+    flyScene.environment = skyboxCube;
+    flyScene.environmentIntensity = 1.5;
     flyScene.add(new THREE.AmbientLight(0xffffff, 0.3));
-    const dir1 = new THREE.DirectionalLight(0xffffff, 1);
+    const dir1 = new THREE.DirectionalLight(0xffffff, 1.5);
     dir1.position.set(50, 50, 50);
     flyScene.add(dir1);
-    const dir2 = new THREE.DirectionalLight(0x4488ff, 0.3);
+    const dir2 = new THREE.DirectionalLight(0x4488ff, 0.5);
     dir2.position.set(-30, -20, -40);
     flyScene.add(dir2);
     const pointLight = new THREE.PointLight(0xffffff, 2, 30);
@@ -370,9 +437,9 @@ function Renderer({ showPath }: { showPath: boolean }) {
       const angle = Math.random() * Math.PI * 2;
       const radius = Math.random() * SCATTER_RADIUS;
       dummy.position.set(
-        Math.cos(angle) * radius + (Math.random() - 0.5) * 20,
-        (Math.random() - 0.5) * 40,
-        Math.random() * 110 - 15
+        Math.cos(angle) * radius + (Math.random() - 0.5) * 40,
+        (Math.random() - 0.5) * 60,
+        Math.random() * 130 - 25
       );
       dummy.rotation.set(
         Math.random() * Math.PI,
@@ -435,6 +502,7 @@ function Renderer({ showPath }: { showPath: boolean }) {
       uniforms: {
         iResolution: { value: new THREE.Vector2(w, h) },
         uProgress: { value: 0 },
+        uBrightness: { value: 1.0 },
         iChannel0: { value: flyFBO.texture },
         iChannel1: { value: hackerImgFBO.texture },
       },
@@ -444,10 +512,60 @@ function Renderer({ showPath }: { showPath: boolean }) {
     const compositorScene = new THREE.Scene();
     compositorScene.add(new THREE.Mesh(fsGeo, compositorMat));
 
+    // ---- Card display scene ----
+    const cardFBO = new THREE.WebGLRenderTarget(w, h, {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      format: THREE.RGBAFormat,
+    });
+
+    const cardScene = new THREE.Scene();
+    cardScene.background = panoTexture;
+    cardScene.environment = panoTexture;
+    cardScene.backgroundRotation = new THREE.Euler(0, Math.PI, 0);
+    cardScene.environmentRotation = new THREE.Euler(0, Math.PI, 0);
+
+    cardScene.add(new THREE.AmbientLight(0xffffff, 1.0));
+    const cardSpot = new THREE.SpotLight(0xffffff, 3, 0, 0.4, 1);
+    cardSpot.position.set(5, 8, 5);
+    cardScene.add(cardSpot);
+    const cardBluePoint = new THREE.PointLight(0x3db5e6, 1.5);
+    cardBluePoint.position.set(-5, -3, -5);
+    cardScene.add(cardBluePoint);
+    const cardWhitePoint = new THREE.PointLight(0xffffff, 1.0);
+    cardWhitePoint.position.set(5, 3, 5);
+    cardScene.add(cardWhitePoint);
+
+    const cardGeo = new THREE.PlaneGeometry(CARD_WIDTH, CARD_HEIGHT);
+    const cardMeshMat = new THREE.MeshPhysicalMaterial({
+      map: cardTexture,
+      transparent: true,
+      alphaTest: 0.5,
+      side: THREE.DoubleSide,
+      roughness: 0.35,
+      metalness: 0.1,
+      clearcoat: 0.6,
+      clearcoatRoughness: 0.15,
+      reflectivity: 0.4,
+      envMapIntensity: 0.8,
+    });
+    cardScene.add(new THREE.Mesh(cardGeo, cardMeshMat));
+
+    const cardCam = new THREE.PerspectiveCamera(
+      40, size.width / size.height, 0.1, 100
+    );
+    const diagPosCurve = new THREE.CatmullRomCurve3(
+      DIAG_POSITIONS, false, 'catmullrom', 0.35
+    );
+    const diagLookCurve = new THREE.CatmullRomCurve3(
+      DIAG_LOOK_ATS, false, 'catmullrom', 0.35
+    );
+
     return {
       flyFBO,
       hackerBufFBO,
       hackerImgFBO,
+      cardFBO,
       orthoCam,
       flyScene,
       pointLight,
@@ -459,11 +577,17 @@ function Renderer({ showPath }: { showPath: boolean }) {
       hackerImgMat,
       compositorScene,
       compositorMat,
+      cardScene,
+      cardCam,
+      cardMeshMat,
+      diagPosCurve,
+      diagLookCurve,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fontTexture]);
+  }, [fontTexture, cardTexture, panoTexture, skyboxTexture]);
 
   const tRef = useRef(0);
+  const warmupRef = useRef(false);
 
   // Handle resize
   useEffect(() => {
@@ -473,9 +597,12 @@ function Renderer({ showPath }: { showPath: boolean }) {
     res.flyFBO.setSize(w, h);
     res.hackerBufFBO.setSize(w, h);
     res.hackerImgFBO.setSize(w, h);
+    res.cardFBO.setSize(w, h);
     res.hackerBufMat.uniforms.iResolution.value.set(w, h);
     res.hackerImgMat.uniforms.iResolution.value.set(w, h);
     res.compositorMat.uniforms.iResolution.value.set(w, h);
+    res.cardCam.aspect = size.width / size.height;
+    res.cardCam.updateProjectionMatrix();
   }, [size, gl, res]);
 
   // Toggle path visibility
@@ -489,9 +616,11 @@ function Renderer({ showPath }: { showPath: boolean }) {
       res.flyFBO.dispose();
       res.hackerBufFBO.dispose();
       res.hackerImgFBO.dispose();
+      res.cardFBO.dispose();
       res.hackerBufMat.dispose();
       res.hackerImgMat.dispose();
       res.compositorMat.dispose();
+      res.cardMeshMat.dispose();
     };
   }, [res]);
 
@@ -499,23 +628,83 @@ function Renderer({ showPath }: { showPath: boolean }) {
   useFrame((state, delta) => {
     const time = state.clock.elapsedTime;
     const loopTime = time % LOOP_DURATION;
-    const progress = computeProgress(loopTime);
 
-    // Advance camera along spline (always, even during hacker phase)
+    // Warm-up: render card scene once on first frame to compile shaders & upload textures
+    if (!warmupRef.current) {
+      warmupRef.current = true;
+      res.cardCam.position.copy(res.diagPosCurve.getPointAt(0));
+      res.cardCam.lookAt(res.diagLookCurve.getPointAt(0));
+      gl.setRenderTarget(res.cardFBO);
+      gl.render(res.cardScene, res.cardCam);
+    }
+
+    // Advance fly-through camera along spline (always)
     tRef.current = (tRef.current + delta * SPEED) % 1;
     const { position, lookAt } = res.flyCam.evaluate(tRef.current);
     camera.position.copy(position);
     camera.lookAt(lookAt);
     res.pointLight.position.copy(position);
 
-    // 1. Render fly-through scene to FBO (skip when fully in hacker)
-    if (progress < 1) {
+    // Determine which scenes are visible and compositor inputs
+    let needsFly = false;
+    let needsHacker = false;
+    let needsCard = false;
+    let ch0 = res.flyFBO.texture;
+    let ch1 = res.flyFBO.texture;
+    let prog = 0;
+    let brightness = 1.0;
+    const CARD_BRIGHTNESS = 1.4;
+
+    if (loopTime < PHASE_A_END) {
+      // Pure fly-through
+      needsFly = true;
+      ch0 = res.flyFBO.texture;
+    } else if (loopTime < PHASE_B_END) {
+      // Transition fly → hacker
+      needsFly = true;
+      needsHacker = true;
+      ch0 = res.flyFBO.texture;
+      ch1 = res.hackerImgFBO.texture;
+      prog = smoothstep01((loopTime - PHASE_A_END) / (PHASE_B_END - PHASE_A_END));
+    } else if (loopTime < PHASE_C_END) {
+      // Pure hacker
+      needsHacker = true;
+      ch0 = res.hackerImgFBO.texture;
+    } else if (loopTime < PHASE_D_END) {
+      // Transition hacker → card — ramp brightness up with transition
+      needsHacker = true;
+      needsCard = true;
+      ch0 = res.hackerImgFBO.texture;
+      ch1 = res.cardFBO.texture;
+      prog = smoothstep01((loopTime - PHASE_C_END) / (PHASE_D_END - PHASE_C_END));
+      brightness = 1.0 + (CARD_BRIGHTNESS - 1.0) * prog;
+    } else if (loopTime < PHASE_E_END) {
+      // Pure card (DIAGONAL playing)
+      needsCard = true;
+      ch0 = res.cardFBO.texture;
+      brightness = CARD_BRIGHTNESS;
+    } else if (loopTime < PHASE_F_END) {
+      // Transition card → fly — ramp brightness back down
+      needsCard = true;
+      needsFly = true;
+      ch0 = res.cardFBO.texture;
+      ch1 = res.flyFBO.texture;
+      prog = smoothstep01((loopTime - PHASE_E_END) / (PHASE_F_END - PHASE_E_END));
+      brightness = CARD_BRIGHTNESS - (CARD_BRIGHTNESS - 1.0) * prog;
+    } else {
+      // Pure fly-through
+      needsFly = true;
+      ch0 = res.flyFBO.texture;
+    }
+
+    // 1. Render fly-through scene
+    if (needsFly) {
       gl.setRenderTarget(res.flyFBO);
       gl.render(res.flyScene, camera);
     }
 
-    // 2. Render hacker passes to FBOs (skip when fully in fly-through)
-    if (progress > 0) {
+    // 2. Render hacker passes
+    if (needsHacker) {
       res.hackerBufMat.uniforms.iTime.value = time;
       gl.setRenderTarget(res.hackerBufFBO);
       gl.render(res.hackerBufScene, res.orthoCam);
@@ -525,8 +714,26 @@ function Renderer({ showPath }: { showPath: boolean }) {
       gl.render(res.hackerImgScene, res.orthoCam);
     }
 
-    // 3. Render compositor to screen
-    res.compositorMat.uniforms.uProgress.value = progress;
+    // 3. Render card scene with DIAGONAL camera
+    if (needsCard) {
+      const diagStart = PHASE_C_END + (PHASE_D_END - PHASE_C_END) * 0.4;
+      const cardT = Math.max(0, Math.min(1,
+        (loopTime - diagStart) / DIAGONAL_DURATION
+      ));
+      const cardEased = smoothstep01(cardT);
+      res.cardCam.position.copy(res.diagPosCurve.getPointAt(cardEased));
+      const lookTarget = res.diagLookCurve.getPointAt(cardEased);
+      res.cardCam.lookAt(lookTarget);
+
+      gl.setRenderTarget(res.cardFBO);
+      gl.render(res.cardScene, res.cardCam);
+    }
+
+    // 4. Compositor to screen
+    res.compositorMat.uniforms.iChannel0.value = ch0;
+    res.compositorMat.uniforms.iChannel1.value = ch1;
+    res.compositorMat.uniforms.uProgress.value = prog;
+    res.compositorMat.uniforms.uBrightness.value = brightness;
     gl.setRenderTarget(null);
     gl.render(res.compositorScene, res.orthoCam);
   }, 1);
