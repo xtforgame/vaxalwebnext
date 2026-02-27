@@ -27,7 +27,6 @@ function PanoramaEnvironment() {
 
 // ============ Credit Card ============
 
-const IDLE_SPEED = 0.15;
 const DRAG_SENSITIVITY = 0.008;
 const PAN_SENSITIVITY = 0.01;
 const DAMPING = 0.92;
@@ -43,9 +42,8 @@ function CreditCard() {
   const dragging = useRef(false);
   const panning = useRef(false);
   const prev = useRef({ x: 0, y: 0 });
-  const velocity = useRef({ rx: 0, ry: IDLE_SPEED });
+  const velocity = useRef({ rx: 0, ry: 0 });
   const panVelocity = useRef({ x: 0, y: 0 });
-  const wasIdle = useRef(true);
 
   useEffect(() => {
     const canvas = gl.domElement;
@@ -58,7 +56,6 @@ function CreditCard() {
         dragging.current = true;
       }
       prev.current = { x: e.clientX, y: e.clientY };
-      wasIdle.current = false;
       canvas.setPointerCapture(e.pointerId);
     };
 
@@ -100,49 +97,36 @@ function CreditCard() {
     const g = groupRef.current;
     if (!g) return;
 
-    // Apply rotation
-    g.rotation.y += velocity.current.ry;
-    g.rotation.x += velocity.current.rx;
-
-    // Apply pan
-    g.position.x += panVelocity.current.x;
-    g.position.y += panVelocity.current.y;
-
-    // Damping
-    if (!dragging.current) {
-      velocity.current.ry *= DAMPING;
-      velocity.current.rx *= DAMPING;
-
-      // Fade back to idle rotation when velocity is near zero
-      if (
-        !wasIdle.current &&
-        Math.abs(velocity.current.ry) < 0.001 &&
-        Math.abs(velocity.current.rx) < 0.001
-      ) {
-        wasIdle.current = true;
-      }
-      if (wasIdle.current) {
-        velocity.current.ry += (IDLE_SPEED * 0.016 - velocity.current.ry) * 0.02;
-      }
+    if (dragging.current) {
+      g.rotation.y += velocity.current.ry;
+      g.rotation.x += velocity.current.rx;
+      velocity.current.ry = 0;
+      velocity.current.rx = 0;
     }
-    if (!panning.current) {
-      panVelocity.current.x *= DAMPING;
-      panVelocity.current.y *= DAMPING;
+
+    if (panning.current) {
+      g.position.x += panVelocity.current.x;
+      g.position.y += panVelocity.current.y;
+      panVelocity.current.x = 0;
+      panVelocity.current.y = 0;
     }
   });
 
   return (
     <group ref={groupRef}>
       <mesh castShadow>
-        <boxGeometry args={[CARD_WIDTH, CARD_HEIGHT, 0.04]} />
+        <planeGeometry args={[CARD_WIDTH, CARD_HEIGHT]} />
         <meshPhysicalMaterial
           map={cardTexture}
+          transparent
+          alphaTest={0.5}
+          side={THREE.DoubleSide}
           roughness={0.35}
           metalness={0.1}
           clearcoat={0.6}
           clearcoatRoughness={0.15}
           reflectivity={0.4}
-          envMapIntensity={0.5}
+          envMapIntensity={0.8}
         />
       </mesh>
     </group>
@@ -204,15 +188,16 @@ export default function CardDisplayScene() {
           dpr={[1, 2]}
           onCreated={handleCreated}
         >
-          <ambientLight intensity={0.4} />
+          <ambientLight intensity={1.0} />
           <spotLight
             position={[5, 8, 5]}
             angle={0.4}
             penumbra={1}
-            intensity={1.2}
+            intensity={3}
             castShadow
           />
-          <pointLight position={[-5, -3, -5]} intensity={0.5} color="#3DB5E6" />
+          <pointLight position={[-5, -3, -5]} intensity={1.5} color="#3DB5E6" />
+          <pointLight position={[5, 3, 5]} intensity={1} color="#ffffff" />
 
           <CreditCard />
           <PanoramaEnvironment />
