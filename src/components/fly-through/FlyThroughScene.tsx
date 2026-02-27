@@ -16,8 +16,8 @@ const SCATTER_RADIUS = 25;
 // Timeline phases (seconds within each loop)
 const PHASE_A_END = 15; // fly-through only
 const PHASE_B_END = 18; // transition → hacker (3s)
-const PHASE_C_END = 30; // hacker only
-const PHASE_D_END = 33; // transition → fly-through (3s)
+const PHASE_C_END = 19; // hacker only
+const PHASE_D_END = 22; // transition → fly-through (3s)
 const LOOP_DURATION = 50;
 
 // ============ GLSL Shaders ============

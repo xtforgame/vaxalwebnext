@@ -7,9 +7,10 @@ import * as THREE from 'three';
 import { useWebGLRecovery } from '@/hooks/useWebGLRecovery';
 
 // ============ Card dimensions ============
-
-const CARD_WIDTH = 4.5;
-const CARD_HEIGHT = CARD_WIDTH / (960 / 622);
+// ai-answer.png: 900×6000 — full image mapped 1:1, width halved
+const CARD_WIDTH = 2.5;
+const CARD_HEIGHT = CARD_WIDTH * (6000 / 900); // ~16.67
+const H = CARD_HEIGHT / 2; // ~8.33, half-height for camera path offsets
 
 // ============ Cinematic Presets ============
 
@@ -18,67 +19,82 @@ type CinematicPreset = {
   duration: number;
   positions: THREE.Vector3[];
   lookAts: THREE.Vector3[];
+  linear?: boolean; // skip smoothstep, use constant speed
 };
 
 const PRESETS: Record<string, CinematicPreset> = {
   sweep: {
     label: 'SWEEP',
-    duration: 4,
+    duration: 7,
     positions: [
-      new THREE.Vector3(0, 3.5, 4),
-      new THREE.Vector3(0, 1.2, 3),
-      new THREE.Vector3(0, -0.5, 2.8),
-      new THREE.Vector3(0, -3, 4),
+      new THREE.Vector3(0, H * 0.85, 3.5),
+      new THREE.Vector3(0, H * 0.55, 3.2),
+      new THREE.Vector3(0, H * 0.25, 3.2),
+      new THREE.Vector3(0, 0, 3.2),
+      new THREE.Vector3(0, -H * 0.25, 3.2),
+      new THREE.Vector3(0, -H * 0.55, 3.2),
+      new THREE.Vector3(0, -H * 0.85, 3.5),
     ],
     lookAts: [
-      new THREE.Vector3(0, 0.5, 0),
-      new THREE.Vector3(0, 0.2, 0),
-      new THREE.Vector3(0, -0.2, 0),
-      new THREE.Vector3(0, -0.5, 0),
+      new THREE.Vector3(0, H * 0.75, 0),
+      new THREE.Vector3(0, H * 0.45, 0),
+      new THREE.Vector3(0, H * 0.15, 0),
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, -H * 0.15, 0),
+      new THREE.Vector3(0, -H * 0.45, 0),
+      new THREE.Vector3(0, -H * 0.75, 0),
     ],
   },
   diagonal: {
     label: 'DIAGONAL',
-    duration: 4.5,
+    duration: 7,
     positions: [
-      new THREE.Vector3(-3.5, 2.5, 4.5),
-      new THREE.Vector3(-1, 1, 3),
-      new THREE.Vector3(1, -0.5, 2.8),
-      new THREE.Vector3(3.5, -2.5, 4.5),
+      new THREE.Vector3(-1.5, H * 0.8, 3.8),
+      new THREE.Vector3(-1.0, H * 0.5, 3.2),
+      new THREE.Vector3(-0.5, H * 0.2, 3.2),
+      new THREE.Vector3(0, 0, 3.2),
+      new THREE.Vector3(0.5, -H * 0.2, 3.2),
+      new THREE.Vector3(1.0, -H * 0.5, 3.2),
+      new THREE.Vector3(1.5, -H * 0.8, 3.8),
     ],
     lookAts: [
+      new THREE.Vector3(0, H * 0.7, 0),
+      new THREE.Vector3(0, H * 0.4, 0),
+      new THREE.Vector3(0, H * 0.1, 0),
       new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, -H * 0.1, 0),
+      new THREE.Vector3(0, -H * 0.4, 0),
+      new THREE.Vector3(0, -H * 0.7, 0),
     ],
   },
   pan: {
     label: 'PAN',
-    duration: 4,
+    duration: 5,
     positions: [
-      new THREE.Vector3(-4.5, 0.5, 4),
-      new THREE.Vector3(-1.5, 0.2, 3.2),
-      new THREE.Vector3(1.5, -0.2, 3.2),
-      new THREE.Vector3(4.5, -0.5, 4),
+      new THREE.Vector3(-3, H * 0.6, 3.2),
+      new THREE.Vector3(-1.5, H * 0.6, 3.2),
+      new THREE.Vector3(0, H * 0.6, 3.2),
+      new THREE.Vector3(1.5, H * 0.6, 3.2),
+      new THREE.Vector3(3, H * 0.6, 3.2),
     ],
     lookAts: [
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, H * 0.6, 0),
+      new THREE.Vector3(0, H * 0.6, 0),
+      new THREE.Vector3(0, H * 0.6, 0),
+      new THREE.Vector3(0, H * 0.6, 0),
+      new THREE.Vector3(0, H * 0.6, 0),
     ],
   },
   orbit: {
     label: 'ORBIT',
-    duration: 5,
+    duration: 6,
     positions: (() => {
       const pts: THREE.Vector3[] = [];
       const steps = 12;
       for (let i = 0; i <= steps; i++) {
         const angle = (i / steps) * Math.PI * 2;
         pts.push(
-          new THREE.Vector3(Math.sin(angle) * 6, 1.5, Math.cos(angle) * 6)
+          new THREE.Vector3(Math.sin(angle) * 4, 0, Math.cos(angle) * 4)
         );
       }
       return pts;
@@ -91,24 +107,89 @@ const PRESETS: Record<string, CinematicPreset> = {
   },
   closeup: {
     label: 'CLOSE-UP',
-    duration: 5,
+    duration: 6,
     positions: [
-      new THREE.Vector3(0, 0.8, 5),
-      new THREE.Vector3(0.3, 0.3, 2.2),
-      new THREE.Vector3(-0.3, -0.2, 2.2),
-      new THREE.Vector3(0, -0.5, 5),
+      new THREE.Vector3(0, -H * 0.45, 5),
+      new THREE.Vector3(0, -H * 0.5, 3.5),
+      new THREE.Vector3(0, -H * 0.55, 2.2),
+      new THREE.Vector3(0, -H * 0.6, 2.2),
+      new THREE.Vector3(0, -H * 0.65, 3.5),
+      new THREE.Vector3(0, -H * 0.7, 5),
     ],
     lookAts: [
+      new THREE.Vector3(0, -H * 0.5, 0),
+      new THREE.Vector3(0, -H * 0.53, 0),
+      new THREE.Vector3(0, -H * 0.56, 0),
+      new THREE.Vector3(0, -H * 0.59, 0),
+      new THREE.Vector3(0, -H * 0.62, 0),
+      new THREE.Vector3(0, -H * 0.65, 0),
+    ],
+  },
+  showcase: {
+    label: 'SHOWCASE',
+    duration: 18,
+    linear: true,
+    positions: [
+      // — top: left → right, Y & Z constant —
+      new THREE.Vector3(-3, H * 0.65, 3.2),
+      new THREE.Vector3(-1.5, H * 0.65, 3.2),
+      new THREE.Vector3(0, H * 0.65, 3.2),
+      new THREE.Vector3(1.5, H * 0.65, 3.2),
+      new THREE.Vector3(3, H * 0.65, 3.2),
+      // — transition: ease down right side (4 pts) —
+      new THREE.Vector3(3, H * 0.5, 3.2),
+      new THREE.Vector3(2.8, H * 0.35, 3.2),
+      new THREE.Vector3(2.5, H * 0.18, 3.2),
+      new THREE.Vector3(2.2, 0, 3.2),
+      // — mid: right → left, Y & Z constant —
+      new THREE.Vector3(1.5, 0, 3.2),
+      new THREE.Vector3(0, 0, 3.2),
+      new THREE.Vector3(-1.5, 0, 3.2),
+      new THREE.Vector3(-2.2, 0, 3.2),
+      // — transition: ease down left side (4 pts) —
+      new THREE.Vector3(-2.5, -H * 0.18, 3.2),
+      new THREE.Vector3(-2.8, -H * 0.35, 3.2),
+      new THREE.Vector3(-3, -H * 0.5, 3.2),
+      // — bottom: left → right, Y & Z constant —
+      new THREE.Vector3(-3, -H * 0.65, 3.2),
+      new THREE.Vector3(-1.5, -H * 0.65, 3.2),
+      new THREE.Vector3(0, -H * 0.65, 3.2),
+      new THREE.Vector3(1.5, -H * 0.65, 3.2),
+      new THREE.Vector3(3, -H * 0.65, 3.2),
+    ],
+    lookAts: [
+      // — top —
+      new THREE.Vector3(0, H * 0.65, 0),
+      new THREE.Vector3(0, H * 0.65, 0),
+      new THREE.Vector3(0, H * 0.65, 0),
+      new THREE.Vector3(0, H * 0.65, 0),
+      new THREE.Vector3(0, H * 0.65, 0),
+      // — transition —
+      new THREE.Vector3(0, H * 0.5, 0),
+      new THREE.Vector3(0, H * 0.35, 0),
+      new THREE.Vector3(0, H * 0.18, 0),
       new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0.3, 0.1, 0),
-      new THREE.Vector3(-0.3, -0.3, 0),
+      // — mid —
       new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0, 0),
+      // — transition —
+      new THREE.Vector3(0, -H * 0.18, 0),
+      new THREE.Vector3(0, -H * 0.35, 0),
+      new THREE.Vector3(0, -H * 0.5, 0),
+      // — bottom —
+      new THREE.Vector3(0, -H * 0.65, 0),
+      new THREE.Vector3(0, -H * 0.65, 0),
+      new THREE.Vector3(0, -H * 0.65, 0),
+      new THREE.Vector3(0, -H * 0.65, 0),
+      new THREE.Vector3(0, -H * 0.65, 0),
     ],
   },
 };
 
 function buildCurve(points: THREE.Vector3[], closed = false) {
-  return new THREE.CatmullRomCurve3(points, closed, 'catmullrom', 0.3);
+  return new THREE.CatmullRomCurve3(points, closed, 'catmullrom', 0.35);
 }
 
 function smoothstep01(t: number) {
@@ -120,17 +201,19 @@ function smoothstep01(t: number) {
 
 function PanoramaEnvironment() {
   const { scene } = useThree();
-  const texture = useTexture('/panas/scifi_dark_scary_laboratory_metallic_doors (4).jpg');
+  const texture = useTexture('/equirectangular-png_15019635.png');
 
   texture.mapping = THREE.EquirectangularReflectionMapping;
   texture.colorSpace = THREE.SRGBColorSpace;
   scene.background = texture;
   scene.environment = texture;
+  scene.backgroundRotation = new THREE.Euler(0, Math.PI, 0);
+  scene.environmentRotation = new THREE.Euler(0, Math.PI, 0);
 
   return null;
 }
 
-// ============ Credit Card + Camera Controller ============
+// ============ Card + Camera Controller ============
 
 const DRAG_SENSITIVITY = 0.008;
 const PAN_SENSITIVITY = 0.01;
@@ -141,9 +224,10 @@ type CinematicState = {
   posCurve: THREE.CatmullRomCurve3;
   lookCurve: THREE.CatmullRomCurve3;
   duration: number;
+  linear: boolean;
 };
 
-function CreditCard({
+function CardPlane({
   activeCinematic,
   onCinematicEnd,
 }: {
@@ -151,7 +235,7 @@ function CreditCard({
   onCinematicEnd: () => void;
 }) {
   const groupRef = useRef<THREE.Group>(null);
-  const cardTexture = useTexture('/Blue-Credit-Card.png');
+  const cardTexture = useTexture('/ai-answer.png');
   const { gl, camera } = useThree();
 
   cardTexture.colorSpace = THREE.SRGBColorSpace;
@@ -188,6 +272,7 @@ function CreditCard({
       posCurve: buildCurve(preset.positions, closed),
       lookCurve: buildCurve(preset.lookAts, closed),
       duration: preset.duration,
+      linear: preset.linear ?? false,
     };
   }, [activeCinematic]);
 
@@ -247,10 +332,9 @@ function CreditCard({
     // Cinematic mode
     if (cin?.active) {
       cin.t = Math.min(cin.t + delta / cin.duration, 1);
-      const eased = smoothstep01(cin.t);
-      camera.position.copy(cin.posCurve.getPointAt(eased));
-      const look = cin.lookCurve.getPointAt(eased);
-      camera.lookAt(look);
+      const t = cin.linear ? cin.t : smoothstep01(cin.t);
+      camera.position.copy(cin.posCurve.getPointAt(t));
+      camera.lookAt(cin.lookCurve.getPointAt(t));
 
       if (cin.t >= 1) {
         cin.active = false;
@@ -311,7 +395,6 @@ export default function CardDisplayScene() {
 
   const handlePresetClick = useCallback(
     (key: string) => {
-      // Toggle off if same button clicked, otherwise start new
       setActiveCinematic((prev) => (prev === key ? null : key));
     },
     []
@@ -378,7 +461,7 @@ export default function CardDisplayScene() {
           <pointLight position={[-5, -3, -5]} intensity={1.5} color="#3DB5E6" />
           <pointLight position={[5, 3, 5]} intensity={1} color="#ffffff" />
 
-          <CreditCard
+          <CardPlane
             activeCinematic={activeCinematic}
             onCinematicEnd={onCinematicEnd}
           />
