@@ -1,0 +1,155 @@
+/* ============ Card Stream ============ */
+
+.ig-card-line {
+  display: flex;
+  align-items: center;
+  gap: 60px;
+  white-space: nowrap;
+  cursor: grab;
+  user-select: none;
+  will-change: transform;
+}
+
+.ig-card-line:active,
+.ig-card-line.dragging {
+  cursor: grabbing;
+}
+
+/* ============ Card Wrapper ============ */
+
+.ig-card-wrapper {
+  position: relative;
+  width: 400px;
+  height: 250px;
+  flex-shrink: 0;
+}
+
+/* ============ Card Base ============ */
+
+.ig-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 400px;
+  height: 250px;
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+/* Normal card (image) — clips from left as scanner passes */
+.ig-card-normal {
+  background: transparent;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+  z-index: 2;
+  clip-path: inset(0 0 0 var(--clip-right, 0%));
+}
+
+/* ASCII card — reveals from right as scanner passes */
+.ig-card-ascii {
+  background: transparent;
+  z-index: 1;
+  clip-path: inset(0 calc(100% - var(--clip-left, 0%)) 0 0);
+}
+
+/* ============ Card Image ============ */
+
+.ig-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 15px;
+  filter: brightness(1.1) contrast(1.1);
+}
+
+/* ============ ASCII Content ============ */
+
+.ig-ascii-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  color: rgba(220, 210, 255, 0.6);
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 13px;
+  overflow: hidden;
+  white-space: pre;
+  animation: ig-glitch 0.1s infinite linear alternate-reverse;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 0.8) 30%,
+    rgba(0, 0, 0, 0.6) 50%,
+    rgba(0, 0, 0, 0.4) 80%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 0.8) 30%,
+    rgba(0, 0, 0, 0.6) 50%,
+    rgba(0, 0, 0, 0.4) 80%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+}
+
+@keyframes ig-glitch {
+  0% {
+    opacity: 1;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  16% {
+    opacity: 1;
+  }
+  49% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+  99% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* ============ Scan Effect (flash when card enters scanner) ============ */
+
+.ig-scan-effect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 255, 255, 0.4),
+    transparent
+  );
+  animation: ig-scan-flash 0.6s ease-out forwards;
+  pointer-events: none;
+  z-index: 5;
+}
+
+@keyframes ig-scan-flash {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
