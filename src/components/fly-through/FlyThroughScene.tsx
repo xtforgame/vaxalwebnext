@@ -2,7 +2,7 @@
 
 import { Suspense, useRef, useMemo, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useTexture } from '@react-three/drei';
+import { useTexture, useCubeTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { useWebGLRecovery } from '@/hooks/useWebGLRecovery';
 import { FlyThroughCamera, DEFAULT_WAYPOINTS } from './FlyThroughCamera';
@@ -16,7 +16,7 @@ const SCATTER_RADIUS = 50;
 const DIAGONAL_DURATION = 7;
 
 // Timeline phases (seconds within each loop)
-const PHASE_A_END = 95; // fly-through only
+const PHASE_A_END = 3; // fly-through only
 const PHASE_B_END = PHASE_A_END + 3; // transition fly → hacker (3s)
 const PHASE_C_END = PHASE_B_END + 1; // hacker only
 const PHASE_D_END = PHASE_C_END + 3; // transition hacker → card (3s)
@@ -329,7 +329,10 @@ function Renderer({ showPath }: { showPath: boolean }) {
   const fontTexture = useTexture('/codepage12.png');
   const cardTexture = useTexture('/ai-answer.png');
   const panoTexture = useTexture('/equirectangular-png_15019635.png');
-  const skyboxTexture = useTexture('/5e495b5311fab.jpg');
+  const skyboxCube = useCubeTexture(
+    ['px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png'],
+    { path: '/skybox2/' }
+  );
 
   // Configure textures
   useMemo(() => {
@@ -372,44 +375,6 @@ function Renderer({ showPath }: { showPath: boolean }) {
 
     const orthoCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     const fsGeo = new THREE.PlaneGeometry(2, 2);
-
-    // ---- Fly-through skybox (horizontal cross layout: 4×3, top/bottom at col 3) ----
-    // Layout:  [blank][blank][blank][top ]
-    //          [right][back ][left ][front]
-    //          [blank][blank][blank][bottom]
-    const skyImg = skyboxTexture.image as HTMLImageElement;
-    const faceW = Math.floor(skyImg.width / 4);
-    const faceH = Math.floor(skyImg.height / 3);
-    const extractFace = (
-      col: number, row: number,
-      opts: { flipH?: boolean; flipV?: boolean; rotate180?: boolean } = {}
-    ) => {
-      const canvas = document.createElement('canvas');
-      canvas.width = faceW;
-      canvas.height = faceH;
-      const ctx = canvas.getContext('2d')!;
-      if (opts.rotate180) {
-        ctx.translate(faceW, faceH);
-        ctx.rotate(Math.PI);
-      } else {
-        if (opts.flipH) { ctx.translate(faceW, 0); ctx.scale(-1, 1); }
-        if (opts.flipV) { ctx.translate(0, faceH); ctx.scale(1, -1); }
-      }
-      ctx.drawImage(skyImg, col * faceW, row * faceH, faceW, faceH, 0, 0, faceW, faceH);
-      return canvas;
-    };
-    // CubeTexture order: +X(right), -X(left), +Y(top), -Y(bottom), +Z(back), -Z(front)
-    // Side faces need horizontal flip (cross shows outside view, cubemap needs inside view)
-    const skyboxCube = new THREE.CubeTexture([
-      extractFace(0, 1, { flipH: true }),   // +X right
-      extractFace(2, 1, { flipH: true }),   // -X left
-      extractFace(3, 0, { flipV: true }), // +Y top
-      extractFace(3, 2, { flipV: true }), // -Y bottom
-      extractFace(1, 1, { flipH: true }),   // +Z back
-      extractFace(3, 1, { flipH: true }),   // -Z front
-    ]);
-    skyboxCube.colorSpace = THREE.SRGBColorSpace;
-    skyboxCube.needsUpdate = true;
 
     // ---- Fly-through scene ----
     const flyScene = new THREE.Scene();
@@ -584,7 +549,7 @@ function Renderer({ showPath }: { showPath: boolean }) {
       diagLookCurve,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fontTexture, cardTexture, panoTexture, skyboxTexture]);
+  }, [fontTexture, cardTexture, panoTexture, skyboxCube]);
 
   const tRef = useRef(0);
   const warmupRef = useRef(false);
