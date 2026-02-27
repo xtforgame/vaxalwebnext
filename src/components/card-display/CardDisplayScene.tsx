@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useRef, useEffect } from 'react';
+import { Suspense, useRef, useEffect, useState, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
@@ -10,6 +10,111 @@ import { useWebGLRecovery } from '@/hooks/useWebGLRecovery';
 
 const CARD_WIDTH = 4.5;
 const CARD_HEIGHT = CARD_WIDTH / (960 / 622);
+
+// ============ Cinematic Presets ============
+
+type CinematicPreset = {
+  label: string;
+  duration: number;
+  positions: THREE.Vector3[];
+  lookAts: THREE.Vector3[];
+};
+
+const PRESETS: Record<string, CinematicPreset> = {
+  sweep: {
+    label: 'SWEEP',
+    duration: 4,
+    positions: [
+      new THREE.Vector3(0, 3.5, 4),
+      new THREE.Vector3(0, 1.2, 3),
+      new THREE.Vector3(0, -0.5, 2.8),
+      new THREE.Vector3(0, -3, 4),
+    ],
+    lookAts: [
+      new THREE.Vector3(0, 0.5, 0),
+      new THREE.Vector3(0, 0.2, 0),
+      new THREE.Vector3(0, -0.2, 0),
+      new THREE.Vector3(0, -0.5, 0),
+    ],
+  },
+  diagonal: {
+    label: 'DIAGONAL',
+    duration: 4.5,
+    positions: [
+      new THREE.Vector3(-3.5, 2.5, 4.5),
+      new THREE.Vector3(-1, 1, 3),
+      new THREE.Vector3(1, -0.5, 2.8),
+      new THREE.Vector3(3.5, -2.5, 4.5),
+    ],
+    lookAts: [
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0, 0),
+    ],
+  },
+  pan: {
+    label: 'PAN',
+    duration: 4,
+    positions: [
+      new THREE.Vector3(-4.5, 0.5, 4),
+      new THREE.Vector3(-1.5, 0.2, 3.2),
+      new THREE.Vector3(1.5, -0.2, 3.2),
+      new THREE.Vector3(4.5, -0.5, 4),
+    ],
+    lookAts: [
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0, 0),
+    ],
+  },
+  orbit: {
+    label: 'ORBIT',
+    duration: 5,
+    positions: (() => {
+      const pts: THREE.Vector3[] = [];
+      const steps = 12;
+      for (let i = 0; i <= steps; i++) {
+        const angle = (i / steps) * Math.PI * 2;
+        pts.push(
+          new THREE.Vector3(Math.sin(angle) * 6, 1.5, Math.cos(angle) * 6)
+        );
+      }
+      return pts;
+    })(),
+    lookAts: (() => {
+      const pts: THREE.Vector3[] = [];
+      for (let i = 0; i <= 12; i++) pts.push(new THREE.Vector3(0, 0, 0));
+      return pts;
+    })(),
+  },
+  closeup: {
+    label: 'CLOSE-UP',
+    duration: 5,
+    positions: [
+      new THREE.Vector3(0, 0.8, 5),
+      new THREE.Vector3(0.3, 0.3, 2.2),
+      new THREE.Vector3(-0.3, -0.2, 2.2),
+      new THREE.Vector3(0, -0.5, 5),
+    ],
+    lookAts: [
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0.3, 0.1, 0),
+      new THREE.Vector3(-0.3, -0.3, 0),
+      new THREE.Vector3(0, 0, 0),
+    ],
+  },
+};
+
+function buildCurve(points: THREE.Vector3[], closed = false) {
+  return new THREE.CatmullRomCurve3(points, closed, 'catmullrom', 0.3);
+}
+
+function smoothstep01(t: number) {
+  const c = Math.max(0, Math.min(1, t));
+  return c * c * (3 - 2 * c);
+}
 
 // ============ Environment ============
 
@@ -25,31 +130,73 @@ function PanoramaEnvironment() {
   return null;
 }
 
-// ============ Credit Card ============
+// ============ Credit Card + Camera Controller ============
 
 const DRAG_SENSITIVITY = 0.008;
 const PAN_SENSITIVITY = 0.01;
-const DAMPING = 0.92;
 
-function CreditCard() {
+type CinematicState = {
+  active: boolean;
+  t: number;
+  posCurve: THREE.CatmullRomCurve3;
+  lookCurve: THREE.CatmullRomCurve3;
+  duration: number;
+};
+
+function CreditCard({
+  activeCinematic,
+  onCinematicEnd,
+}: {
+  activeCinematic: string | null;
+  onCinematicEnd: () => void;
+}) {
   const groupRef = useRef<THREE.Group>(null);
   const cardTexture = useTexture('/Blue-Credit-Card.png');
-  const { gl } = useThree();
+  const { gl, camera } = useThree();
 
   cardTexture.colorSpace = THREE.SRGBColorSpace;
 
-  // Interaction state (refs to avoid re-renders)
+  // Interaction state
   const dragging = useRef(false);
   const panning = useRef(false);
   const prev = useRef({ x: 0, y: 0 });
   const velocity = useRef({ rx: 0, ry: 0 });
   const panVelocity = useRef({ x: 0, y: 0 });
 
+  // Cinematic state
+  const cinRef = useRef<CinematicState | null>(null);
+
+  // Start cinematic when activeCinematic changes
+  useEffect(() => {
+    if (!activeCinematic) {
+      if (cinRef.current) cinRef.current.active = false;
+      return;
+    }
+    const preset = PRESETS[activeCinematic];
+    if (!preset) return;
+
+    // Reset card to origin
+    if (groupRef.current) {
+      groupRef.current.rotation.set(0, 0, 0);
+      groupRef.current.position.set(0, 0, 0);
+    }
+
+    const closed = activeCinematic === 'orbit';
+    cinRef.current = {
+      active: true,
+      t: 0,
+      posCurve: buildCurve(preset.positions, closed),
+      lookCurve: buildCurve(preset.lookAts, closed),
+      duration: preset.duration,
+    };
+  }, [activeCinematic]);
+
+  // Pointer events for manual drag
   useEffect(() => {
     const canvas = gl.domElement;
 
     const onPointerDown = (e: PointerEvent) => {
-      // Right-click or shift+click = pan, left-click = rotate
+      if (cinRef.current?.active) return;
       if (e.button === 2 || e.shiftKey) {
         panning.current = true;
       } else {
@@ -60,6 +207,7 @@ function CreditCard() {
     };
 
     const onPointerMove = (e: PointerEvent) => {
+      if (cinRef.current?.active) return;
       const dx = e.clientX - prev.current.x;
       const dy = e.clientY - prev.current.y;
       prev.current = { x: e.clientX, y: e.clientY };
@@ -93,7 +241,25 @@ function CreditCard() {
     };
   }, [gl]);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
+    const cin = cinRef.current;
+
+    // Cinematic mode
+    if (cin?.active) {
+      cin.t = Math.min(cin.t + delta / cin.duration, 1);
+      const eased = smoothstep01(cin.t);
+      camera.position.copy(cin.posCurve.getPointAt(eased));
+      const look = cin.lookCurve.getPointAt(eased);
+      camera.lookAt(look);
+
+      if (cin.t >= 1) {
+        cin.active = false;
+        onCinematicEnd();
+      }
+      return;
+    }
+
+    // Manual drag mode
     const g = groupRef.current;
     if (!g) return;
 
@@ -135,8 +301,21 @@ function CreditCard() {
 
 // ============ Exported Component ============
 
+const PRESET_KEYS = Object.keys(PRESETS);
+
 export default function CardDisplayScene() {
   const { contextLost, canvasKey, handleCreated } = useWebGLRecovery('CardDisplay');
+  const [activeCinematic, setActiveCinematic] = useState<string | null>(null);
+
+  const onCinematicEnd = useCallback(() => setActiveCinematic(null), []);
+
+  const handlePresetClick = useCallback(
+    (key: string) => {
+      // Toggle off if same button clicked, otherwise start new
+      setActiveCinematic((prev) => (prev === key ? null : key));
+    },
+    []
+  );
 
   if (contextLost) {
     return (
@@ -199,10 +378,56 @@ export default function CardDisplayScene() {
           <pointLight position={[-5, -3, -5]} intensity={1.5} color="#3DB5E6" />
           <pointLight position={[5, 3, 5]} intensity={1} color="#ffffff" />
 
-          <CreditCard />
+          <CreditCard
+            activeCinematic={activeCinematic}
+            onCinematicEnd={onCinematicEnd}
+          />
           <PanoramaEnvironment />
         </Canvas>
       </Suspense>
+
+      {/* Cinematic preset buttons */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 32,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 200,
+          display: 'flex',
+          gap: 8,
+        }}
+      >
+        {PRESET_KEYS.map((key) => {
+          const active = activeCinematic === key;
+          return (
+            <button
+              key={key}
+              onClick={() => handlePresetClick(key)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 8,
+                border: active
+                  ? '1px solid rgba(96,165,250,0.8)'
+                  : '1px solid rgba(255,255,255,0.15)',
+                backgroundColor: active
+                  ? 'rgba(96,165,250,0.2)'
+                  : 'rgba(255,255,255,0.06)',
+                color: active ? '#93c5fd' : 'rgba(255,255,255,0.45)',
+                fontSize: 11,
+                fontFamily: 'monospace',
+                fontWeight: 600,
+                letterSpacing: '0.05em',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {PRESETS[key].label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
