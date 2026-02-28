@@ -12,10 +12,10 @@ const OFFSCREEN_X = 15;
 const FONT_SIZE = 2.0;
 const LINE_GAP = 1.4;
 const LETTER_SPACING = 0.12;
-const TOP_TEXT = 'BEYOND';
+const TOP_TEXT = '你好';
 const BOT_TEXT = 'LIMITS';
 
-const FONT_URL = '/fonts/Inter-Bold.ttf';
+const FONT_URL = '/fonts/NotoSansTC-Bold.ttf';
 
 // ============ Easing ============
 
