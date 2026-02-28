@@ -22,9 +22,9 @@ const FONT_URL = '/fonts/NotoSansTC-Bold.ttf';
 /** Seconds the text spends in the slow center crawl.
  *  Adjust freely — entry/exit speed stays the same.
  *  e.g. 0.5 (brief flash), 1.5 (readable), 3.0 (long linger) */
-const SLOW_ZONE = 4.0;
+const SLOW_ZONE = 1.5;
 
-const FAST_DURATION = 0.4; // seconds per fast phase (entry or exit)
+const FAST_DURATION = 0.6; // seconds per fast phase (entry or exit)
 const FAST_POWER = 8;      // steepness of acceleration/deceleration
 const CRAWL_RANGE = 0.02;  // fraction of total travel covered during crawl (smaller = slower crawl)
 

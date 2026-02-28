@@ -13,7 +13,7 @@ const CUBE_COUNT = 500;
 const SPEED = 0.02;
 const SCATTER_RADIUS = 50;
 
-const DIAGONAL_DURATION = 14;
+const DIAGONAL_DURATION = 10;
 
 // Timeline phases (seconds within each loop)
 const PHASE_A_END = 3; // fly-through only
