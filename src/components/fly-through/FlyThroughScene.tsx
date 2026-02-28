@@ -61,7 +61,7 @@ const NEON_PANELS: {
   // Right side (angled toward card)
   { pos: [3.0, 3.5, -3], rot: [0, -Math.PI / 6, 0], color: '#00ffff', video: '/video/ElephantsDream.mp4' },
   { pos: [3.5, -1.5, -4], rot: [0, -Math.PI / 5, 0], color: '#00ffff', video: '/video/BigBuckBunny.mp4' },
-  { pos: [3.0, -6.0, -3], rot: [0, -Math.PI / 6, 0], color: '#00ffcc', video: '/video/ElephantsDream.mp4' },
+  { pos: [3.0, -5.0, -3], rot: [0, -Math.PI / 6, 0], color: '#00ffcc', video: '/video/ElephantsDream.mp4' },
 ];
 const PANEL_VIDEO_W = 2.4;
 const PANEL_VIDEO_H = 1.44;
@@ -127,9 +127,18 @@ const panelCrtFrag = /* glsl */ `
   uniform float powerOn; // 0=off, 0..1=booting, 1=fully on
   varying vec2 vUv;
   void main() {
-    // Still off — pure black
+    // Still off — fully transparent
     if (powerOn <= 0.0) {
-      gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+      gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+      return;
+    }
+
+    // Flicker pattern: ON/OFF/ON/OFF/ON
+    // t<0.3: ON, 0.3–0.6: OFF, 0.6–0.8: ON, 0.8–1.0: OFF, >=1.0: ON
+    float t = powerOn;
+    bool visible = (t < 0.3) || (t >= 0.6 && t < 0.8) || (t >= 1.0);
+    if (!visible) {
+      gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
       return;
     }
 
@@ -157,36 +166,6 @@ const panelCrtFrag = /* glsl */ `
 
     // Sci-fi tint
     col *= vec3(0.92, 1.0, 1.05);
-
-    // ---- Power-on boot sequence ----
-    if (powerOn < 1.0) {
-      float t = powerOn;
-      // Random static noise
-      float noise = fract(sin(dot(vUv * 200.0 + vec2(time * 73.1, time * 37.7),
-                    vec2(12.9898, 78.233))) * 43758.5453);
-
-      // Flash 1: bright horizontal scan line (0.08–0.18)
-      float f1 = smoothstep(0.08, 0.1, t) * (1.0 - smoothstep(0.16, 0.18, t));
-      // Flash 2: partial image + static (0.30–0.45)
-      float f2 = smoothstep(0.30, 0.32, t) * (1.0 - smoothstep(0.43, 0.45, t));
-      // Flash 3: image fades in with interference (0.60+)
-      float f3 = smoothstep(0.60, 0.62, t);
-
-      float vis = clamp(f1 * 0.15 + f2 * 0.5 + f3, 0.0, 1.0);
-
-      // Thin horizontal line during first flash (old TV turn-on)
-      float hLine = f1 * step(abs(vUv.y - 0.5), 0.004) * 3.0;
-
-      // Rolling interference bar during stabilisation (0.60–0.90)
-      float roll = 0.0;
-      if (t > 0.60 && t < 0.92) {
-        float rp = fract(vUv.y - time * 4.0);
-        roll = smoothstep(0.0, 0.03, rp) * (1.0 - smoothstep(0.03, 0.06, rp))
-             * 0.2 * (1.0 - smoothstep(0.80, 0.92, t));
-      }
-
-      col = col * vis + vec3(noise * (f1 * 0.4 + f2 * 0.2) + hLine + roll);
-    }
 
     gl_FragColor = vec4(col, 1.0);
   }
@@ -505,7 +484,7 @@ function smoothstep01(t: number): number {
 const _frustum = new THREE.Frustum();
 const _projScreenMat = new THREE.Matrix4();
 const _tmpPos = new THREE.Vector3();
-const POWER_ON_DURATION = 1.2; // seconds for CRT boot animation
+const POWER_ON_DURATION = 0.15; // seconds for CRT boot animation
 
 // ============ All-in-One Renderer ============
 
@@ -730,6 +709,7 @@ function Renderer({ showPath }: { showPath: boolean }) {
           time: { value: 0 },
           powerOn: { value: 0 },
         },
+        transparent: true,
         toneMapped: false,
       });
       crtMaterials.push(crtMat);
