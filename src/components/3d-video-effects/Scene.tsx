@@ -13,13 +13,9 @@ export default function Scene() {
   return (
     <div
       style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
         width: '100vw',
         height: '100vh',
         backgroundColor: '#030508',
-        zIndex: 0,
         overflow: 'hidden'
       }}
     >
