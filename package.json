@@ -13,6 +13,7 @@
     "@react-three/fiber": "^9.5.0",
     "@react-three/postprocessing": "^3.0.4",
     "gsap": "^3.14.2",
+    "jotai": "^2.18.0",
     "leva": "^0.10.1",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
