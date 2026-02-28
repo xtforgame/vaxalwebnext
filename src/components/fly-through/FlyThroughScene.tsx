@@ -57,11 +57,11 @@ const NEON_PANELS: {
   // Left side (angled toward card)
   { pos: [-3.0, 5.0, -3], rot: [0, Math.PI / 6, 0], color: '#00ffff', video: '/video/BigBuckBunny.mp4' },
   { pos: [-3.5, 0.0, -4], rot: [0, Math.PI / 5, 0], color: '#00ffff', video: '/video/ElephantsDream.mp4' },
-  { pos: [-3.0, -5.0, -3], rot: [0, Math.PI / 6, 0], color: '#00ffcc', video: '/video/BigBuckBunny.mp4' },
+  { pos: [-5.7, -5.0, -3], rot: [0, Math.PI / 6, 0], color: '#00ffcc', video: '/video/BigBuckBunny.mp4' },
   // Right side (angled toward card)
-  { pos: [3.0, 3.5, -3], rot: [0, -Math.PI / 6, 0], color: '#00ffff', video: '/video/ElephantsDream.mp4' },
+  { pos: [4.0, 3.5, -3], rot: [0, -Math.PI / 6, 0], color: '#00ffff', video: '/video/ElephantsDream.mp4' },
   { pos: [3.5, -1.5, -4], rot: [0, -Math.PI / 5, 0], color: '#00ffff', video: '/video/BigBuckBunny.mp4' },
-  { pos: [3.0, -5.0, -3], rot: [0, -Math.PI / 6, 0], color: '#00ffcc', video: '/video/ElephantsDream.mp4' },
+  { pos: [2.0, -4.5, -3], rot: [0, -Math.PI / 6, 0], color: '#00ffcc', video: '/video/ElephantsDream.mp4' },
 ];
 const PANEL_VIDEO_W = 2.4;
 const PANEL_VIDEO_H = 1.44;
@@ -70,46 +70,145 @@ const PANEL_FRAME_H = 1.8;
 const PANEL_FRAME_THICKNESS = 0.02;
 const PANEL_FRAME_CUT = 0.15;
 
-function buildNeonFrameGeometry(
-  w: number, h: number, thickness: number, cutSize: number
-): THREE.ExtrudeGeometry {
+// Compute correct polygon inset: each vertex offset along bisector of adjacent
+// edge normals so that perpendicular distance = t for ALL edges (including 45°).
+function insetCW(pts: [number, number][], t: number): [number, number][] {
+  const n = pts.length;
+  const out: [number, number][] = [];
+  for (let i = 0; i < n; i++) {
+    const prev = (i - 1 + n) % n;
+    const next = (i + 1) % n;
+    // Inward normals (right perpendicular for CW winding)
+    const dx1 = pts[i][0] - pts[prev][0];
+    const dy1 = pts[i][1] - pts[prev][1];
+    const l1 = Math.hypot(dx1, dy1) || 1;
+    const nx1 = dy1 / l1, ny1 = -dx1 / l1;
+    const dx2 = pts[next][0] - pts[i][0];
+    const dy2 = pts[next][1] - pts[i][1];
+    const l2 = Math.hypot(dx2, dy2) || 1;
+    const nx2 = dy2 / l2, ny2 = -dx2 / l2;
+    // Bisector scaled so perpendicular offset = t
+    const bx = nx1 + nx2, by = ny1 + ny2;
+    const dot = bx * nx1 + by * ny1;
+    const s = Math.abs(dot) > 1e-10 ? t / dot : t;
+    out.push([pts[i][0] + bx * s, pts[i][1] + by * s]);
+  }
+  return out;
+}
+
+// Shared outer contour for frame geometry and glow SDF
+function getFrameContour(w: number, h: number, cutSize: number): [number, number][] {
   const hw = w / 2;
   const hh = h / 2;
-  const shape = new THREE.Shape();
-  shape.moveTo(-hw + cutSize, hh);
-  shape.lineTo(hw - cutSize, hh);
-  shape.lineTo(hw, hh - cutSize);
-  shape.lineTo(hw, -hh + cutSize);
-  shape.lineTo(hw - cutSize, -hh);
-  shape.lineTo(-hw + cutSize, -hh);
-  shape.lineTo(-hw, -hh + cutSize);
-  shape.lineTo(-hw, hh - cutSize);
-  shape.lineTo(-hw + cutSize, hh);
+  const dipH     = cutSize;
+  const peakW    = cutSize * 0.8;
+  const brCham   = cutSize * 1.5;
+  const stepDrop = cutSize;
+  const blFlat   = cutSize * 1.8;
+  const bodyTop  = hh - dipH;
+  const upperBot = -hh + stepDrop;
+  return [
+    [-hw, bodyTop],                          // B
+    [-hw + dipH, hh],                        // C
+    [-hw + dipH + peakW, hh],                // D
+    [-hw + 2 * dipH + peakW, bodyTop],       // E
+    [hw - peakW - dipH, bodyTop],            // F
+    [hw - peakW, hh],                        // G
+    [hw, hh],                                // H
+    [hw, upperBot + brCham],                 // I
+    [hw - brCham, upperBot],                 // BR chamfer end
+    [-hw + blFlat + stepDrop, upperBot],     // J
+    [-hw + blFlat, -hh],                     // K
+    [-hw, -hh],                              // A
+  ];
+}
 
-  const innerHw = hw - thickness;
-  const innerHh = hh - thickness;
-  const innerCut = cutSize - thickness * 0.4;
-  const hole = new THREE.Path();
-  hole.moveTo(-innerHw + innerCut, innerHh);
-  hole.lineTo(innerHw - innerCut, innerHh);
-  hole.lineTo(innerHw, innerHh - innerCut);
-  hole.lineTo(innerHw, -innerHh + innerCut);
-  hole.lineTo(innerHw - innerCut, -innerHh);
-  hole.lineTo(-innerHw + innerCut, -innerHh);
-  hole.lineTo(-innerHw, -innerHh + innerCut);
-  hole.lineTo(-innerHw, innerHh - innerCut);
-  hole.lineTo(-innerHw + innerCut, innerHh);
-  shape.holes.push(hole);
+function buildNeonFrameGeometry(
+  w: number, h: number, thickness: number, cutSize: number
+): THREE.BufferGeometry {
+  // Sci-fi frame — dipped body with raised peaks at left & right top corners
+  // Built as manual triangle-strip ring to avoid earcut artifacts on concave top.
+  //
+  //        C──D                  G──H
+  //       ╱    ╲________________╱    │  ← body (E–F) LOWER than peaks (C–D, G–H)
+  //      B      E              F     │
+  //      │                           │
+  //      │                           I
+  //      │          J______________╱
+  //      │         ╱
+  //      A───────K
 
-  const geo = new THREE.ExtrudeGeometry(shape, {
-    depth: thickness,
-    bevelEnabled: true,
-    bevelThickness: 0.02,
-    bevelSize: 0.02,
-    bevelSegments: 3,
-    curveSegments: 12,
-  });
-  geo.translate(0, 0, -thickness / 2);
+  const outer = getFrameContour(w, h, cutSize);
+
+  // Inner contour — proper polygon inset (uniform perpendicular distance)
+  const inner = insetCW(outer, thickness);
+
+  const halfD = thickness / 2;
+  const n = outer.length;
+  const pos: number[] = [];
+  const nrm: number[] = [];
+  const ids: number[] = [];
+  let vi = 0;
+  const v = (x: number, y: number, z: number, nx: number, ny: number, nz: number) => {
+    pos.push(x, y, z);
+    nrm.push(nx, ny, nz);
+    return vi++;
+  };
+
+  // Front ring (z = +halfD, normal +Z)
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    const a = v(outer[i][0], outer[i][1], halfD, 0, 0, 1);
+    const b = v(outer[j][0], outer[j][1], halfD, 0, 0, 1);
+    const c = v(inner[j][0], inner[j][1], halfD, 0, 0, 1);
+    const d = v(inner[i][0], inner[i][1], halfD, 0, 0, 1);
+    ids.push(a, d, c, a, c, b);
+  }
+
+  // Back ring (z = -halfD, normal -Z, reversed winding)
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    const a = v(outer[i][0], outer[i][1], -halfD, 0, 0, -1);
+    const b = v(outer[j][0], outer[j][1], -halfD, 0, 0, -1);
+    const c = v(inner[j][0], inner[j][1], -halfD, 0, 0, -1);
+    const d = v(inner[i][0], inner[i][1], -halfD, 0, 0, -1);
+    ids.push(a, b, c, a, c, d);
+  }
+
+  // Outer side faces (outward normals)
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    const dx = outer[j][0] - outer[i][0];
+    const dy = outer[j][1] - outer[i][1];
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len;
+    const ny = dx / len;
+    const a = v(outer[i][0], outer[i][1], halfD, nx, ny, 0);
+    const b = v(outer[j][0], outer[j][1], halfD, nx, ny, 0);
+    const c = v(outer[j][0], outer[j][1], -halfD, nx, ny, 0);
+    const d = v(outer[i][0], outer[i][1], -halfD, nx, ny, 0);
+    ids.push(a, b, c, a, c, d);
+  }
+
+  // Inner side faces (inward normals, toward frame center)
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    const dx = inner[j][0] - inner[i][0];
+    const dy = inner[j][1] - inner[i][1];
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = dy / len;
+    const ny = -dx / len;
+    const a = v(inner[i][0], inner[i][1], halfD, nx, ny, 0);
+    const b = v(inner[j][0], inner[j][1], halfD, nx, ny, 0);
+    const c = v(inner[j][0], inner[j][1], -halfD, nx, ny, 0);
+    const d = v(inner[i][0], inner[i][1], -halfD, nx, ny, 0);
+    ids.push(a, d, c, a, c, b);
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+  geo.setIndex(ids);
   return geo;
 }
 
@@ -180,25 +279,33 @@ const panelGlowVert = /* glsl */ `
   }
 `;
 
+const FRAME_VERT_COUNT = 12;
 const panelGlowFrag = /* glsl */ `
   uniform vec3 glowColor;
   uniform float intensity;
-  uniform vec2 frameHalf;      // (halfW, halfH) in world units
-  uniform float chamferThresh; // halfW + halfH - cutSize
+  uniform vec2 frameVerts[${FRAME_VERT_COUNT}]; // outer contour in world units
   uniform vec2 glowHalf;       // glow plane half-size in world units
   varying vec2 vUv;
+
+  // Polygon signed-distance (Inigo Quilez)
+  float polySD(vec2 p) {
+    float d = dot(p - frameVerts[0], p - frameVerts[0]);
+    float s = 1.0;
+    for (int i = 0, j = ${FRAME_VERT_COUNT - 1}; i < ${FRAME_VERT_COUNT}; j = i, i++) {
+      vec2 e = frameVerts[j] - frameVerts[i];
+      vec2 w = p - frameVerts[i];
+      vec2 b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
+      d = min(d, dot(b, b));
+      bvec3 cond = bvec3(p.y >= frameVerts[i].y, p.y < frameVerts[j].y,
+                          e.x * w.y > e.y * w.x);
+      if (all(cond) || all(not(cond))) s *= -1.0;
+    }
+    return s * sqrt(d);
+  }
+
   void main() {
-    // World-proportional coords (preserves aspect ratio)
     vec2 p = (vUv - 0.5) * glowHalf * 2.0;
-    vec2 ap = abs(p);
-    // Box SDF
-    vec2 d = ap - frameHalf;
-    float boxSD = length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
-    // Chamfer plane SDF — 45° corner cuts in world space
-    float chamferSD = (ap.x + ap.y - chamferThresh) * 0.7071;
-    // Chamfered box = intersection of box + chamfer planes
-    float sd = max(boxSD, chamferSD);
-    // Glow peaks at edge, steep inward, gentle outward (tighter halo)
+    float sd = polySD(p);
     float falloff = sd < 0.0 ? 40.0 : 10.0;
     float glow = exp(-abs(sd) * falloff) * intensity;
     gl_FragColor = vec4(glowColor * glow, glow);
@@ -734,8 +841,10 @@ function Renderer({ showPath }: { showPath: boolean }) {
         uniforms: {
           glowColor: { value: neonColor },
           intensity: { value: 1.2 },
-          frameHalf: { value: new THREE.Vector2(PANEL_FRAME_W / 2, PANEL_FRAME_H / 2) },
-          chamferThresh: { value: PANEL_FRAME_W / 2 + PANEL_FRAME_H / 2 - PANEL_FRAME_CUT },
+          frameVerts: {
+            value: getFrameContour(PANEL_FRAME_W, PANEL_FRAME_H, PANEL_FRAME_CUT)
+              .map(([x, y]) => new THREE.Vector2(x, y)),
+          },
           glowHalf: { value: new THREE.Vector2(PANEL_FRAME_W * 1.6 / 2, PANEL_FRAME_H * 1.6 / 2) },
         },
         transparent: true,
@@ -749,9 +858,9 @@ function Renderer({ showPath }: { showPath: boolean }) {
       group.position.set(...cfg.pos);
       group.rotation.set(...cfg.rot);
 
-      // Glow plane sits behind neon frame
+      // Glow plane sits just behind neon frame (minimal offset to avoid parallax gap)
       const glowMesh = new THREE.Mesh(glowPlaneGeo, glowMat);
-      glowMesh.position.z = -0.06;
+      glowMesh.position.z = -0.005;
       group.add(glowMesh);
       group.add(new THREE.Mesh(neonFrameGeo, neonMat));
       group.add(new THREE.Mesh(videoPlaneGeo, crtMat));
@@ -1032,22 +1141,29 @@ function Renderer({ showPath }: { showPath: boolean }) {
       res.cardCam.lookAt(lookTarget);
 
       // Frustum detection + CRT power-on animation
+      // Only start detecting after the hacker→card transition is fully complete
       const neonTime = state.clock.getElapsedTime();
-      res.cardCam.updateMatrixWorld();
-      _projScreenMat.multiplyMatrices(
-        res.cardCam.projectionMatrix,
-        res.cardCam.matrixWorldInverse
-      );
-      _frustum.setFromProjectionMatrix(_projScreenMat);
+      const transitionDone = loopTime >= PHASE_D_END;
+
+      if (transitionDone) {
+        res.cardCam.updateMatrixWorld();
+        _projScreenMat.multiplyMatrices(
+          res.cardCam.projectionMatrix,
+          res.cardCam.matrixWorldInverse
+        );
+        _frustum.setFromProjectionMatrix(_projScreenMat);
+      }
 
       const states = panelStatesRef.current;
       for (let i = 0; i < res.crtMaterials.length; i++) {
-        _tmpPos.copy(res.panelPositions[i]);
-        const inView = _frustum.containsPoint(_tmpPos);
+        if (transitionDone) {
+          _tmpPos.copy(res.panelPositions[i]);
+          const inView = _frustum.containsPoint(_tmpPos);
 
-        if (inView && !states[i].seen) {
-          states[i].seen = true;
-          states[i].startTime = neonTime;
+          if (inView && !states[i].seen) {
+            states[i].seen = true;
+            states[i].startTime = neonTime;
+          }
         }
 
         let powerOn = 0;
