@@ -13,7 +13,7 @@ const CUBE_COUNT = 500;
 const SPEED = 0.02;
 const SCATTER_RADIUS = 50;
 
-const DIAGONAL_DURATION = 7;
+const DIAGONAL_DURATION = 14;
 
 // Timeline phases (seconds within each loop)
 const PHASE_A_END = 3; // fly-through only
@@ -46,6 +46,185 @@ const DIAG_LOOK_ATS = [
   new THREE.Vector3(0, -CARD_H * 0.4, 0),
   new THREE.Vector3(0, -CARD_H * 0.7, 0),
 ];
+
+// Neon video panels flanking the card
+const NEON_PANELS: {
+  pos: [number, number, number];
+  rot: [number, number, number];
+  color: string;
+  video: string;
+}[] = [
+  // Left side (angled toward card)
+  { pos: [-3.0, 5.0, -3], rot: [0, Math.PI / 6, 0], color: '#00ffff', video: '/video/BigBuckBunny.mp4' },
+  { pos: [-3.5, 0.0, -4], rot: [0, Math.PI / 5, 0], color: '#00ffff', video: '/video/ElephantsDream.mp4' },
+  { pos: [-3.0, -5.0, -3], rot: [0, Math.PI / 6, 0], color: '#00ffcc', video: '/video/BigBuckBunny.mp4' },
+  // Right side (angled toward card)
+  { pos: [3.0, 3.5, -3], rot: [0, -Math.PI / 6, 0], color: '#00ffff', video: '/video/ElephantsDream.mp4' },
+  { pos: [3.5, -1.5, -4], rot: [0, -Math.PI / 5, 0], color: '#00ffff', video: '/video/BigBuckBunny.mp4' },
+  { pos: [3.0, -6.0, -3], rot: [0, -Math.PI / 6, 0], color: '#00ffcc', video: '/video/ElephantsDream.mp4' },
+];
+const PANEL_VIDEO_W = 2.4;
+const PANEL_VIDEO_H = 1.44;
+const PANEL_FRAME_W = 2.8;
+const PANEL_FRAME_H = 1.8;
+const PANEL_FRAME_THICKNESS = 0.02;
+const PANEL_FRAME_CUT = 0.15;
+
+function buildNeonFrameGeometry(
+  w: number, h: number, thickness: number, cutSize: number
+): THREE.ExtrudeGeometry {
+  const hw = w / 2;
+  const hh = h / 2;
+  const shape = new THREE.Shape();
+  shape.moveTo(-hw + cutSize, hh);
+  shape.lineTo(hw - cutSize, hh);
+  shape.lineTo(hw, hh - cutSize);
+  shape.lineTo(hw, -hh + cutSize);
+  shape.lineTo(hw - cutSize, -hh);
+  shape.lineTo(-hw + cutSize, -hh);
+  shape.lineTo(-hw, -hh + cutSize);
+  shape.lineTo(-hw, hh - cutSize);
+  shape.lineTo(-hw + cutSize, hh);
+
+  const innerHw = hw - thickness;
+  const innerHh = hh - thickness;
+  const innerCut = cutSize - thickness * 0.4;
+  const hole = new THREE.Path();
+  hole.moveTo(-innerHw + innerCut, innerHh);
+  hole.lineTo(innerHw - innerCut, innerHh);
+  hole.lineTo(innerHw, innerHh - innerCut);
+  hole.lineTo(innerHw, -innerHh + innerCut);
+  hole.lineTo(innerHw - innerCut, -innerHh);
+  hole.lineTo(-innerHw + innerCut, -innerHh);
+  hole.lineTo(-innerHw, -innerHh + innerCut);
+  hole.lineTo(-innerHw, innerHh - innerCut);
+  hole.lineTo(-innerHw + innerCut, innerHh);
+  shape.holes.push(hole);
+
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: thickness,
+    bevelEnabled: true,
+    bevelThickness: 0.02,
+    bevelSize: 0.02,
+    bevelSegments: 3,
+    curveSegments: 12,
+  });
+  geo.translate(0, 0, -thickness / 2);
+  return geo;
+}
+
+const panelCrtVert = /* glsl */ `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const panelCrtFrag = /* glsl */ `
+  uniform sampler2D map;
+  uniform float time;
+  uniform float powerOn; // 0=off, 0..1=booting, 1=fully on
+  varying vec2 vUv;
+  void main() {
+    // Still off — pure black
+    if (powerOn <= 0.0) {
+      gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+      return;
+    }
+
+    // Chromatic aberration — RGB channel offset
+    float aberration = 0.004;
+    float r = texture2D(map, vUv + vec2(aberration, 0.0)).r;
+    float g = texture2D(map, vUv).g;
+    float b = texture2D(map, vUv - vec2(aberration, 0.0)).b;
+    vec3 col = vec3(r, g, b);
+
+    // CRT scanlines
+    float scanline = sin(vUv.y * 800.0 - time * 10.0) * 0.08;
+    col -= scanline;
+
+    // Horizontal interference bands
+    float interference = sin(vUv.y * 200.0 + time * 3.0) * 0.02;
+    col += interference;
+
+    // Radial vignette
+    float edgeDist = distance(vUv, vec2(0.5));
+    col *= smoothstep(0.8, 0.2, edgeDist);
+
+    // Corner darkening
+    col *= 1.0 - pow(edgeDist * 1.4, 2.5);
+
+    // Sci-fi tint
+    col *= vec3(0.92, 1.0, 1.05);
+
+    // ---- Power-on boot sequence ----
+    if (powerOn < 1.0) {
+      float t = powerOn;
+      // Random static noise
+      float noise = fract(sin(dot(vUv * 200.0 + vec2(time * 73.1, time * 37.7),
+                    vec2(12.9898, 78.233))) * 43758.5453);
+
+      // Flash 1: bright horizontal scan line (0.08–0.18)
+      float f1 = smoothstep(0.08, 0.1, t) * (1.0 - smoothstep(0.16, 0.18, t));
+      // Flash 2: partial image + static (0.30–0.45)
+      float f2 = smoothstep(0.30, 0.32, t) * (1.0 - smoothstep(0.43, 0.45, t));
+      // Flash 3: image fades in with interference (0.60+)
+      float f3 = smoothstep(0.60, 0.62, t);
+
+      float vis = clamp(f1 * 0.15 + f2 * 0.5 + f3, 0.0, 1.0);
+
+      // Thin horizontal line during first flash (old TV turn-on)
+      float hLine = f1 * step(abs(vUv.y - 0.5), 0.004) * 3.0;
+
+      // Rolling interference bar during stabilisation (0.60–0.90)
+      float roll = 0.0;
+      if (t > 0.60 && t < 0.92) {
+        float rp = fract(vUv.y - time * 4.0);
+        roll = smoothstep(0.0, 0.03, rp) * (1.0 - smoothstep(0.03, 0.06, rp))
+             * 0.2 * (1.0 - smoothstep(0.80, 0.92, t));
+      }
+
+      col = col * vis + vec3(noise * (f1 * 0.4 + f2 * 0.2) + hLine + roll);
+    }
+
+    gl_FragColor = vec4(col, 1.0);
+  }
+`;
+
+// Glow plane behind neon frames (fake bloom)
+const panelGlowVert = /* glsl */ `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const panelGlowFrag = /* glsl */ `
+  uniform vec3 glowColor;
+  uniform float intensity;
+  uniform vec2 frameHalf;      // (halfW, halfH) in world units
+  uniform float chamferThresh; // halfW + halfH - cutSize
+  uniform vec2 glowHalf;       // glow plane half-size in world units
+  varying vec2 vUv;
+  void main() {
+    // World-proportional coords (preserves aspect ratio)
+    vec2 p = (vUv - 0.5) * glowHalf * 2.0;
+    vec2 ap = abs(p);
+    // Box SDF
+    vec2 d = ap - frameHalf;
+    float boxSD = length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+    // Chamfer plane SDF — 45° corner cuts in world space
+    float chamferSD = (ap.x + ap.y - chamferThresh) * 0.7071;
+    // Chamfered box = intersection of box + chamfer planes
+    float sd = max(boxSD, chamferSD);
+    // Glow peaks at edge, steep inward, gentle outward (tighter halo)
+    float falloff = sd < 0.0 ? 40.0 : 10.0;
+    float glow = exp(-abs(sd) * falloff) * intensity;
+    gl_FragColor = vec4(glowColor * glow, glow);
+  }
+`;
 
 // ============ GLSL Shaders ============
 
@@ -322,6 +501,12 @@ function smoothstep01(t: number): number {
   return c * c * (3 - 2 * c);
 }
 
+// Frustum detection temporaries (reused every frame)
+const _frustum = new THREE.Frustum();
+const _projScreenMat = new THREE.Matrix4();
+const _tmpPos = new THREE.Vector3();
+const POWER_ON_DURATION = 1.2; // seconds for CRT boot animation
+
 // ============ All-in-One Renderer ============
 
 function Renderer({ showPath }: { showPath: boolean }) {
@@ -516,6 +701,89 @@ function Renderer({ showPath }: { showPath: boolean }) {
     });
     cardScene.add(new THREE.Mesh(cardGeo, cardMeshMat));
 
+    // ---- Neon video panels flanking the card ----
+    const neonFrameGeo = buildNeonFrameGeometry(
+      PANEL_FRAME_W, PANEL_FRAME_H, PANEL_FRAME_THICKNESS, PANEL_FRAME_CUT
+    );
+    const videoPlaneGeo = new THREE.PlaneGeometry(PANEL_VIDEO_W, PANEL_VIDEO_H, 1, 1);
+    // Glow plane: 60% larger than frame so the bloom halo extends well beyond
+    const glowPlaneGeo = new THREE.PlaneGeometry(
+      PANEL_FRAME_W * 1.6, PANEL_FRAME_H * 1.6, 1, 1
+    );
+
+    // 1×1 black placeholder — videos are attached later via useEffect
+    const placeholderTex = new THREE.DataTexture(
+      new Uint8Array([0, 0, 0, 255]), 1, 1, THREE.RGBAFormat
+    );
+    placeholderTex.needsUpdate = true;
+
+    const neonMaterials: THREE.MeshStandardMaterial[] = [];
+    const crtMaterials: THREE.ShaderMaterial[] = [];
+    const glowMaterials: THREE.ShaderMaterial[] = [];
+
+    NEON_PANELS.forEach((cfg) => {
+      const crtMat = new THREE.ShaderMaterial({
+        vertexShader: panelCrtVert,
+        fragmentShader: panelCrtFrag,
+        uniforms: {
+          map: { value: placeholderTex },
+          time: { value: 0 },
+          powerOn: { value: 0 },
+        },
+        toneMapped: false,
+      });
+      crtMaterials.push(crtMat);
+
+      const neonColor = new THREE.Color(cfg.color);
+
+      // Neon frame — boosted emissive, color-matched surface
+      const neonMat = new THREE.MeshStandardMaterial({
+        color: neonColor,
+        emissive: neonColor,
+        emissiveIntensity: 5.0,
+        roughness: 0.15,
+        metalness: 0.9,
+        toneMapped: false,
+      });
+      neonMaterials.push(neonMat);
+
+      // Glow halo plane (fake bloom) — additive blending behind frame
+      const glowMat = new THREE.ShaderMaterial({
+        vertexShader: panelGlowVert,
+        fragmentShader: panelGlowFrag,
+        uniforms: {
+          glowColor: { value: neonColor },
+          intensity: { value: 1.2 },
+          frameHalf: { value: new THREE.Vector2(PANEL_FRAME_W / 2, PANEL_FRAME_H / 2) },
+          chamferThresh: { value: PANEL_FRAME_W / 2 + PANEL_FRAME_H / 2 - PANEL_FRAME_CUT },
+          glowHalf: { value: new THREE.Vector2(PANEL_FRAME_W * 1.6 / 2, PANEL_FRAME_H * 1.6 / 2) },
+        },
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        toneMapped: false,
+      });
+      glowMaterials.push(glowMat);
+
+      const group = new THREE.Group();
+      group.position.set(...cfg.pos);
+      group.rotation.set(...cfg.rot);
+
+      // Glow plane sits behind neon frame
+      const glowMesh = new THREE.Mesh(glowPlaneGeo, glowMat);
+      glowMesh.position.z = -0.06;
+      group.add(glowMesh);
+      group.add(new THREE.Mesh(neonFrameGeo, neonMat));
+      group.add(new THREE.Mesh(videoPlaneGeo, crtMat));
+
+      cardScene.add(group);
+    });
+
+    // Pre-compute world positions for frustum checks
+    const panelPositions = NEON_PANELS.map(
+      (cfg) => new THREE.Vector3(...cfg.pos)
+    );
+
     const cardCam = new THREE.PerspectiveCamera(
       40, size.width / size.height, 0.1, 100
     );
@@ -547,12 +815,24 @@ function Renderer({ showPath }: { showPath: boolean }) {
       cardMeshMat,
       diagPosCurve,
       diagLookCurve,
+      neonFrameGeo,
+      videoPlaneGeo,
+      glowPlaneGeo,
+      placeholderTex,
+      neonMaterials,
+      crtMaterials,
+      glowMaterials,
+      panelPositions,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fontTexture, cardTexture, panoTexture, skyboxCube]);
 
   const tRef = useRef(0);
   const warmupRef = useRef(false);
+  const panelStatesRef = useRef(
+    NEON_PANELS.map(() => ({ seen: false, startTime: -1 }))
+  );
+  const prevNeedsCardRef = useRef(false);
 
   // Handle resize
   useEffect(() => {
@@ -586,6 +866,87 @@ function Renderer({ showPath }: { showPath: boolean }) {
       res.hackerImgMat.dispose();
       res.compositorMat.dispose();
       res.cardMeshMat.dispose();
+      // Neon panel resources (videos cleaned up by their own useEffect)
+      res.neonFrameGeo.dispose();
+      res.videoPlaneGeo.dispose();
+      res.glowPlaneGeo.dispose();
+      res.placeholderTex.dispose();
+      res.neonMaterials.forEach((m) => m.dispose());
+      res.crtMaterials.forEach((m) => m.dispose());
+      res.glowMaterials.forEach((m) => m.dispose());
+    };
+  }, [res]);
+
+  // Video lifecycle: create videos after mount, swap into CRT materials when ready
+  useEffect(() => {
+    const videos: HTMLVideoElement[] = [];
+    const textures: THREE.VideoTexture[] = [];
+
+    NEON_PANELS.forEach((cfg, i) => {
+      const video = document.createElement('video');
+      video.crossOrigin = 'Anonymous';
+      video.loop = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = 'auto';
+      videos.push(video);
+
+      const tryPlay = () => {
+        video.play().catch(() => {
+          setTimeout(tryPlay, 1000);
+        });
+      };
+
+      const onCanPlay = () => {
+        const vTex = new THREE.VideoTexture(video);
+        vTex.minFilter = THREE.LinearFilter;
+        vTex.magFilter = THREE.LinearFilter;
+        textures.push(vTex);
+        res.crtMaterials[i].uniforms.map.value = vTex;
+        tryPlay();
+      };
+      video.addEventListener('canplay', onCanPlay, { once: true });
+
+      let retryCount = 0;
+      const onError = () => {
+        if (retryCount < 5) {
+          retryCount++;
+          setTimeout(() => {
+            video.src = cfg.video;
+            video.load();
+          }, 2000 * retryCount);
+        }
+      };
+      video.addEventListener('error', onError);
+
+      // Start loading
+      video.src = cfg.video;
+    });
+
+    // Resume paused videos when tab becomes visible again
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        videos.forEach((v) => {
+          if (v.paused && v.readyState >= 2) {
+            v.play().catch(() => {});
+          }
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      videos.forEach((v) => {
+        v.pause();
+        v.removeAttribute('src');
+        v.load();
+      });
+      textures.forEach((t) => t.dispose());
+      // Reset CRT materials back to placeholder
+      res.crtMaterials.forEach((m) => {
+        m.uniforms.map.value = res.placeholderTex;
+      });
     };
   }, [res]);
 
@@ -690,9 +1051,51 @@ function Renderer({ showPath }: { showPath: boolean }) {
       const lookTarget = res.diagLookCurve.getPointAt(cardEased);
       res.cardCam.lookAt(lookTarget);
 
+      // Frustum detection + CRT power-on animation
+      const neonTime = state.clock.getElapsedTime();
+      res.cardCam.updateMatrixWorld();
+      _projScreenMat.multiplyMatrices(
+        res.cardCam.projectionMatrix,
+        res.cardCam.matrixWorldInverse
+      );
+      _frustum.setFromProjectionMatrix(_projScreenMat);
+
+      const states = panelStatesRef.current;
+      for (let i = 0; i < res.crtMaterials.length; i++) {
+        _tmpPos.copy(res.panelPositions[i]);
+        const inView = _frustum.containsPoint(_tmpPos);
+
+        if (inView && !states[i].seen) {
+          states[i].seen = true;
+          states[i].startTime = neonTime;
+        }
+
+        let powerOn = 0;
+        if (states[i].seen) {
+          const elapsed = neonTime - states[i].startTime;
+          powerOn = Math.min(1, elapsed / POWER_ON_DURATION);
+        }
+
+        res.crtMaterials[i].uniforms.powerOn.value = powerOn;
+        res.crtMaterials[i].uniforms.time.value = neonTime;
+      }
+
       gl.setRenderTarget(res.cardFBO);
       gl.render(res.cardScene, res.cardCam);
     }
+
+    // Reset panel power-on states when leaving card phase
+    if (prevNeedsCardRef.current && !needsCard) {
+      const states = panelStatesRef.current;
+      for (let i = 0; i < states.length; i++) {
+        states[i].seen = false;
+        states[i].startTime = -1;
+      }
+      for (let i = 0; i < res.crtMaterials.length; i++) {
+        res.crtMaterials[i].uniforms.powerOn.value = 0;
+      }
+    }
+    prevNeedsCardRef.current = needsCard;
 
     // 4. Compositor to screen
     res.compositorMat.uniforms.iChannel0.value = ch0;
