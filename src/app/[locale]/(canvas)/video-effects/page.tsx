@@ -5,7 +5,7 @@ import { Suspense } from 'react';
 
 // Dynamically import the Scene component to disable SSR for Three.js
 const VideoEffectsScene = dynamic(
-  () => import('../../../components/3d-video-effects/Scene'),
+  () => import('@/components/3d-video-effects/Scene'),
   { ssr: false }
 );
 
