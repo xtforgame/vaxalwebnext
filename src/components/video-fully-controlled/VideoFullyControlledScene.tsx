@@ -12,6 +12,10 @@ import {
   type EasingFn,
 } from './timelineData';
 
+// ─── Cursor constants ────────────────────────────────────────────
+const RIPPLE_DURATION = 0.6; // seconds
+const RIPPLE_MAX_SCALE = 4;
+
 // ─── Zoom helper ─────────────────────────────────────────────────
 function applyZoom(
   camera: THREE.OrthographicCamera,
@@ -106,6 +110,23 @@ function VideoScene() {
     easing: EasingFn;
   } | null>(null);
 
+  // ── Cursor state ─────────────────────────────────────────────
+  const cursorGroupRef = useRef<THREE.Group>(null!);
+  const rippleMeshRef = useRef<THREE.Mesh>(null!);
+  const rippleMaterialRef = useRef<THREE.MeshBasicMaterial>(null!);
+
+  const currentCursorPosRef = useRef<[number, number]>([0.5, 0.5]);
+
+  const activeCursorMoveRef = useRef<{
+    startPos: [number, number];
+    endPos: [number, number];
+    startTime: number;
+    duration: number;
+    easing: EasingFn;
+  } | null>(null);
+
+  const activeRippleRef = useRef<{ startTime: number } | null>(null);
+
   // ── Frame loop ─────────────────────────────────────────────────
   useFrame((state, delta) => {
     const elapsed = (elapsedRef.current += delta);
@@ -157,6 +178,37 @@ function VideoScene() {
             easing: EASING_MAP[action.easing ?? 'easeInCubic'],
           };
           break;
+
+        case 'cursor-show':
+          currentCursorPosRef.current = [...action.position];
+          cursorGroupRef.current.visible = true;
+          break;
+
+        case 'cursor-hide':
+          cursorGroupRef.current.visible = false;
+          activeCursorMoveRef.current = null;
+          break;
+
+        case 'cursor-move':
+          activeCursorMoveRef.current = {
+            startPos: [...currentCursorPosRef.current],
+            endPos: action.to,
+            startTime: action.time,
+            duration: action.duration,
+            easing: EASING_MAP[action.easing ?? 'easeInOutCubic'],
+          };
+          break;
+
+        case 'cursor-click': {
+          activeRippleRef.current = { startTime: elapsed };
+          const [rx, ry] = currentCursorPosRef.current;
+          rippleMeshRef.current.position.x = (rx - 0.5) * planeWidth;
+          rippleMeshRef.current.position.y = (0.5 - ry) * planeHeight;
+          rippleMeshRef.current.visible = true;
+          rippleMeshRef.current.scale.setScalar(1);
+          rippleMaterialRef.current.opacity = 0.5;
+          break;
+        }
       }
 
       nextActionRef.current++;
@@ -191,21 +243,110 @@ function VideoScene() {
       if (rawT >= 1) activeZoomRef.current = null;
     }
 
+    // Cursor move
+    if (activeCursorMoveRef.current) {
+      const m = activeCursorMoveRef.current;
+      const rawT = Math.min(1, (elapsed - m.startTime) / m.duration);
+      const t = m.easing(rawT);
+      const cx = m.startPos[0] + (m.endPos[0] - m.startPos[0]) * t;
+      const cy = m.startPos[1] + (m.endPos[1] - m.startPos[1]) * t;
+      currentCursorPosRef.current = [cx, cy];
+      if (rawT >= 1) activeCursorMoveRef.current = null;
+    }
+
+    // Apply cursor world position
+    if (cursorGroupRef.current.visible) {
+      const [cx, cy] = currentCursorPosRef.current;
+      cursorGroupRef.current.position.x = (cx - 0.5) * planeWidth;
+      cursorGroupRef.current.position.y = (0.5 - cy) * planeHeight;
+      // Keep cursor screen-size constant regardless of camera zoom
+      const invZoom = 1 / camera.zoom;
+      cursorGroupRef.current.scale.setScalar(invZoom);
+    }
+
+    // Ripple animation
+    if (activeRippleRef.current) {
+      const rawT = (elapsed - activeRippleRef.current.startTime) / RIPPLE_DURATION;
+      if (rawT >= 1) {
+        rippleMeshRef.current.visible = false;
+        activeRippleRef.current = null;
+      } else {
+        const scale = (1 + rawT * RIPPLE_MAX_SCALE) / camera.zoom;
+        rippleMeshRef.current.scale.setScalar(scale);
+        rippleMaterialRef.current.opacity = 0.5 * (1 - rawT);
+      }
+    }
+
     // 3. Texture update guard
     if (video.readyState >= video.HAVE_CURRENT_DATA) {
       textureRef.current!.needsUpdate = true;
     }
   });
 
+  // ── Cursor size relative to plane ────────────────────────────
+  const cursorRadius = planeHeight * 0.025;
+  const outlineWidth = cursorRadius * 0.2;
+
   // ── Render ─────────────────────────────────────────────────────
   return (
-    <mesh>
-      <planeGeometry
-        key={`${planeWidth.toFixed(2)}-${planeHeight.toFixed(2)}`}
-        args={[planeWidth, planeHeight]}
-      />
-      <meshBasicMaterial map={textureRef.current} toneMapped={false} />
-    </mesh>
+    <>
+      {/* Video plane */}
+      <mesh>
+        <planeGeometry
+          key={`${planeWidth.toFixed(2)}-${planeHeight.toFixed(2)}`}
+          args={[planeWidth, planeHeight]}
+        />
+        <meshBasicMaterial map={textureRef.current} toneMapped={false} />
+      </mesh>
+
+      {/* Cursor dot + white outline */}
+      <group ref={cursorGroupRef} visible={false}>
+        {/* White outline ring (behind) */}
+        <mesh position={[0, 0, 0.09]} renderOrder={2}>
+          <ringGeometry
+            key={`outline-${cursorRadius.toFixed(4)}`}
+            args={[cursorRadius - outlineWidth * 0.3, cursorRadius + outlineWidth, 48]}
+          />
+          <meshBasicMaterial
+            color="#ffffff"
+            transparent
+            opacity={0.85}
+            depthTest={false}
+            depthWrite={false}
+          />
+        </mesh>
+        {/* Blue fill */}
+        <mesh position={[0, 0, 0.1]} renderOrder={3}>
+          <circleGeometry
+            key={`cur-${cursorRadius.toFixed(4)}`}
+            args={[cursorRadius, 48]}
+          />
+          <meshBasicMaterial
+            color="#60a5fa"
+            transparent
+            opacity={0.7}
+            depthTest={false}
+            depthWrite={false}
+          />
+        </mesh>
+      </group>
+
+      {/* Click ripple ring */}
+      <mesh ref={rippleMeshRef} position={[0, 0, 0.05]} visible={false} renderOrder={1}>
+        <ringGeometry
+          key={`rip-${cursorRadius.toFixed(4)}`}
+          args={[cursorRadius * 0.85, cursorRadius, 48]}
+        />
+        <meshBasicMaterial
+          ref={rippleMaterialRef}
+          color="#93c5fd"
+          transparent
+          opacity={0.6}
+          depthTest={false}
+          depthWrite={false}
+        />
+      </mesh>
+    </>
   );
 }
 
