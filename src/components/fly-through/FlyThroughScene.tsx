@@ -16,7 +16,7 @@ const SCATTER_RADIUS = 50;
 const DIAGONAL_DURATION = 10;
 
 // Timeline phases (seconds within each loop)
-const PHASE_A_END = 3; // fly-through only
+const PHASE_A_END = 7; // fly-through only
 const PHASE_B_END = PHASE_A_END + 3; // transition fly → hacker (3s)
 const PHASE_C_END = PHASE_B_END + 1; // hacker only
 const PHASE_D_END = PHASE_C_END + 3; // transition hacker → card (3s)
@@ -594,6 +594,7 @@ const HUD_HEIGHT = 0.45;
 const HUD_DEPTH = 0.06;
 const HUD_DISTANCE = 3.0;
 const HUD_Y_OFFSET = -0.9;
+const HUD_TILT = -0.0;         // radians, negative = top tilts away from camera (後傾)
 
 const HUD_CANVAS_W = 1024;
 const HUD_CANVAS_H = 256;
@@ -650,6 +651,7 @@ const _projScreenMat = new THREE.Matrix4();
 const _tmpPos = new THREE.Vector3();
 const _hudForward = new THREE.Vector3();
 const _hudUp = new THREE.Vector3();
+const _hudTiltQ = new THREE.Quaternion();
 const POWER_ON_DURATION = 0.15; // seconds for CRT boot animation
 
 // ============ All-in-One Renderer ============
@@ -716,7 +718,7 @@ function Renderer({ showPath }: { showPath: boolean }) {
     const dir1 = new THREE.DirectionalLight(0xffffff, 1.5);
     dir1.position.set(50, 50, 50);
     flyScene.add(dir1);
-    const dir2 = new THREE.DirectionalLight(0x4488ff, 0.5);
+    const dir2 = new THREE.DirectionalLight(0xffffff, 0.5);
     dir2.position.set(-30, -20, -40);
     flyScene.add(dir2);
     const pointLight = new THREE.PointLight(0xffffff, 2, 30);
@@ -955,7 +957,7 @@ function Renderer({ showPath }: { showPath: boolean }) {
     const hudGlassMat = new THREE.MeshPhysicalMaterial({
       color: new THREE.Color('#88ccff'),
       transparent: true,
-      opacity: 0.15,
+      opacity: 0.45,
       roughness: 0.05,
       metalness: 0.1,
       clearcoat: 1.0,
@@ -1188,6 +1190,8 @@ function Renderer({ showPath }: { showPath: boolean }) {
       .addScaledVector(_hudForward, HUD_DISTANCE)
       .addScaledVector(_hudUp, HUD_Y_OFFSET);
     res.hudGroup.quaternion.copy(camera.quaternion);
+    _hudTiltQ.setFromAxisAngle(_hudUp.set(1, 0, 0), HUD_TILT);
+    res.hudGroup.quaternion.multiply(_hudTiltQ);
 
     // Typing animation
     const typing = typingRef.current;
@@ -1229,10 +1233,10 @@ function Renderer({ showPath }: { showPath: boolean }) {
 
     // Glow pass
     ctx.font = 'bold 42px "Courier New", monospace';
-    ctx.fillStyle = '#00ffd0';
+    ctx.fillStyle = '#ffffff';
     ctx.textBaseline = 'middle';
-    ctx.shadowColor = '#00ffd0';
-    ctx.shadowBlur = 16;
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 10;
     ctx.fillText(displayText, textX, textY);
 
     // Sharp pass on top
@@ -1242,9 +1246,9 @@ function Renderer({ showPath }: { showPath: boolean }) {
     // Blinking cursor
     if (typing.cursorVisible && typing.charIndex <= msg.length) {
       const textWidth = ctx.measureText(displayText).width;
-      ctx.fillStyle = '#00ffd0';
-      ctx.shadowColor = '#00ffd0';
-      ctx.shadowBlur = 10;
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = '#ffffff';
+      ctx.shadowBlur = 8;
       ctx.fillRect(textX + textWidth + 4, textY - 22, 3, 44);
       ctx.shadowBlur = 0;
     }
