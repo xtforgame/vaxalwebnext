@@ -658,7 +658,8 @@ function Renderer({ showPath }: { showPath: boolean }) {
     flyScene.backgroundIntensity = 2.5;
     flyScene.environment = skyboxCube;
     flyScene.environmentIntensity = 1.5;
-    flyScene.add(new THREE.AmbientLight(0xffffff, 0.3));
+    // flyScene.add(new THREE.AmbientLight(0xffffff, 0.3));
+    flyScene.add(new THREE.AmbientLight(0xffffff, 1.3));
     const dir1 = new THREE.DirectionalLight(0xffffff, 1.5);
     dir1.position.set(50, 50, 50);
     flyScene.add(dir1);

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // ============ Constants (adjustable) ============
 
 const HUD_WIDTH = 2.0;
-const HUD_HEIGHT = 0.45;
+const HUD_HEIGHT = 0.25; // 0.45
 const HUD_DEPTH = 0.06;
 const HUD_DISTANCE = 3.0;
 const HUD_Y_OFFSET = -0.9;
@@ -18,7 +18,7 @@ const HUD_SLIDE_DISTANCE = 0.12; // world units the block slides upward during e
 const HUD_TYPING_DELAY = 1.0;    // seconds after fully appeared before typing starts
 
 const HUD_CANVAS_W = 1024;
-const HUD_CANVAS_H = 256;
+const HUD_CANVAS_H = 128; // 256
 const HUD_TYPING_SPEED = 0.05;   // seconds per character
 const HUD_PAUSE_DURATION = 2.0;  // seconds between messages
 const HUD_CURSOR_BLINK = 0.53;   // seconds per blink toggle
@@ -251,8 +251,8 @@ export function updateHudTypingGlass(
   ctx.clearRect(0, 0, cvs.width, cvs.height);
 
   // Subtle dark background for readability
-  ctx.fillStyle = 'rgba(0, 5, 15, 0.35)';
-  ctx.fillRect(0, 0, cvs.width, cvs.height);
+  // ctx.fillStyle = 'rgba(0, 5, 15, 0.35)';
+  // ctx.fillRect(0, 0, cvs.width, cvs.height);
 
   const currentMsg = HUD_TYPING_MESSAGES[typing.messageIndex];
   const displayText = typing.started
