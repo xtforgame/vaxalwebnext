@@ -69,6 +69,16 @@ export interface CursorClickAction extends ActionBase {
   type: 'cursor-click';
 }
 
+// ─── Overlay Action Types ────────────────────────────────────────
+export interface OverlayShowAction extends ActionBase {
+  type: 'overlay-show';
+  text?: string; // text displayed below the gears
+}
+
+export interface OverlayHideAction extends ActionBase {
+  type: 'overlay-hide';
+}
+
 export type TimelineAction =
   | PlayAction
   | PauseAction
@@ -78,7 +88,9 @@ export type TimelineAction =
   | CursorShowAction
   | CursorHideAction
   | CursorMoveAction
-  | CursorClickAction;
+  | CursorClickAction
+  | OverlayShowAction
+  | OverlayHideAction;
 
 // ─── Configuration ───────────────────────────────────────────────
 export const VIDEO_SRC = '/video/BigBuckBunny.mp4';
@@ -140,11 +152,13 @@ export const TIMELINE: TimelineAction[] = [
     easing: 'easeInCubic',
   },
 
-  // 10s — fast-forward
+  // 10s — fast-forward + gear overlay
   { type: 'speed', time: START_TIME + 10, rate: 3 },
+  { type: 'overlay-show', time: START_TIME + 10, text: 'Fast forwarding...' },
 
-  // 12s — normal speed + zoom to centre (simultaneous)
+  // 12s — normal speed + hide overlay + zoom to centre
   { type: 'speed', time: START_TIME + 12, rate: 1 },
+  { type: 'overlay-hide', time: START_TIME + 12 },
   {
     type: 'zoom',
     time: START_TIME + 12,
@@ -191,7 +205,7 @@ export const TIMELINE: TimelineAction[] = [
   { type: 'cursor-move', time: START_TIME + 18.5, to: [0.6, 0.4], duration: 0.5, easing: 'easeOutCubic' },
   { type: 'cursor-click', time: START_TIME + 19 },
 
-  // 19s — speed up + zoom simultaneously
+  // 19s — speed up + zoom + gear overlay simultaneously
   {
     type: 'speed',
     time: START_TIME + 19,
@@ -207,9 +221,11 @@ export const TIMELINE: TimelineAction[] = [
     duration: 2,
     easing: 'easeInOutCubic',
   },
+  { type: 'overlay-show', time: START_TIME + 19, text: 'Analyzing...' },
 
-  // 21s — cursor hides
+  // 21s — cursor hides + overlay hides
   { type: 'cursor-hide', time: START_TIME + 21 },
+  { type: 'overlay-hide', time: START_TIME + 21 },
 
   // 22s — zoom out + pause
   {

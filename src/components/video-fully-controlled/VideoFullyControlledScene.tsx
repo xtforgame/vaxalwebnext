@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useMemo } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
+import { Text } from '@react-three/drei';
 import * as THREE from 'three';
 import {
   TIMELINE,
@@ -15,6 +16,55 @@ import {
 // ─── Cursor constants ────────────────────────────────────────────
 const RIPPLE_DURATION = 0.6; // seconds
 const RIPPLE_MAX_SCALE = 4;
+
+// ─── Gear shape (adapted from gear.tsx) ──────────────────────────
+const GEAR_SPEED = 0.015;
+const GEAR1 = { count: 8, outR: 4, inR: 3.2, holeR: 1.3 };
+const GEAR2 = { count: 7, outR: 3.741657, inR: 2.941657, holeR: 1 };
+const GEAR_DISTANCE = GEAR1.outR + GEAR2.inR; // centres apart
+const GEAR2_INIT_ROT = (-(Math.PI * 2) / GEAR2.count) * 1.05;
+
+function createGearShape(
+  count: number,
+  outRadius: number,
+  inRadius: number,
+  holeRadius: number,
+): THREE.Shape {
+  const shape = new THREE.Shape();
+  const outDeg = (Math.PI * 2) / count;
+  const step = 30;
+  const degStep = outDeg / step;
+  let theta = 0;
+  let first = false;
+
+  for (let i = 0; i < count; i++) {
+    for (let j = 0; j < step; j++) {
+      theta += degStep;
+      const inside = (theta % outDeg) > (outDeg * 2) / 3;
+      let radius = inside ? inRadius : outRadius;
+      if (!inside) {
+        const value = theta % outDeg;
+        const radiusDiff = outRadius - inRadius;
+        const left = ((outDeg * 2) / 3) / 3;
+        const right = (((outDeg * 2) / 3) * 2) / 3;
+        if (value <= left) {
+          radius -= (-(value / left) + 1) * radiusDiff;
+        } else if (value > right) {
+          radius -= ((value - right) / left) * radiusDiff;
+        }
+      }
+      const x = radius * Math.sin(theta);
+      const y = radius * Math.cos(theta);
+      if (!first) { shape.moveTo(x, y); first = true; }
+      else { shape.lineTo(x, y); }
+    }
+  }
+  shape.closePath();
+
+  const hole = new THREE.EllipseCurve(0, 0, holeRadius, holeRadius, 0, Math.PI * 2, false, 0);
+  shape.holes = [new THREE.Path(hole.getPoints(60))];
+  return shape;
+}
 
 // ─── Zoom helper ─────────────────────────────────────────────────
 function applyZoom(
@@ -45,11 +95,15 @@ function VideoScene() {
       ? viewport.height
       : viewport.width / VIDEO_ASPECT;
 
-  // ── Video + texture (lazy init) ────────────────────────────────
-  const videoRef = useRef<HTMLVideoElement>(null!);
-  const textureRef = useRef<THREE.VideoTexture>(null!);
+  // ── Video + texture (created in useEffect for Strict Mode safety) ─
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const textureRef = useRef<THREE.VideoTexture | null>(null);
+  const videoMaterial = useMemo(
+    () => new THREE.MeshBasicMaterial({ toneMapped: false }),
+    [],
+  );
 
-  if (!videoRef.current) {
+  useEffect(() => {
     const video = document.createElement('video');
     video.src = VIDEO_SRC;
     video.crossOrigin = 'anonymous';
@@ -64,19 +118,18 @@ function VideoScene() {
     texture.minFilter = THREE.LinearFilter;
     texture.magFilter = THREE.LinearFilter;
     textureRef.current = texture;
-  }
 
-  useEffect(() => {
     return () => {
-      const video = videoRef.current;
-      if (video) {
-        video.pause();
-        video.removeAttribute('src');
-        video.load();
-      }
-      textureRef.current?.dispose();
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+      texture.dispose();
+      videoMaterial.map = null;
+      videoMaterial.needsUpdate = true;
+      videoRef.current = null;
+      textureRef.current = null;
     };
-  }, []);
+  }, [videoMaterial]);
 
   // ── Sorted timeline ────────────────────────────────────────────
   const sortedTimeline = useMemo(
@@ -127,10 +180,37 @@ function VideoScene() {
 
   const activeRippleRef = useRef<{ startTime: number } | null>(null);
 
+  // ── Overlay state ──────────────────────────────────────────────
+  const overlayGroupRef = useRef<THREE.Group>(null!);
+  const gearSubGroupRef = useRef<THREE.Group>(null!);
+  const gear1Ref = useRef<THREE.Mesh>(null!);
+  const gear2Ref = useRef<THREE.Mesh>(null!);
+  const overlayTextRef = useRef('');
+  const textMeshRef = useRef<THREE.Object3D>(null!);
+
+  const gearData = useMemo(() => {
+    const geo1 = new THREE.ExtrudeGeometry(
+      createGearShape(GEAR1.count, GEAR1.outR, GEAR1.inR, GEAR1.holeR),
+      { steps: 1, depth: 0.01, bevelEnabled: false },
+    );
+    const geo2 = new THREE.ExtrudeGeometry(
+      createGearShape(GEAR2.count, GEAR2.outR, GEAR2.inR, GEAR2.holeR),
+      { steps: 1, depth: 0.01, bevelEnabled: false },
+    );
+    return { geo1, geo2 };
+  }, []);
+
+  useEffect(() => {
+    return () => { gearData.geo1.dispose(); gearData.geo2.dispose(); videoMaterial.dispose(); };
+  }, [gearData, videoMaterial]);
+
   // ── Frame loop ─────────────────────────────────────────────────
   useFrame((state, delta) => {
-    const elapsed = (elapsedRef.current += delta);
     const video = videoRef.current;
+    const texture = textureRef.current;
+    if (!video) return; // wait for useEffect init
+
+    const elapsed = (elapsedRef.current += delta);
     const camera = state.camera as THREE.OrthographicCamera;
 
     // 1. Process actions that reached their trigger time
@@ -209,6 +289,20 @@ function VideoScene() {
           rippleMaterialRef.current.opacity = 0.5;
           break;
         }
+
+        case 'overlay-show':
+          overlayGroupRef.current.visible = true;
+          gear1Ref.current.rotation.z = 0;
+          gear2Ref.current.rotation.z = GEAR2_INIT_ROT;
+          overlayTextRef.current = action.text ?? '';
+          if ((textMeshRef.current as any)?.text !== undefined) {
+            (textMeshRef.current as any).text = overlayTextRef.current;
+          }
+          break;
+
+        case 'overlay-hide':
+          overlayGroupRef.current.visible = false;
+          break;
       }
 
       nextActionRef.current++;
@@ -277,9 +371,25 @@ function VideoScene() {
       }
     }
 
-    // 3. Texture update guard
-    if (video.readyState >= video.HAVE_CURRENT_DATA) {
-      textureRef.current!.needsUpdate = true;
+    // Overlay: follow camera + rotate gears (constant screen size)
+    if (overlayGroupRef.current.visible) {
+      overlayGroupRef.current.position.set(camera.position.x, camera.position.y, 0);
+      // Scale so gears are ~15% of visible viewport height, independent of zoom
+      const visH = state.viewport.height;
+      const s = (visH * 0.15) / (GEAR1.outR * 2) / camera.zoom;
+      gearSubGroupRef.current.scale.setScalar(s);
+      // Rotate gears
+      gear1Ref.current.rotation.z -= GEAR_SPEED;
+      gear2Ref.current.rotation.z += (GEAR_SPEED * GEAR1.count) / GEAR2.count;
+    }
+
+    // 3. Texture: assign to material when video is ready, then update
+    if (texture && video.readyState >= video.HAVE_CURRENT_DATA) {
+      if (!videoMaterial.map) {
+        videoMaterial.map = texture;
+        videoMaterial.needsUpdate = true;
+      }
+      texture.needsUpdate = true;
     }
   });
 
@@ -296,7 +406,7 @@ function VideoScene() {
           key={`${planeWidth.toFixed(2)}-${planeHeight.toFixed(2)}`}
           args={[planeWidth, planeHeight]}
         />
-        <meshBasicMaterial map={textureRef.current} toneMapped={false} />
+        <primitive object={videoMaterial} attach="material" />
       </mesh>
 
       {/* Cursor dot + white outline */}
@@ -346,6 +456,71 @@ function VideoScene() {
           depthWrite={false}
         />
       </mesh>
+
+      {/* Gear overlay */}
+      <group ref={overlayGroupRef} visible={false}>
+        {/* Semi-transparent black backdrop */}
+        <mesh position={[0, 0, 0.19]} renderOrder={10}>
+          <planeGeometry args={[100000, 100000]} />
+          <meshBasicMaterial
+            color="#000000"
+            transparent
+            opacity={0.55}
+            depthTest={false}
+            depthWrite={false}
+          />
+        </mesh>
+
+        {/* Gears + text sub-group (scaled in useFrame) */}
+        <group ref={gearSubGroupRef}>
+          {/* Gear 1 */}
+          <mesh
+            ref={gear1Ref}
+            geometry={gearData.geo1}
+            position={[-GEAR_DISTANCE / 2, 0.5, 0.2]}
+            renderOrder={11}
+          >
+            <meshBasicMaterial
+              color="#ffffff"
+              transparent
+              opacity={0.75}
+              depthTest={false}
+              depthWrite={false}
+            />
+          </mesh>
+
+          {/* Gear 2 */}
+          <mesh
+            ref={gear2Ref}
+            geometry={gearData.geo2}
+            position={[GEAR_DISTANCE / 2, 0.5, 0.2]}
+            rotation={[0, 0, GEAR2_INIT_ROT]}
+            renderOrder={11}
+          >
+            <meshBasicMaterial
+              color="#c7d2fe"
+              transparent
+              opacity={0.75}
+              depthTest={false}
+              depthWrite={false}
+            />
+          </mesh>
+
+          {/* Text below gears */}
+          <Text
+            ref={textMeshRef}
+            position={[0, -GEAR1.outR - 1.5, 0.2]}
+            fontSize={1.8}
+            color="#ffffff"
+            anchorX="center"
+            anchorY="top"
+            renderOrder={12}
+            material-depthTest={false}
+          >
+            {''}
+          </Text>
+        </group>
+      </group>
     </>
   );
 }
@@ -365,8 +540,8 @@ export default function VideoFullyControlledScene() {
         orthographic
         camera={{ position: [0, 0, 5], zoom: 1, near: 0.1, far: 100 }}
         frameloop="always"
-        gl={{ antialias: false, alpha: false }}
-        dpr={[1, 1]}
+        gl={{ antialias: true, alpha: false }}
+        dpr={[1, 2]}
         style={{ width: '100%', height: '100%', display: 'block' }}
       >
         <VideoScene />
