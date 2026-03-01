@@ -6,6 +6,11 @@ import { useTexture, useCubeTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { useWebGLRecovery } from '@/hooks/useWebGLRecovery';
 import { FlyThroughCamera, DEFAULT_WAYPOINTS } from './FlyThroughCamera';
+import {
+  createHudTypingGlass,
+  updateHudTypingGlass,
+  disposeHudTypingGlass,
+} from './HudTypingGlass';
 
 // ============ Constants ============
 
@@ -587,71 +592,10 @@ function smoothstep01(t: number): number {
   return c * c * (3 - 2 * c);
 }
 
-// ============ HUD Typing Glass Block ============
-
-const HUD_WIDTH = 2.0;
-const HUD_HEIGHT = 0.45;
-const HUD_DEPTH = 0.06;
-const HUD_DISTANCE = 3.0;
-const HUD_Y_OFFSET = -0.9;
-const HUD_TILT = -0.0;         // radians, negative = top tilts away from camera (後傾)
-
-const HUD_CANVAS_W = 1024;
-const HUD_CANVAS_H = 256;
-const HUD_TYPING_SPEED = 0.05;  // seconds per character
-const HUD_PAUSE_DURATION = 2.0; // seconds between messages
-const HUD_CURSOR_BLINK = 0.53;  // seconds per blink toggle
-
-const HUD_TYPING_MESSAGES = [
-  'Initializing neural pathways...',
-  'Scanning quantum environment...',
-  'Loading holographic display...',
-  'Rendering volumetric data...',
-  'System calibration complete.',
-];
-
-function createRoundedBoxGeometry(
-  width: number,
-  height: number,
-  depth: number,
-  radius: number,
-  segments: number = 8
-): THREE.BufferGeometry {
-  const maxRadius = Math.min(width, height, depth) / 2;
-  const r = Math.min(radius, maxRadius);
-  const shape = new THREE.Shape();
-  const w = width / 2 - r;
-  const h = height / 2 - r;
-  shape.moveTo(-w, -height / 2);
-  shape.lineTo(w, -height / 2);
-  shape.quadraticCurveTo(width / 2, -height / 2, width / 2, -h);
-  shape.lineTo(width / 2, h);
-  shape.quadraticCurveTo(width / 2, height / 2, w, height / 2);
-  shape.lineTo(-w, height / 2);
-  shape.quadraticCurveTo(-width / 2, height / 2, -width / 2, h);
-  shape.lineTo(-width / 2, -h);
-  shape.quadraticCurveTo(-width / 2, -height / 2, -w, -height / 2);
-  const geometry = new THREE.ExtrudeGeometry(shape, {
-    depth: depth - r * 2,
-    bevelEnabled: true,
-    bevelThickness: r,
-    bevelSize: r,
-    bevelOffset: 0,
-    bevelSegments: segments,
-    curveSegments: segments,
-  });
-  geometry.translate(0, 0, -(depth - r * 2) / 2 - r);
-  geometry.computeVertexNormals();
-  return geometry;
-}
-
 // Frustum detection temporaries (reused every frame)
 const _frustum = new THREE.Frustum();
 const _projScreenMat = new THREE.Matrix4();
 const _tmpPos = new THREE.Vector3();
-const _hudForward = new THREE.Vector3();
-const _hudUp = new THREE.Vector3();
-const _hudTiltQ = new THREE.Quaternion();
 const POWER_ON_DURATION = 0.15; // seconds for CRT boot animation
 
 // ============ All-in-One Renderer ============
@@ -945,42 +889,8 @@ function Renderer({ showPath }: { showPath: boolean }) {
     );
 
     // ---- HUD Typing Glass Block ----
-    const hudCanvas = document.createElement('canvas');
-    hudCanvas.width = HUD_CANVAS_W;
-    hudCanvas.height = HUD_CANVAS_H;
-    const hudCtx = hudCanvas.getContext('2d')!;
-    const hudTexture = new THREE.CanvasTexture(hudCanvas);
-    hudTexture.minFilter = THREE.LinearFilter;
-    hudTexture.magFilter = THREE.LinearFilter;
-
-    const hudGlassGeo = createRoundedBoxGeometry(HUD_WIDTH, HUD_HEIGHT, HUD_DEPTH, 0.03, 6);
-    const hudGlassMat = new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color('#88ccff'),
-      transparent: true,
-      opacity: 0.45,
-      roughness: 0.05,
-      metalness: 0.1,
-      clearcoat: 1.0,
-      clearcoatRoughness: 0.1,
-      envMap: skyboxCube,
-      envMapIntensity: 0.8,
-      side: THREE.DoubleSide,
-    });
-
-    const hudTextGeo = new THREE.PlaneGeometry(HUD_WIDTH * 0.92, HUD_HEIGHT * 0.85);
-    const hudTextMat = new THREE.MeshBasicMaterial({
-      map: hudTexture,
-      transparent: true,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    });
-
-    const hudGroup = new THREE.Group();
-    hudGroup.add(new THREE.Mesh(hudGlassGeo, hudGlassMat));
-    const hudTextMesh = new THREE.Mesh(hudTextGeo, hudTextMat);
-    hudTextMesh.position.z = HUD_DEPTH / 2 + 0.005;
-    hudGroup.add(hudTextMesh);
-    flyScene.add(hudGroup);
+    const hud = createHudTypingGlass(skyboxCube);
+    flyScene.add(hud.group);
 
     return {
       flyFBO,
@@ -1011,14 +921,7 @@ function Renderer({ showPath }: { showPath: boolean }) {
       crtMaterials,
       glowMaterials,
       panelPositions,
-      hudGroup,
-      hudCanvas,
-      hudCtx,
-      hudTexture,
-      hudGlassMat,
-      hudTextMat,
-      hudGlassGeo,
-      hudTextGeo,
+      hud,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fontTexture, cardTexture, panoTexture, skyboxCube]);
@@ -1029,15 +932,6 @@ function Renderer({ showPath }: { showPath: boolean }) {
     NEON_PANELS.map(() => ({ seen: false, startTime: -1 }))
   );
   const prevNeedsCardRef = useRef(false);
-  const typingRef = useRef({
-    messageIndex: 0,
-    charIndex: 0,
-    lastCharTime: 0,
-    lastCursorBlink: 0,
-    cursorVisible: true,
-    isPausing: false,
-    pauseStart: 0,
-  });
 
   // Handle resize
   useEffect(() => {
@@ -1080,11 +974,7 @@ function Renderer({ showPath }: { showPath: boolean }) {
       res.crtMaterials.forEach((m) => m.dispose());
       res.glowMaterials.forEach((m) => m.dispose());
       // HUD cleanup
-      res.hudGlassGeo.dispose();
-      res.hudGlassMat.dispose();
-      res.hudTextGeo.dispose();
-      res.hudTextMat.dispose();
-      res.hudTexture.dispose();
+      disposeHudTypingGlass(res.hud);
     };
   }, [res]);
 
@@ -1183,77 +1073,7 @@ function Renderer({ showPath }: { showPath: boolean }) {
     res.pointLight.position.copy(position);
 
     // ---- HUD Typing Glass Block Update ----
-    // Position HUD in front of camera, offset downward
-    _hudForward.set(0, 0, -1).applyQuaternion(camera.quaternion);
-    _hudUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
-    res.hudGroup.position.copy(camera.position)
-      .addScaledVector(_hudForward, HUD_DISTANCE)
-      .addScaledVector(_hudUp, HUD_Y_OFFSET);
-    res.hudGroup.quaternion.copy(camera.quaternion);
-    _hudTiltQ.setFromAxisAngle(_hudUp.set(1, 0, 0), HUD_TILT);
-    res.hudGroup.quaternion.multiply(_hudTiltQ);
-
-    // Typing animation
-    const typing = typingRef.current;
-    const msg = HUD_TYPING_MESSAGES[typing.messageIndex];
-
-    if (!typing.isPausing) {
-      if (time - typing.lastCharTime > HUD_TYPING_SPEED) {
-        typing.charIndex++;
-        typing.lastCharTime = time;
-        if (typing.charIndex > msg.length) {
-          typing.isPausing = true;
-          typing.pauseStart = time;
-        }
-      }
-    } else if (time - typing.pauseStart > HUD_PAUSE_DURATION) {
-      typing.isPausing = false;
-      typing.messageIndex = (typing.messageIndex + 1) % HUD_TYPING_MESSAGES.length;
-      typing.charIndex = 0;
-      typing.lastCharTime = time;
-    }
-
-    if (time - typing.lastCursorBlink > HUD_CURSOR_BLINK) {
-      typing.cursorVisible = !typing.cursorVisible;
-      typing.lastCursorBlink = time;
-    }
-
-    // Render text to canvas
-    const ctx = res.hudCtx;
-    const cvs = res.hudCanvas;
-    ctx.clearRect(0, 0, cvs.width, cvs.height);
-
-    // Subtle dark background for readability
-    ctx.fillStyle = 'rgba(0, 5, 15, 0.35)';
-    ctx.fillRect(0, 0, cvs.width, cvs.height);
-
-    const displayText = msg.substring(0, Math.min(typing.charIndex, msg.length));
-    const textX = 40;
-    const textY = cvs.height / 2;
-
-    // Glow pass
-    ctx.font = 'bold 42px "Courier New", monospace';
-    ctx.fillStyle = '#ffffff';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = '#ffffff';
-    ctx.shadowBlur = 10;
-    ctx.fillText(displayText, textX, textY);
-
-    // Sharp pass on top
-    ctx.shadowBlur = 0;
-    ctx.fillText(displayText, textX, textY);
-
-    // Blinking cursor
-    if (typing.cursorVisible && typing.charIndex <= msg.length) {
-      const textWidth = ctx.measureText(displayText).width;
-      ctx.fillStyle = '#ffffff';
-      ctx.shadowColor = '#ffffff';
-      ctx.shadowBlur = 8;
-      ctx.fillRect(textX + textWidth + 4, textY - 22, 3, 44);
-      ctx.shadowBlur = 0;
-    }
-
-    res.hudTexture.needsUpdate = true;
+    updateHudTypingGlass(res.hud, camera, time);
 
     // Determine which scenes are visible and compositor inputs
     let needsFly = false;
