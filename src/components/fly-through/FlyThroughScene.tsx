@@ -30,13 +30,14 @@ const TITLE_STAGGER       = 0.5;                         // stagger between titl
 const TITLE_DURATION      = 0.8;                         // swipe reveal duration
 const TITLE_EXIT_DELAY    = 3.0;                         // title exit after entrance
 
-const HUD_ENTER           = TITLE_DELAY + 0;             // HUD glass starts appearing
+const HUD_ENTER           = TITLE_DELAY + 3;             // HUD glass starts appearing
 const HUD_FADE_DUR        = 0.8;                         // HUD fade-in + slide
 const HUD_SLIDE_DIST      = 0.12;                        // HUD slide distance (world units)
 const HUD_TYPE_WAIT       = 1.0;                         // pause before typing starts
 const HUD_TYPE_SPEED      = 0.05;                        // seconds per character
 const HUD_MESSAGES: string[] = [
-  'Initializing neural pathways...',
+  '> Rosie，請幫我分析上個月的銷售數據，感謝',
+  // 'Initializing neural pathways...',
   // 'Scanning quantum environment...',
   // 'Loading holographic display...',
   // 'Rendering volumetric data...',
@@ -1414,14 +1415,35 @@ export default function FlyThroughScene() {
 
       {/* Swipe reveal title */}
       <SwipeRevealText
-        title="Fly Through"
-        description="Interactive 3D Experience"
+        title={<span className='text-white'>Project <span className='text-cyan-500'>R.O.S.I.E.</span></span>}
+        description={
+          <>
+            <span>訓練有素 — Studio Doe專屬的</span>
+            <span className='text-red-500'>AI平台核心</span>
+          </>
+        }
         x={48}
         y={120}
         delay={TITLE_DELAY}
         stagger={TITLE_STAGGER}
         duration={TITLE_DURATION}
         exitDelay={TITLE_EXIT_DELAY}
+        titleStyle={{
+          fontSize: 48,
+          fontWeight: 900,
+          lineHeight: 1,
+          color: '#ffffff',
+          // textTransform: 'uppercase',
+          fontFamily: 'montserrat, sans-serif',
+        }}
+        descriptionStyle={{
+          fontSize: 32,
+          fontWeight: 700,
+          lineHeight: 1,
+          color: '#ffffff',
+          // textTransform: 'uppercase',
+          fontFamily: 'montserrat, sans-serif',
+        }}
       />
 
       {/* GO button — appears after HUD typing completes */}
@@ -1448,6 +1470,7 @@ export default function FlyThroughScene() {
           fontFamily: 'monospace',
           cursor: 'pointer',
           transition: 'all 0.2s',
+          display: 'none',
         }}
       >
         {showPath ? 'HIDE PATH' : 'SHOW PATH'}

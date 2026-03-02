@@ -138,13 +138,7 @@ export default function SwipeRevealText({
         swipeColor={titleSwipeColor}
         exitAt={exitStart}
         style={{
-          fontSize: 48,
-          fontWeight: 900,
-          lineHeight: 1,
-          color: '#ffffff',
-          textTransform: 'uppercase',
           padding: '12px 20px',
-          fontFamily: 'montserrat, sans-serif',
           ...titleStyle,
         }}
       />
@@ -155,13 +149,7 @@ export default function SwipeRevealText({
         swipeColor={descriptionSwipeColor}
         exitAt={exitStart != null ? exitStart + stagger : undefined}
         style={{
-          fontSize: 22,
-          fontWeight: 700,
-          lineHeight: 1,
-          color: '#ffffff',
-          textTransform: 'uppercase',
           padding: '8px 14px',
-          fontFamily: 'montserrat, sans-serif',
           ...descriptionStyle,
         }}
       />
