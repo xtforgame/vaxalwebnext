@@ -25,10 +25,10 @@ const HUD_CURSOR_BLINK = 0.53;   // seconds per blink toggle
 
 const HUD_TYPING_MESSAGES = [
   'Initializing neural pathways...',
-  'Scanning quantum environment...',
-  'Loading holographic display...',
-  'Rendering volumetric data...',
-  'System calibration complete.',
+  // 'Scanning quantum environment...',
+  // 'Loading holographic display...',
+  // 'Rendering volumetric data...',
+  // 'System calibration complete.',
 ];
 
 // ============ Helpers ============
@@ -101,6 +101,7 @@ export interface HudTypingGlassResources {
     cursorVisible: boolean;
     isPausing: boolean;
     pauseStart: number;
+    done: boolean;
   };
 }
 
@@ -164,6 +165,7 @@ export function createHudTypingGlass(
       cursorVisible: true,
       isPausing: false,
       pauseStart: 0,
+      done: false,
     },
   };
 }
@@ -174,7 +176,7 @@ export function updateHudTypingGlass(
   res: HudTypingGlassResources,
   camera: THREE.Camera,
   time: number
-): void {
+): boolean {
   const appearEnd = HUD_APPEAR_DELAY + HUD_APPEAR_DURATION;
   const typingStart = appearEnd + HUD_TYPING_DELAY;
 
@@ -182,7 +184,7 @@ export function updateHudTypingGlass(
   if (time < HUD_APPEAR_DELAY) {
     res.glassMat.opacity = 0;
     res.textMat.opacity = 0;
-    return;
+    return false;
   }
 
   // --- Position HUD in front of camera ---
@@ -223,18 +225,24 @@ export function updateHudTypingGlass(
 
     const msg = HUD_TYPING_MESSAGES[typing.messageIndex];
 
-    if (!typing.isPausing) {
+    if (typing.done) {
+      // Finished — keep showing final message
+    } else if (!typing.isPausing) {
       if (time - typing.lastCharTime > HUD_TYPING_SPEED) {
         typing.charIndex++;
         typing.lastCharTime = time;
         if (typing.charIndex > msg.length) {
-          typing.isPausing = true;
-          typing.pauseStart = time;
+          if (typing.messageIndex >= HUD_TYPING_MESSAGES.length - 1) {
+            typing.done = true;
+          } else {
+            typing.isPausing = true;
+            typing.pauseStart = time;
+          }
         }
       }
     } else if (time - typing.pauseStart > HUD_PAUSE_DURATION) {
       typing.isPausing = false;
-      typing.messageIndex = (typing.messageIndex + 1) % HUD_TYPING_MESSAGES.length;
+      typing.messageIndex++;
       typing.charIndex = 0;
       typing.lastCharTime = time;
     }
@@ -287,6 +295,24 @@ export function updateHudTypingGlass(
   }
 
   res.texture.needsUpdate = true;
+  return typing.done;
+}
+
+// ============ Reset (for loop restart) ============
+
+export function resetHudTypingGlass(res: HudTypingGlassResources): void {
+  const t = res.typing;
+  t.started = false;
+  t.messageIndex = 0;
+  t.charIndex = 0;
+  t.lastCharTime = 0;
+  t.lastCursorBlink = 0;
+  t.cursorVisible = true;
+  t.isPausing = false;
+  t.pauseStart = 0;
+  t.done = false;
+  res.glassMat.opacity = 0;
+  res.textMat.opacity = 0;
 }
 
 // ============ Dispose ============

@@ -10,8 +10,10 @@ import {
   createHudTypingGlass,
   updateHudTypingGlass,
   disposeHudTypingGlass,
+  resetHudTypingGlass,
 } from './HudTypingGlass';
 import SwipeRevealText from '@/components/SwipeRevealText';
+import GoButton from './GoButton';
 
 // ============ Constants ============
 
@@ -599,9 +601,27 @@ const _projScreenMat = new THREE.Matrix4();
 const _tmpPos = new THREE.Vector3();
 const POWER_ON_DURATION = 0.15; // seconds for CRT boot animation
 
+// ============ Timeline control ============
+
+interface TimelineControl {
+  time: number;
+  paused: boolean;
+  goClicked: boolean;
+  phaseAStart: number;
+  hudDone: boolean;
+}
+
 // ============ All-in-One Renderer ============
 
-function Renderer({ showPath }: { showPath: boolean }) {
+function Renderer({
+  showPath,
+  tlRef,
+  setShowGoButton,
+}: {
+  showPath: boolean;
+  tlRef: React.MutableRefObject<TimelineControl>;
+  setShowGoButton: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
   const { gl, size, camera } = useThree();
   const fontTexture = useTexture('/codepage12.png');
   const cardTexture = useTexture('/ai-answer.png');
@@ -1056,7 +1076,26 @@ function Renderer({ showPath }: { showPath: boolean }) {
   // ---- Render loop (priority 1 → disables R3F auto-render) ----
   useFrame((state, delta) => {
     const time = state.clock.elapsedTime;
-    const loopTime = time % LOOP_DURATION;
+    const tl = tlRef.current;
+
+    // ---- Managed timeline (pauses at PHASE_A_END until GO) ----
+    if (!tl.paused) {
+      tl.time += delta;
+    }
+    if (tl.time >= PHASE_A_END && !tl.goClicked) {
+      tl.time = PHASE_A_END;
+      tl.paused = true;
+    }
+    if (tl.time >= LOOP_DURATION) {
+      tl.time -= LOOP_DURATION;
+      tl.goClicked = false;
+      tl.paused = false;
+      tl.phaseAStart = time;
+      tl.hudDone = false;
+      resetHudTypingGlass(res.hud);
+      setShowGoButton(false);
+    }
+    const loopTime = tl.time;
 
     // Warm-up: render card scene once on first frame to compile shaders & upload textures
     if (!warmupRef.current) {
@@ -1067,15 +1106,25 @@ function Renderer({ showPath }: { showPath: boolean }) {
       gl.render(res.cardScene, res.cardCam);
     }
 
-    // Advance fly-through camera along spline (always)
+    // Advance fly-through camera along spline (always, independent of timeline)
     tRef.current = (tRef.current + delta * SPEED) % 1;
     const { position, lookAt } = res.flyCam.evaluate(tRef.current);
     camera.position.copy(position);
     camera.lookAt(lookAt);
     res.pointLight.position.copy(position);
 
-    // ---- HUD Typing Glass Block Update ----
-    updateHudTypingGlass(res.hud, camera, time);
+    // ---- HUD Typing Glass Block Update (only during Phase A) ----
+    const hudTime = time - tl.phaseAStart;
+    if (loopTime <= PHASE_A_END) {
+      const done = updateHudTypingGlass(res.hud, camera, hudTime);
+      if (done && !tl.hudDone) {
+        tl.hudDone = true;
+        setShowGoButton(true);
+      }
+    } else {
+      res.hud.glassMat.opacity = 0;
+      res.hud.textMat.opacity = 0;
+    }
 
     // Determine which scenes are visible and compositor inputs
     let needsFly = false;
@@ -1227,6 +1276,20 @@ function Renderer({ showPath }: { showPath: boolean }) {
 export default function FlyThroughScene() {
   const { contextLost, canvasKey, handleCreated } = useWebGLRecovery('FlyThrough');
   const [showPath, setShowPath] = useState(false);
+  const [showGoButton, setShowGoButton] = useState(false);
+  const tlRef = useRef<TimelineControl>({
+    time: 0,
+    paused: false,
+    goClicked: false,
+    phaseAStart: 0,
+    hudDone: false,
+  });
+
+  const handleGoClick = () => {
+    tlRef.current.goClicked = true;
+    tlRef.current.paused = false;
+    setShowGoButton(false);
+  };
 
   if (contextLost) {
     return (
@@ -1270,7 +1333,7 @@ export default function FlyThroughScene() {
           dpr={[1, 2]}
           onCreated={handleCreated}
         >
-          <Renderer showPath={showPath} />
+          <Renderer showPath={showPath} tlRef={tlRef} setShowGoButton={setShowGoButton} />
         </Canvas>
       </Suspense>
 
@@ -1284,6 +1347,9 @@ export default function FlyThroughScene() {
         stagger={0.5}
         exitDelay={3.0}
       />
+
+      {/* GO button — appears after HUD typing completes */}
+      <GoButton visible={showGoButton} onClick={handleGoClick} />
 
       {/* Path toggle button */}
       <button
