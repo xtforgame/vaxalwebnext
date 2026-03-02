@@ -11,6 +11,7 @@ import {
   updateHudTypingGlass,
   disposeHudTypingGlass,
 } from './HudTypingGlass';
+import SwipeRevealText from '@/components/SwipeRevealText';
 
 // ============ Constants ============
 
@@ -1272,6 +1273,17 @@ export default function FlyThroughScene() {
           <Renderer showPath={showPath} />
         </Canvas>
       </Suspense>
+
+      {/* Swipe reveal title */}
+      <SwipeRevealText
+        title="Fly Through"
+        description="Interactive 3D Experience"
+        x={48}
+        y={120}
+        delay={2.0}
+        stagger={0.5}
+        exitDelay={3.0}
+      />
 
       {/* Path toggle button */}
       <button
