@@ -46,9 +46,9 @@ export default function GoButton({ visible, onClick, autoDelay = 0.5 }: GoButton
     <AnimatePresence>
       {visible && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: fading ? 0 : 1, scale: fading ? 0.8 : 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: fading ? 0 : 1 }}
+          exit={{ opacity: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
           style={{
             position: 'absolute',

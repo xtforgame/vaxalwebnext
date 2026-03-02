@@ -6,7 +6,7 @@ const HUD_WIDTH = 2.0;
 const HUD_HEIGHT = 0.25; // 0.45
 const HUD_DEPTH = 0.06;
 const HUD_DISTANCE = 3.0;
-const HUD_Y_OFFSET = -0.9;
+const HUD_Y_OFFSET = 0.2;
 const HUD_TILT = -0.0;           // radians, negative = top tilts away from camera (後傾)
 
 const HUD_GLASS_OPACITY = 0.45;  // glass material target opacity
@@ -175,7 +175,8 @@ export function createHudTypingGlass(
 export function updateHudTypingGlass(
   res: HudTypingGlassResources,
   camera: THREE.Camera,
-  time: number
+  time: number,
+  liftOffset = 0
 ): boolean {
   const appearEnd = HUD_APPEAR_DELAY + HUD_APPEAR_DURATION;
   const typingStart = appearEnd + HUD_TYPING_DELAY;
@@ -192,7 +193,7 @@ export function updateHudTypingGlass(
   _up.set(0, 1, 0).applyQuaternion(camera.quaternion);
   res.group.position.copy(camera.position)
     .addScaledVector(_forward, HUD_DISTANCE)
-    .addScaledVector(_up, HUD_Y_OFFSET);
+    .addScaledVector(_up, HUD_Y_OFFSET + liftOffset);
 
   // --- Entrance animation: fade-in + slide up ---
   if (time < appearEnd) {

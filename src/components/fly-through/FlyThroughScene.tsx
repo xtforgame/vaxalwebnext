@@ -603,12 +603,19 @@ const POWER_ON_DURATION = 0.15; // seconds for CRT boot animation
 
 // ============ Timeline control ============
 
+const GO_APPEAR_DELAY = 0.5;   // seconds after typing done before GO button appears
+const HUD_LIFT_AMOUNT = 0.25;  // world units HUD slides up when GO appears
+const HUD_LIFT_DURATION = 0.8; // seconds for the lift animation
+
 interface TimelineControl {
   time: number;
   paused: boolean;
   goClicked: boolean;
   phaseAStart: number;
   hudDone: boolean;
+  hudDoneTime: number;
+  goShown: boolean;
+  goShownTime: number;
 }
 
 // ============ All-in-One Renderer ============
@@ -1092,6 +1099,9 @@ function Renderer({
       tl.paused = false;
       tl.phaseAStart = time;
       tl.hudDone = false;
+      tl.hudDoneTime = 0;
+      tl.goShown = false;
+      tl.goShownTime = 0;
       resetHudTypingGlass(res.hud);
       setShowGoButton(false);
     }
@@ -1116,9 +1126,24 @@ function Renderer({
     // ---- HUD Typing Glass Block Update (only during Phase A) ----
     const hudTime = time - tl.phaseAStart;
     if (loopTime <= PHASE_A_END) {
-      const done = updateHudTypingGlass(res.hud, camera, hudTime);
+      // HUD starts lifting as soon as typing is done (before GO button appears)
+      let hudLift = 0;
+      if (tl.hudDone) {
+        hudLift = smoothstep01((time - tl.hudDoneTime) / HUD_LIFT_DURATION) * HUD_LIFT_AMOUNT;
+      }
+
+      const done = updateHudTypingGlass(res.hud, camera, hudTime, hudLift);
+
+      // Track when typing finishes
       if (done && !tl.hudDone) {
         tl.hudDone = true;
+        tl.hudDoneTime = time;
+      }
+
+      // Show GO button after delay (HUD already lifting by now)
+      if (tl.hudDone && !tl.goShown && time - tl.hudDoneTime >= GO_APPEAR_DELAY) {
+        tl.goShown = true;
+        tl.goShownTime = time;
         setShowGoButton(true);
       }
     } else {
@@ -1283,6 +1308,9 @@ export default function FlyThroughScene() {
     goClicked: false,
     phaseAStart: 0,
     hudDone: false,
+    hudDoneTime: 0,
+    goShown: false,
+    goShownTime: 0,
   });
 
   const handleGoClick = () => {
