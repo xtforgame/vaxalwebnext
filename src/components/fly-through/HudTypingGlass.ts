@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-// ============ Constants (adjustable) ============
+// ============ Constants (visual / layout) ============
 
 const HUD_WIDTH = 2.0;
 const HUD_HEIGHT = 0.25; // 0.45
@@ -11,25 +11,8 @@ const HUD_TILT = -0.0;           // radians, negative = top tilts away from came
 
 const HUD_GLASS_OPACITY = 0.45;  // glass material target opacity
 
-// Entrance animation
-const HUD_APPEAR_DELAY = 2.0;    // seconds before the glass block starts appearing
-const HUD_APPEAR_DURATION = 0.8; // seconds for fade-in + slide animation
-const HUD_SLIDE_DISTANCE = 0.12; // world units the block slides upward during entrance
-const HUD_TYPING_DELAY = 1.0;    // seconds after fully appeared before typing starts
-
 const HUD_CANVAS_W = 1024;
 const HUD_CANVAS_H = 128; // 256
-const HUD_TYPING_SPEED = 0.05;   // seconds per character
-const HUD_PAUSE_DURATION = 2.0;  // seconds between messages
-const HUD_CURSOR_BLINK = 0.53;   // seconds per blink toggle
-
-const HUD_TYPING_MESSAGES = [
-  'Initializing neural pathways...',
-  // 'Scanning quantum environment...',
-  // 'Loading holographic display...',
-  // 'Rendering volumetric data...',
-  // 'System calibration complete.',
-];
 
 // ============ Helpers ============
 
@@ -82,6 +65,17 @@ function createRoundedBoxGeometry(
 }
 
 // ============ Types ============
+
+export interface HudTimingConfig {
+  appearDelay: number;
+  appearDuration: number;
+  slideDistance: number;
+  typingDelay: number;
+  typingSpeed: number;
+  messages: string[];
+  messagePause: number;
+  cursorBlink: number;
+}
 
 export interface HudTypingGlassResources {
   group: THREE.Group;
@@ -176,13 +170,14 @@ export function updateHudTypingGlass(
   res: HudTypingGlassResources,
   camera: THREE.Camera,
   time: number,
-  liftOffset = 0
+  liftOffset: number,
+  cfg: HudTimingConfig
 ): boolean {
-  const appearEnd = HUD_APPEAR_DELAY + HUD_APPEAR_DURATION;
-  const typingStart = appearEnd + HUD_TYPING_DELAY;
+  const appearEnd = cfg.appearDelay + cfg.appearDuration;
+  const typingStart = appearEnd + cfg.typingDelay;
 
   // --- Hidden phase: not yet time to appear ---
-  if (time < HUD_APPEAR_DELAY) {
+  if (time < cfg.appearDelay) {
     res.glassMat.opacity = 0;
     res.textMat.opacity = 0;
     return false;
@@ -197,11 +192,11 @@ export function updateHudTypingGlass(
 
   // --- Entrance animation: fade-in + slide up ---
   if (time < appearEnd) {
-    const t = smoothstep01((time - HUD_APPEAR_DELAY) / HUD_APPEAR_DURATION);
+    const t = smoothstep01((time - cfg.appearDelay) / cfg.appearDuration);
     res.glassMat.opacity = HUD_GLASS_OPACITY * t;
     res.textMat.opacity = t;
     // Slide upward from below: offset down by remaining distance
-    res.group.position.addScaledVector(_up, -HUD_SLIDE_DISTANCE * (1 - t));
+    res.group.position.addScaledVector(_up, -cfg.slideDistance * (1 - t));
   } else {
     res.glassMat.opacity = HUD_GLASS_OPACITY;
     res.textMat.opacity = 1;
@@ -224,16 +219,16 @@ export function updateHudTypingGlass(
       typing.lastCursorBlink = time;
     }
 
-    const msg = HUD_TYPING_MESSAGES[typing.messageIndex];
+    const msg = cfg.messages[typing.messageIndex];
 
     if (typing.done) {
       // Finished — keep showing final message
     } else if (!typing.isPausing) {
-      if (time - typing.lastCharTime > HUD_TYPING_SPEED) {
+      if (time - typing.lastCharTime > cfg.typingSpeed) {
         typing.charIndex++;
         typing.lastCharTime = time;
         if (typing.charIndex > msg.length) {
-          if (typing.messageIndex >= HUD_TYPING_MESSAGES.length - 1) {
+          if (typing.messageIndex >= cfg.messages.length - 1) {
             typing.done = true;
           } else {
             typing.isPausing = true;
@@ -241,7 +236,7 @@ export function updateHudTypingGlass(
           }
         }
       }
-    } else if (time - typing.pauseStart > HUD_PAUSE_DURATION) {
+    } else if (time - typing.pauseStart > cfg.messagePause) {
       typing.isPausing = false;
       typing.messageIndex++;
       typing.charIndex = 0;
@@ -250,7 +245,7 @@ export function updateHudTypingGlass(
   }
 
   // Cursor always blinks once visible (even before typing starts)
-  if (time - typing.lastCursorBlink > HUD_CURSOR_BLINK) {
+  if (time - typing.lastCursorBlink > cfg.cursorBlink) {
     typing.cursorVisible = !typing.cursorVisible;
     typing.lastCursorBlink = time;
   }
@@ -259,11 +254,7 @@ export function updateHudTypingGlass(
   const { ctx, canvas: cvs } = res;
   ctx.clearRect(0, 0, cvs.width, cvs.height);
 
-  // Subtle dark background for readability
-  // ctx.fillStyle = 'rgba(0, 5, 15, 0.35)';
-  // ctx.fillRect(0, 0, cvs.width, cvs.height);
-
-  const currentMsg = HUD_TYPING_MESSAGES[typing.messageIndex];
+  const currentMsg = cfg.messages[typing.messageIndex];
   const displayText = typing.started
     ? currentMsg.substring(0, Math.min(typing.charIndex, currentMsg.length))
     : '';

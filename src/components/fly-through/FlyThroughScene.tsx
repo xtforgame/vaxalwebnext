@@ -11,6 +11,7 @@ import {
   updateHudTypingGlass,
   disposeHudTypingGlass,
   resetHudTypingGlass,
+  type HudTimingConfig,
 } from './HudTypingGlass';
 import SwipeRevealText from '@/components/SwipeRevealText';
 import GoButton from './GoButton';
@@ -21,16 +22,63 @@ const CUBE_COUNT = 500;
 const SPEED = 0.02;
 const SCATTER_RADIUS = 50;
 
-const DIAGONAL_DURATION = 10;
+// ============ Timeline phases (seconds within each loop) ============
 
-// Timeline phases (seconds within each loop)
-const PHASE_A_END = 7; // fly-through only
-const PHASE_B_END = PHASE_A_END + 3; // transition fly → hacker (3s)
-const PHASE_C_END = PHASE_B_END + 1; // hacker only
-const PHASE_D_END = PHASE_C_END + 3; // transition hacker → card (3s)
-const PHASE_E_END = PHASE_D_END + DIAGONAL_DURATION - 1; // card display with DIAGONAL (7s)
-const PHASE_F_END = PHASE_E_END + 3; // transition card → fly (3s)
-const LOOP_DURATION = 50;
+// --- Phase A: Fly-through + title + HUD typing + GO button ---
+const TITLE_DELAY         = 2.0;                         // title text entrance
+const TITLE_STAGGER       = 0.5;                         // stagger between title lines
+const TITLE_DURATION      = 0.8;                         // swipe reveal duration
+const TITLE_EXIT_DELAY    = 3.0;                         // title exit after entrance
+
+const HUD_ENTER           = TITLE_DELAY + 0;             // HUD glass starts appearing
+const HUD_FADE_DUR        = 0.8;                         // HUD fade-in + slide
+const HUD_SLIDE_DIST      = 0.12;                        // HUD slide distance (world units)
+const HUD_TYPE_WAIT       = 1.0;                         // pause before typing starts
+const HUD_TYPE_SPEED      = 0.05;                        // seconds per character
+const HUD_MESSAGES: string[] = [
+  'Initializing neural pathways...',
+  // 'Scanning quantum environment...',
+  // 'Loading holographic display...',
+  // 'Rendering volumetric data...',
+  // 'System calibration complete.',
+];
+const HUD_MSG_PAUSE       = 2.0;                         // pause between messages
+const HUD_BLINK           = 0.53;                        // cursor blink interval
+
+// Computed: total typing duration
+const _typeDur = HUD_MESSAGES.reduce(
+  (s, m, i) => s + (m.length + 1) * HUD_TYPE_SPEED
+    + (i < HUD_MESSAGES.length - 1 ? HUD_MSG_PAUSE : 0),
+  0
+);
+const HUD_DONE_AT         = HUD_ENTER + HUD_FADE_DUR + HUD_TYPE_WAIT + _typeDur;
+const HUD_DONE_PAUSE      = 1.0;                         // pause after typing done before lift starts
+
+const GO_OFFSET           = HUD_DONE_PAUSE + 0.5;       // GO appears after pause + half beat
+const HUD_LIFT_AMOUNT     = 0.25;                        // HUD lift (world units)
+const HUD_LIFT_DUR        = 0.8;                         // HUD lift duration
+const PHASE_A_END         = HUD_DONE_AT + GO_OFFSET + 2.0; // + GO lifecycle (appear → auto → exit)
+
+// --- Phase B–F: Transitions ---
+const DIAGONAL_DURATION   = 10;
+const PHASE_B_END         = PHASE_A_END + 3;             // fly → hacker (3s)
+const PHASE_C_END         = PHASE_B_END + 1;             // hacker only (1s)
+const PHASE_D_END         = PHASE_C_END + 3;             // hacker → card (3s)
+const PHASE_E_END         = PHASE_D_END + DIAGONAL_DURATION - 1; // card display
+const PHASE_F_END         = PHASE_E_END + 3;             // card → fly (3s)
+const LOOP_DURATION       = 50;
+
+// HUD timing config (passed to HudTypingGlass)
+const HUD_TIMING: HudTimingConfig = {
+  appearDelay: HUD_ENTER,
+  appearDuration: HUD_FADE_DUR,
+  slideDistance: HUD_SLIDE_DIST,
+  typingDelay: HUD_TYPE_WAIT,
+  typingSpeed: HUD_TYPE_SPEED,
+  messages: HUD_MESSAGES,
+  messagePause: HUD_MSG_PAUSE,
+  cursorBlink: HUD_BLINK,
+};
 
 // Card display
 const CARD_WIDTH = 2.5;
@@ -603,10 +651,6 @@ const POWER_ON_DURATION = 0.15; // seconds for CRT boot animation
 
 // ============ Timeline control ============
 
-const GO_APPEAR_DELAY = 0.5;   // seconds after typing done before GO button appears
-const HUD_LIFT_AMOUNT = 0.25;  // world units HUD slides up when GO appears
-const HUD_LIFT_DURATION = 0.8; // seconds for the lift animation
-
 interface TimelineControl {
   time: number;
   paused: boolean;
@@ -1125,14 +1169,17 @@ function Renderer({
 
     // ---- HUD Typing Glass Block Update (only during Phase A) ----
     const hudTime = time - tl.phaseAStart;
-    if (loopTime <= PHASE_A_END) {
-      // HUD starts lifting as soon as typing is done (before GO button appears)
+    if (loopTime <= PHASE_B_END) {
+      // HUD starts lifting after HUD_DONE_PAUSE (before GO button appears)
       let hudLift = 0;
       if (tl.hudDone) {
-        hudLift = smoothstep01((time - tl.hudDoneTime) / HUD_LIFT_DURATION) * HUD_LIFT_AMOUNT;
+        const liftElapsed = time - tl.hudDoneTime - HUD_DONE_PAUSE;
+        if (liftElapsed > 0) {
+          hudLift = smoothstep01(liftElapsed / HUD_LIFT_DUR) * HUD_LIFT_AMOUNT;
+        }
       }
 
-      const done = updateHudTypingGlass(res.hud, camera, hudTime, hudLift);
+      const done = updateHudTypingGlass(res.hud, camera, hudTime, hudLift, HUD_TIMING);
 
       // Track when typing finishes
       if (done && !tl.hudDone) {
@@ -1141,7 +1188,7 @@ function Renderer({
       }
 
       // Show GO button after delay (HUD already lifting by now)
-      if (tl.hudDone && !tl.goShown && time - tl.hudDoneTime >= GO_APPEAR_DELAY) {
+      if (tl.hudDone && !tl.goShown && time - tl.hudDoneTime >= GO_OFFSET) {
         tl.goShown = true;
         tl.goShownTime = time;
         setShowGoButton(true);
@@ -1371,13 +1418,14 @@ export default function FlyThroughScene() {
         description="Interactive 3D Experience"
         x={48}
         y={120}
-        delay={2.0}
-        stagger={0.5}
-        exitDelay={3.0}
+        delay={TITLE_DELAY}
+        stagger={TITLE_STAGGER}
+        duration={TITLE_DURATION}
+        exitDelay={TITLE_EXIT_DELAY}
       />
 
       {/* GO button — appears after HUD typing completes */}
-      <GoButton visible={showGoButton} onClick={handleGoClick} />
+      <GoButton visible={showGoButton} autoDelay={0.7} onClick={handleGoClick} />
 
       {/* Path toggle button */}
       <button

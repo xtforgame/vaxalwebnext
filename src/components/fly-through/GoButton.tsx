@@ -28,7 +28,7 @@ export default function GoButton({ visible, onClick, autoDelay = 0.5 }: GoButton
     triggeredRef.current = true;
     setRipples((prev) => [...prev, Date.now()]);
     setFading(true);
-    setTimeout(onClick, 500);
+    setTimeout(onClick, 100);
   };
 
   // Auto-trigger after entrance animation + autoDelay if user hasn't clicked
