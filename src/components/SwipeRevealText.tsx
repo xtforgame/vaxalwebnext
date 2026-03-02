@@ -6,7 +6,7 @@ import { motion, useAnimationControls } from 'motion/react';
 // ============ SwipeRevealLine (single line) ============
 
 interface SwipeRevealLineProps {
-  text: string;
+  content: React.ReactNode;
   delay: number;
   duration?: number;
   swipeColor?: string;
@@ -15,7 +15,7 @@ interface SwipeRevealLineProps {
 }
 
 function SwipeRevealLine({
-  text,
+  content,
   delay,
   duration = 0.8,
   swipeColor = '#FF5858',
@@ -63,7 +63,7 @@ function SwipeRevealLine({
     <div style={{ position: 'relative', width: 'fit-content' }}>
       {/* Text */}
       <motion.div initial={{ opacity: 0 }} animate={textCtrl} style={style}>
-        {text}
+        {content}
       </motion.div>
 
       {/* Swipe overlay */}
@@ -85,8 +85,8 @@ function SwipeRevealLine({
 // ============ SwipeRevealText (title + description) ============
 
 interface SwipeRevealTextProps {
-  title: string;
-  description: string;
+  title: React.ReactNode;
+  description: React.ReactNode;
   x?: number;
   y?: number;
   delay?: number;
@@ -132,7 +132,7 @@ export default function SwipeRevealText({
       }}
     >
       <SwipeRevealLine
-        text={title}
+        content={title}
         delay={delay}
         duration={duration}
         swipeColor={titleSwipeColor}
@@ -149,7 +149,7 @@ export default function SwipeRevealText({
         }}
       />
       <SwipeRevealLine
-        text={description}
+        content={description}
         delay={delay + stagger}
         duration={duration}
         swipeColor={descriptionSwipeColor}
