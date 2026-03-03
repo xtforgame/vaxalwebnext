@@ -11,23 +11,30 @@ import {
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useWebGLRecovery } from '@/hooks/useWebGLRecovery';
-import './image-gen.css';
+import './image-gen-v2.css';
 
 // ============ Constants ============
 
 const CARD_WIDTH_PX = 400;
-const CARD_HEIGHT_PX = 250;
 const CARD_GAP_PX = 60;
 const CARD_COUNT = 30;
 const PARTICLE_COUNT = 400;
 
 const CARD_IMAGES = [
-  'https://cdn.prod.website-files.com/68789c86c8bc802d61932544/689f20b55e654d1341fb06f8_4.1.png',
-  'https://cdn.prod.website-files.com/68789c86c8bc802d61932544/689f20b5a080a31ee7154b19_1.png',
-  'https://cdn.prod.website-files.com/68789c86c8bc802d61932544/689f20b5c1e4919fd69672b8_3.png',
-  'https://cdn.prod.website-files.com/68789c86c8bc802d61932544/689f20b5f6a5e232e7beb4be_2.png',
-  'https://cdn.prod.website-files.com/68789c86c8bc802d61932544/689f20b5bea2f1b07392d936_4.png',
+  { src: '/images/01.jpg', naturalWidth: 2048, naturalHeight: 1118 },
+  { src: '/images/02.png', naturalWidth: 1380, naturalHeight: 1522 },
+  { src: '/images/03.jpg', naturalWidth: 1000, naturalHeight: 1500 },
 ];
+
+// Precompute card heights at CARD_WIDTH_PX
+const CARD_HEIGHTS = CARD_IMAGES.map((img) =>
+  Math.round(CARD_WIDTH_PX * (img.naturalHeight / img.naturalWidth))
+);
+const MAX_CARD_HEIGHT = Math.max(...CARD_HEIGHTS);
+
+function getCardHeight(index: number): number {
+  return CARD_HEIGHTS[index % CARD_HEIGHTS.length];
+}
 
 // ============ Code Generation for ASCII Cards ============
 
@@ -181,7 +188,7 @@ function ParticleField() {
 
     for (let i = 0; i < count; i++) {
       positions[i * 3] = (Math.random() - 0.5) * w * 2;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 250;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * MAX_CARD_HEIGHT;
       positions[i * 3 + 2] = 0;
 
       colors[i * 3] = 1;
@@ -252,7 +259,7 @@ function ParticleField() {
 
       if (positions[i * 3] > halfW + 100) {
         positions[i * 3] = -halfW - 100;
-        positions[i * 3 + 1] = (Math.random() - 0.5) * 250;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * MAX_CARD_HEIGHT;
       }
 
       positions[i * 3 + 1] += Math.sin(time + i * 0.1) * 0.5;
@@ -291,6 +298,8 @@ interface ScannerParticle {
   twinkleAmount: number;
 }
 
+const SCANNER_HEIGHT = MAX_CARD_HEIGHT + 100;
+
 function ScannerOverlay({
   scanningActiveRef,
 }: {
@@ -305,7 +314,7 @@ function ScannerOverlay({
     const ctx = canvas.getContext('2d')!;
 
     let w = window.innerWidth;
-    const h = 300;
+    const h = SCANNER_HEIGHT;
     const lightBarWidth = 3;
     let lightBarX = w / 2;
 
@@ -654,7 +663,7 @@ function ScannerOverlay({
         left: -3,
         transform: 'translateY(-50%)',
         width: '100vw',
-        height: 300,
+        height: SCANNER_HEIGHT,
         zIndex: 15,
         pointerEvents: 'none',
       }}
@@ -667,43 +676,49 @@ function ScannerOverlay({
 function CardWrapper({
   index,
   initialCode,
+  cardHeight,
 }: {
   index: number;
   initialCode: string;
+  cardHeight: number;
 }) {
-  const imgSrc = CARD_IMAGES[index % CARD_IMAGES.length];
+  const imgData = CARD_IMAGES[index % CARD_IMAGES.length];
 
   const handleImageError = useCallback(
     (e: React.SyntheticEvent<HTMLImageElement>) => {
       const img = e.currentTarget;
       const cvs = document.createElement('canvas');
-      cvs.width = 400;
-      cvs.height = 250;
+      cvs.width = CARD_WIDTH_PX;
+      cvs.height = cardHeight;
       const c = cvs.getContext('2d')!;
-      const grad = c.createLinearGradient(0, 0, 400, 250);
+      const grad = c.createLinearGradient(0, 0, CARD_WIDTH_PX, cardHeight);
       grad.addColorStop(0, '#667eea');
       grad.addColorStop(1, '#764ba2');
       c.fillStyle = grad;
-      c.fillRect(0, 0, 400, 250);
+      c.fillRect(0, 0, CARD_WIDTH_PX, cardHeight);
       img.src = cvs.toDataURL();
     },
-    []
+    [cardHeight]
   );
 
   return (
-    <div className="ig-card-wrapper">
-      <div className="ig-card ig-card-normal">
+    <div
+      className="ig2-card-wrapper"
+      data-card-height={cardHeight}
+      style={{ height: cardHeight }}
+    >
+      <div className="ig2-card ig2-card-normal">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          className="ig-card-image"
-          src={imgSrc}
+          className="ig2-card-image"
+          src={imgData.src}
           alt="Card"
           onError={handleImageError}
           draggable={false}
         />
       </div>
-      <div className="ig-card ig-card-ascii">
-        <div className="ig-ascii-content">{initialCode}</div>
+      <div className="ig2-card ig2-card-ascii">
+        <div className="ig2-ascii-content" suppressHydrationWarning>{initialCode}</div>
       </div>
     </div>
   );
@@ -725,9 +740,9 @@ const controlBtnStyle: React.CSSProperties = {
 
 // ============ Main Exported Component ============
 
-export default function ImageGenScene() {
+export default function ImageGenSceneV2() {
   const { contextLost, canvasKey, handleCreated } =
-    useWebGLRecovery('ImageGen');
+    useWebGLRecovery('ImageGenV2');
 
   // Shared ref: scanner particles read this, card stream writes it
   const scanningActiveRef = useRef<boolean>(false);
@@ -753,15 +768,13 @@ export default function ImageGenScene() {
   // Play/pause state (only button text needs re-render)
   const [isPlaying, setIsPlaying] = useState(true);
 
-  // Generate initial ASCII code texts
+  // Generate initial ASCII code texts (per-card heights)
   const initialCodes = useMemo(() => {
-    const { width, height } = calculateCodeDimensions(
-      CARD_WIDTH_PX,
-      CARD_HEIGHT_PX
-    );
-    return Array.from({ length: CARD_COUNT }, () =>
-      generateCode(width, height)
-    );
+    return Array.from({ length: CARD_COUNT }, (_, i) => {
+      const h = getCardHeight(i);
+      const { width, height } = calculateCodeDimensions(CARD_WIDTH_PX, h);
+      return generateCode(width, height);
+    });
   }, []);
 
   // Dimension calculation
@@ -783,7 +796,7 @@ export default function ImageGenScene() {
     let anyScanningActive = false;
 
     const wrappers =
-      cardLineRef.current.querySelectorAll('.ig-card-wrapper');
+      cardLineRef.current.querySelectorAll('.ig2-card-wrapper');
 
     wrappers.forEach((wrapper) => {
       const rect = wrapper.getBoundingClientRect();
@@ -792,10 +805,10 @@ export default function ImageGenScene() {
       const cardWidth = rect.width;
 
       const normalCard = wrapper.querySelector(
-        '.ig-card-normal'
+        '.ig2-card-normal'
       ) as HTMLElement | null;
       const asciiCard = wrapper.querySelector(
-        '.ig-card-ascii'
+        '.ig2-card-ascii'
       ) as HTMLElement | null;
 
       if (!normalCard || !asciiCard) return;
@@ -832,7 +845,7 @@ export default function ImageGenScene() {
         ) {
           wrapper.setAttribute('data-scanned', 'true');
           const flash = document.createElement('div');
-          flash.className = 'ig-scan-effect';
+          flash.className = 'ig2-scan-effect';
           wrapper.appendChild(flash);
           setTimeout(() => {
             if (flash.parentNode) flash.parentNode.removeChild(flash);
@@ -918,15 +931,21 @@ export default function ImageGenScene() {
   useEffect(() => {
     const timer = setInterval(() => {
       if (!cardLineRef.current) return;
-      const contents =
-        cardLineRef.current.querySelectorAll('.ig-ascii-content');
-      const { width, height } = calculateCodeDimensions(
-        CARD_WIDTH_PX,
-        CARD_HEIGHT_PX
-      );
-      contents.forEach((el) => {
+      const wrappers =
+        cardLineRef.current.querySelectorAll('.ig2-card-wrapper');
+      wrappers.forEach((wrapper) => {
+        const content = wrapper.querySelector('.ig2-ascii-content');
+        if (!content) return;
+        const cardHeight = parseInt(
+          wrapper.getAttribute('data-card-height') || '250',
+          10
+        );
         if (Math.random() < 0.15) {
-          el.textContent = generateCode(width, height);
+          const { width, height } = calculateCodeDimensions(
+            CARD_WIDTH_PX,
+            cardHeight
+          );
+          content.textContent = generateCode(width, height);
         }
       });
     }, 200);
@@ -1114,7 +1133,7 @@ export default function ImageGenScene() {
           left: 0,
           transform: 'translateY(-50%)',
           width: '100vw',
-          height: 250,
+          height: MAX_CARD_HEIGHT,
           zIndex: 0,
           pointerEvents: 'none',
         }}
@@ -1147,7 +1166,7 @@ export default function ImageGenScene() {
         style={{
           position: 'absolute',
           width: '100vw',
-          height: 180,
+          height: MAX_CARD_HEIGHT,
           display: 'flex',
           alignItems: 'center',
           overflow: 'visible',
@@ -1157,9 +1176,14 @@ export default function ImageGenScene() {
           zIndex: 5,
         }}
       >
-        <div className="ig-card-line" ref={cardLineRef}>
+        <div className="ig2-card-line" ref={cardLineRef}>
           {initialCodes.map((code, i) => (
-            <CardWrapper key={i} index={i} initialCode={code} />
+            <CardWrapper
+              key={i}
+              index={i}
+              initialCode={code}
+              cardHeight={getCardHeight(i)}
+            />
           ))}
         </div>
       </div>
