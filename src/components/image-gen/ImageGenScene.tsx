@@ -736,7 +736,7 @@ export default function ImageGenScene() {
   const cardLineRef = useRef<HTMLDivElement>(null);
   const positionRef = useRef(0);
   const velocityRef = useRef(640);
-  const directionRef = useRef(-1);
+  const directionRef = useRef(1);
   const isAnimatingRef = useRef(true);
   const isDraggingRef = useRef(false);
   const lastMouseXRef = useRef(0);
