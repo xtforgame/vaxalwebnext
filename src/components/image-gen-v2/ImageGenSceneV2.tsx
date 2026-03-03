@@ -39,6 +39,16 @@ function getCardHeight(index: number): number {
   return CARD_HEIGHTS[index % CARD_HEIGHTS.length];
 }
 
+// Title texts shown sequentially as each card passes the scanner
+const CARD_TITLES = [
+  'Minimalist',
+  'Typography',
+  'Geometric',
+  'Gradient',
+  'Abstract',
+];
+const SCRAMBLE_CHARS = '!<>-_\\/[]{}—=+*^?#________';
+
 // ============ Code Generation for ASCII Cards ============
 
 function generateCode(width: number, height: number): string {
@@ -152,6 +162,65 @@ function calculateCodeDimensions(cardWidth: number, cardHeight: number) {
     fontSize,
     lineHeight,
   };
+}
+
+// ============ Hacker Text Scramble ============
+
+function scrambleText(
+  el: HTMLElement,
+  newText: string,
+  animRef: React.RefObject<number>
+) {
+  const oldText = el.innerText;
+  const length = Math.max(oldText.length, newText.length);
+  const queue: {
+    from: string;
+    to: string;
+    start: number;
+    end: number;
+    char?: string;
+  }[] = [];
+
+  for (let i = 0; i < length; i++) {
+    const from = oldText[i] || '';
+    const to = newText[i] || '';
+    const start = Math.floor(Math.random() * 40);
+    const end = start + Math.floor(Math.random() * 40);
+    queue.push({ from, to, start, end });
+  }
+
+  cancelAnimationFrame(animRef.current);
+  let frame = 0;
+
+  const update = () => {
+    let output = '';
+    let complete = 0;
+
+    for (let i = 0; i < queue.length; i++) {
+      const { from, to, start, end } = queue[i];
+      if (frame >= end) {
+        complete++;
+        output += to;
+      } else if (frame >= start) {
+        if (!queue[i].char || Math.random() < 0.28) {
+          queue[i].char =
+            SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
+        }
+        output += `<span style="color:#c4b5fd;text-shadow:0 0 12px currentColor">${queue[i].char}</span>`;
+      } else {
+        output += from;
+      }
+    }
+
+    el.innerHTML = output;
+
+    if (complete < queue.length) {
+      animRef.current = requestAnimationFrame(update);
+      frame++;
+    }
+  };
+
+  update();
 }
 
 // ============ R3F Particle System (background floating particles) ============
@@ -759,6 +828,12 @@ export default function ImageGenSceneV2() {
   const containerWidthRef = useRef(0);
   const cardLineWidthRef = useRef(0);
 
+  // Title scramble refs
+  const titleRef = useRef<HTMLDivElement>(null);
+  const scrambleAnimRef = useRef(0);
+  const titleCounterRef = useRef(0);
+  const firstTitleFiredRef = useRef(false);
+
   // Play/pause state (only button text needs re-render)
   const [isPlaying, setIsPlaying] = useState(true);
 
@@ -797,6 +872,41 @@ export default function ImageGenSceneV2() {
       const cardLeft = rect.left;
       const cardRight = rect.right;
       const cardWidth = rect.width;
+
+      // First title: trigger early when the first card approaches
+      if (
+        !firstTitleFiredRef.current &&
+        titleCounterRef.current === 0 &&
+        scannerLeft - cardRight < CARD_GAP_PX &&
+        titleRef.current
+      ) {
+        firstTitleFiredRef.current = true;
+        scrambleText(
+          titleRef.current,
+          CARD_TITLES[0],
+          scrambleAnimRef
+        );
+        titleCounterRef.current = 1;
+      }
+
+      // Subsequent titles: trigger when each card fully passes the scanner
+      if (
+        !wrapper.hasAttribute('data-title-triggered') &&
+        cardLeft > scannerRight
+      ) {
+        wrapper.setAttribute('data-title-triggered', 'true');
+        if (
+          titleRef.current &&
+          titleCounterRef.current < CARD_TITLES.length
+        ) {
+          scrambleText(
+            titleRef.current,
+            CARD_TITLES[titleCounterRef.current],
+            scrambleAnimRef
+          );
+          titleCounterRef.current++;
+        }
+      }
 
       const normalCard = wrapper.querySelector(
         '.ig2-card-normal'
@@ -866,7 +976,7 @@ export default function ImageGenSceneV2() {
   useEffect(() => {
     calculateDimensions();
     // Start with the last card already visible near the left edge
-    positionRef.current = -cardLineWidthRef.current + containerWidthRef.current * 0.5;
+    positionRef.current = -cardLineWidthRef.current + containerWidthRef.current * 0.3;
     lastTimeRef.current = performance.now();
 
     if (cardLineRef.current) {
@@ -940,11 +1050,22 @@ export default function ImageGenSceneV2() {
   }, []);
 
   const resetPosition = useCallback(() => {
-    positionRef.current = -cardLineWidthRef.current + containerWidthRef.current * 0.5;
+    positionRef.current = -cardLineWidthRef.current + containerWidthRef.current * 0.3;
     isAnimatingRef.current = true;
     setIsPlaying(true);
+    titleCounterRef.current = 0;
+    firstTitleFiredRef.current = false;
+    cancelAnimationFrame(scrambleAnimRef.current);
+    if (titleRef.current) {
+      titleRef.current.innerHTML = '';
+    }
     if (cardLineRef.current) {
       cardLineRef.current.style.transform = `translateX(${positionRef.current}px)`;
+      // Reset scanned state on all wrappers
+      cardLineRef.current.querySelectorAll('.ig2-card-wrapper').forEach((w) => {
+        w.removeAttribute('data-scanned');
+        w.removeAttribute('data-title-triggered');
+      });
     }
   }, []);
 
@@ -975,6 +1096,26 @@ export default function ImageGenSceneV2() {
         overflow: 'hidden',
       }}
     >
+      {/* Title with scramble effect (z: 100) */}
+      <div
+        ref={titleRef}
+        style={{
+          position: 'absolute',
+          top: '5%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 100,
+          pointerEvents: 'none',
+          color: 'white',
+          fontFamily: "'Courier New', monospace",
+          fontSize: '2.5rem',
+          fontWeight: 'bold',
+          textShadow: '0 0 8px rgba(139, 92, 246, 0.8)',
+          whiteSpace: 'nowrap',
+          letterSpacing: '0.05em',
+        }}
+      />
+
       {/* Three.js Particle Background (z: 0) */}
       <div
         style={{

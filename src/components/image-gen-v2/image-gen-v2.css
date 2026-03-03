@@ -3,7 +3,7 @@
 .ig2-card-line {
   display: flex;
   align-items: center;
-  gap: 180px;
+  gap: 280px;
   white-space: nowrap;
   user-select: none;
   will-change: transform;
