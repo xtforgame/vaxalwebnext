@@ -9,140 +9,60 @@ const START_TIME = 0;
 
 export const TIMELINE: TimelineAction[] = [
   // 0s — start from 10s mark
-  { type: 'seek', time: START_TIME + 0, to: 10 },
+  { type: 'seek', time: START_TIME + 0, to: 8 },
   { type: 'play', time: START_TIME + 0 },
+  { type: 'speed', time: START_TIME + 0, rate: 2 },
 
   // 1s — cursor appears at centre
-  { type: 'cursor-show', time: START_TIME + 1, position: [0.5, 0.5] },
-
-  // 2s — cursor moves to upper-right (previewing the zoom target)
-  { type: 'cursor-move', time: START_TIME + 2, to: [0.75, 0.3], duration: 1, easing: 'easeInOutCubic' },
-
-  // 3s — click + zoom into upper-right
-  { type: 'cursor-click', time: START_TIME + 3 },
   {
     type: 'zoom',
-    time: START_TIME + 3,
+    time: START_TIME + 1,
     scale: 2,
-    focal: [0.75, 0.3],
-    duration: 2,
+    focal: [0.5, 0.9],
+    duration: 1,
     easing: 'easeInOutCubic',
   },
 
+  // 2s — cursor moves to upper-right (previewing the zoom target)
+  // { type: 'cursor-show', time: START_TIME + 3.5, position: [0.5, 0.5] },
+  // { type: 'cursor-move', time: START_TIME + 3.5, to: [0.38, 0.95], duration: 1, easing: 'easeInOutCubic' },
+  // { type: 'cursor-click', time: START_TIME + 4.5 },
+  // { type: 'cursor-hide', time: START_TIME + 6 },
+
   // 5s — slow-mo while zoomed
-  {
-    type: 'speed',
-    time: START_TIME + 5,
-    rate: 0.3,
-    duration: 1,
-    easing: 'easeOutCubic',
-  },
+  // {
+  //   type: 'speed',
+  //   time: START_TIME + 5,
+  //   rate: 0.3,
+  //   duration: 1,
+  //   easing: 'easeOutCubic',
+  // },
 
   // 6s — cursor hides while zoomed
-  { type: 'cursor-hide', time: START_TIME + 6 },
+  
 
   // 7s — zoom out to full view
   {
     type: 'zoom',
-    time: START_TIME + 7,
+    time: START_TIME + 5,
     scale: 1,
     focal: [0.5, 0.5],
-    duration: 1.5,
+    duration: 1,
     easing: 'easeInOutCubic',
-  },
-
-  // 8s — back to normal speed
-  {
-    type: 'speed',
-    time: START_TIME + 8,
-    rate: 1,
-    duration: 0.5,
-    easing: 'easeInCubic',
   },
 
   // 10s — fast-forward + gear overlay
-  { type: 'speed', time: START_TIME + 10, rate: 3 },
-  { type: 'overlay-show', time: START_TIME + 10, text: 'Fast forwarding...' },
+  { type: 'speed', time: START_TIME + 6.5, rate: 12 },
+  { type: 'overlay-show', time: START_TIME + 6.5, text: 'AI處理中...' },
+
 
   // 12s — normal speed + hide overlay + zoom to centre
-  { type: 'speed', time: START_TIME + 12, rate: 1 },
-  { type: 'overlay-hide', time: START_TIME + 12 },
-  {
-    type: 'zoom',
-    time: START_TIME + 12,
-    scale: 1.5,
-    focal: [0.5, 0.5],
-    duration: 1,
-    easing: 'easeOutCubic',
-  },
+  { type: 'speed', time: START_TIME + 8.5, rate: 2 },
+  { type: 'overlay-hide', time: START_TIME + 8.5 },
 
-  // 13s — cursor reappears, moves toward bottom-left
-  { type: 'cursor-show', time: START_TIME + 13, position: [0.5, 0.5] },
-  { type: 'cursor-move', time: START_TIME + 13, to: [0.2, 0.8], duration: 1, easing: 'easeInOutCubic' },
+  { type: 'pause', time: START_TIME + 8.5 },
+  { type: 'seek', time: START_TIME + 8.5, to: 191 },
+  { type: 'play', time: START_TIME + 8.5 },
 
-  // 14s — click + dramatic zoom to bottom-left
-  { type: 'cursor-click', time: START_TIME + 14 },
-  {
-    type: 'zoom',
-    time: START_TIME + 14,
-    scale: 3,
-    focal: [0.2, 0.8],
-    duration: 2,
-    easing: 'easeInCubic',
-  },
-
-  // 15.5s — cursor hides
-  { type: 'cursor-hide', time: START_TIME + 15.5 },
-
-  // 16s — snap back
-  {
-    type: 'zoom',
-    time: START_TIME + 16,
-    scale: 1,
-    focal: [0.5, 0.5],
-    duration: 0.5,
-    easing: 'easeOutCubic',
-  },
-
-  // 17s — seek to 60s + slow-mo
-  { type: 'seek', time: START_TIME + 17, to: 60 },
-  { type: 'speed', time: START_TIME + 17, rate: 0.5 },
-
-  // 18.5s — cursor shows and moves to zoom target
-  { type: 'cursor-show', time: START_TIME + 18.5, position: [0.5, 0.5] },
-  { type: 'cursor-move', time: START_TIME + 18.5, to: [0.6, 0.4], duration: 0.5, easing: 'easeOutCubic' },
-  { type: 'cursor-click', time: START_TIME + 19 },
-
-  // 19s — speed up + zoom + gear overlay simultaneously
-  {
-    type: 'speed',
-    time: START_TIME + 19,
-    rate: 2,
-    duration: 1,
-    easing: 'easeInOutCubic',
-  },
-  {
-    type: 'zoom',
-    time: START_TIME + 19,
-    scale: 2.5,
-    focal: [0.6, 0.4],
-    duration: 2,
-    easing: 'easeInOutCubic',
-  },
-  { type: 'overlay-show', time: START_TIME + 19, text: 'Analyzing...' },
-
-  // 21s — cursor hides + overlay hides
-  { type: 'cursor-hide', time: START_TIME + 21 },
-  { type: 'overlay-hide', time: START_TIME + 21 },
-
-  // 22s — zoom out + pause
-  {
-    type: 'zoom',
-    time: START_TIME + 22,
-    scale: 1,
-    focal: [0.5, 0.5],
-    duration: 1,
-    easing: 'easeOutCubic',
-  },
-  { type: 'pause', time: START_TIME + 23 },
+  { type: 'pause', time: START_TIME + 123 },
 ];
