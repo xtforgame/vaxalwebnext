@@ -5,14 +5,8 @@
   align-items: center;
   gap: 60px;
   white-space: nowrap;
-  cursor: grab;
   user-select: none;
   will-change: transform;
-}
-
-.ig2-card-line:active,
-.ig2-card-line.dragging {
-  cursor: grabbing;
 }
 
 /* ============ Card Wrapper ============ */

@@ -19,6 +19,7 @@ const CARD_WIDTH_PX = 400;
 const CARD_GAP_PX = 60;
 const CARD_COUNT = 30;
 const PARTICLE_COUNT = 400;
+const SCROLL_SPEED = 200; // px/s — configurable scroll speed
 
 const CARD_IMAGES = [
   { src: '/images/styles/01.png', naturalWidth: 652, naturalHeight: 1110 },
@@ -752,20 +753,11 @@ export default function ImageGenSceneV2() {
   // Card stream state (all ref-based for performance)
   const cardLineRef = useRef<HTMLDivElement>(null);
   const positionRef = useRef(0);
-  const velocityRef = useRef(640);
-  const directionRef = useRef(1);
   const isAnimatingRef = useRef(true);
-  const isDraggingRef = useRef(false);
-  const lastMouseXRef = useRef(0);
-  const mouseVelocityRef = useRef(0);
   const lastTimeRef = useRef(0);
   const animFrameRef = useRef(0);
   const containerWidthRef = useRef(0);
   const cardLineWidthRef = useRef(0);
-  const speedDisplayRef = useRef<HTMLSpanElement>(null);
-
-  const friction = 0.95;
-  const minVelocity = 60;
 
   // Play/pause state (only button text needs re-render)
   const [isPlaying, setIsPlaying] = useState(true);
@@ -855,11 +847,11 @@ export default function ImageGenSceneV2() {
         }
       } else {
         if (cardRight < scannerLeft) {
-          // Card has fully passed the scanner
+          // Card is LEFT of scanner — still ASCII (not yet scanned)
           normalCard.style.setProperty('--clip-right', '100%');
           asciiCard.style.setProperty('--clip-left', '100%');
         } else if (cardLeft > scannerRight) {
-          // Card hasn't reached the scanner yet
+          // Card is RIGHT of scanner — fully converted to image
           normalCard.style.setProperty('--clip-right', '0%');
           asciiCard.style.setProperty('--clip-left', '0%');
         }
@@ -870,47 +862,33 @@ export default function ImageGenSceneV2() {
     scanningActiveRef.current = anyScanningActive;
   }, []);
 
-  // Main animation loop
+  // Main animation loop — one-way left-to-right scroll
   useEffect(() => {
     calculateDimensions();
+    // Start with all cards to the left of the screen
+    positionRef.current = -cardLineWidthRef.current;
     lastTimeRef.current = performance.now();
+
+    if (cardLineRef.current) {
+      cardLineRef.current.style.transform = `translateX(${positionRef.current}px)`;
+    }
 
     const animate = () => {
       const currentTime = performance.now();
       const deltaTime = (currentTime - lastTimeRef.current) / 1000;
       lastTimeRef.current = currentTime;
 
-      if (isAnimatingRef.current && !isDraggingRef.current) {
-        if (velocityRef.current > minVelocity) {
-          velocityRef.current *= friction;
-        } else {
-          velocityRef.current = Math.max(
-            minVelocity,
-            velocityRef.current
-          );
-        }
+      if (isAnimatingRef.current) {
+        positionRef.current += SCROLL_SPEED * deltaTime;
 
-        positionRef.current +=
-          velocityRef.current * directionRef.current * deltaTime;
-
-        // Wrap position for infinite scroll
-        const cw = containerWidthRef.current;
-        const clw = cardLineWidthRef.current;
-        if (positionRef.current < -clw) {
-          positionRef.current = cw;
-        } else if (positionRef.current > cw) {
-          positionRef.current = -clw;
+        // Stop when all cards have scrolled past the right edge
+        if (positionRef.current > containerWidthRef.current) {
+          isAnimatingRef.current = false;
+          setIsPlaying(false);
         }
 
         if (cardLineRef.current) {
           cardLineRef.current.style.transform = `translateX(${positionRef.current}px)`;
-        }
-
-        // Update speed display via ref (no re-render)
-        if (speedDisplayRef.current) {
-          speedDisplayRef.current.textContent = String(
-            Math.round(velocityRef.current)
-          );
         }
       }
 
@@ -955,125 +933,6 @@ export default function ImageGenSceneV2() {
     return () => clearInterval(timer);
   }, []);
 
-  // Pointer events for drag/swipe
-  useEffect(() => {
-    const cardLine = cardLineRef.current;
-    if (!cardLine) return;
-
-    const startDrag = (clientX: number) => {
-      isDraggingRef.current = true;
-      isAnimatingRef.current = false;
-      lastMouseXRef.current = clientX;
-      mouseVelocityRef.current = 0;
-
-      const transform = window.getComputedStyle(cardLine).transform;
-      if (transform !== 'none') {
-        const matrix = new DOMMatrix(transform);
-        positionRef.current = matrix.m41;
-      }
-
-      cardLine.classList.add('dragging');
-      document.body.style.userSelect = 'none';
-      document.body.style.cursor = 'grabbing';
-    };
-
-    const onDrag = (clientX: number) => {
-      if (!isDraggingRef.current) return;
-      const deltaX = clientX - lastMouseXRef.current;
-      positionRef.current += deltaX;
-      mouseVelocityRef.current = deltaX * 60;
-      lastMouseXRef.current = clientX;
-      cardLine.style.transform = `translateX(${positionRef.current}px)`;
-    };
-
-    const endDrag = () => {
-      if (!isDraggingRef.current) return;
-      isDraggingRef.current = false;
-      cardLine.classList.remove('dragging');
-
-      if (Math.abs(mouseVelocityRef.current) > minVelocity) {
-        velocityRef.current = Math.abs(mouseVelocityRef.current);
-        directionRef.current =
-          mouseVelocityRef.current > 0 ? 1 : -1;
-      } else {
-        velocityRef.current = 640;
-      }
-
-      isAnimatingRef.current = true;
-
-      if (speedDisplayRef.current) {
-        speedDisplayRef.current.textContent = String(
-          Math.round(velocityRef.current)
-        );
-      }
-
-      document.body.style.userSelect = '';
-      document.body.style.cursor = '';
-    };
-
-    const onMouseDown = (e: MouseEvent) => {
-      e.preventDefault();
-      startDrag(e.clientX);
-    };
-    const onMouseMove = (e: MouseEvent) => {
-      if (!isDraggingRef.current) return;
-      e.preventDefault();
-      onDrag(e.clientX);
-    };
-    const onMouseUp = () => endDrag();
-
-    const onTouchStart = (e: TouchEvent) => {
-      e.preventDefault();
-      startDrag(e.touches[0].clientX);
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      e.preventDefault();
-      onDrag(e.touches[0].clientX);
-    };
-    const onTouchEnd = () => endDrag();
-
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? 20 : -20;
-      positionRef.current += delta;
-
-      const cw = containerWidthRef.current;
-      const clw = cardLineWidthRef.current;
-      if (positionRef.current < -clw) positionRef.current = cw;
-      else if (positionRef.current > cw) positionRef.current = -clw;
-
-      cardLine.style.transform = `translateX(${positionRef.current}px)`;
-    };
-
-    const preventDefault = (e: Event) => e.preventDefault();
-
-    cardLine.addEventListener('mousedown', onMouseDown);
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-    cardLine.addEventListener('touchstart', onTouchStart, {
-      passive: false,
-    });
-    document.addEventListener('touchmove', onTouchMove, {
-      passive: false,
-    });
-    document.addEventListener('touchend', onTouchEnd);
-    cardLine.addEventListener('wheel', onWheel, { passive: false });
-    cardLine.addEventListener('selectstart', preventDefault);
-    cardLine.addEventListener('dragstart', preventDefault);
-
-    return () => {
-      cardLine.removeEventListener('mousedown', onMouseDown);
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-      cardLine.removeEventListener('touchstart', onTouchStart);
-      document.removeEventListener('touchmove', onTouchMove);
-      document.removeEventListener('touchend', onTouchEnd);
-      cardLine.removeEventListener('wheel', onWheel);
-      cardLine.removeEventListener('selectstart', preventDefault);
-      cardLine.removeEventListener('dragstart', preventDefault);
-    };
-  }, []);
-
   // Control handlers
   const toggleAnimation = useCallback(() => {
     isAnimatingRef.current = !isAnimatingRef.current;
@@ -1081,23 +940,12 @@ export default function ImageGenSceneV2() {
   }, []);
 
   const resetPosition = useCallback(() => {
-    positionRef.current = containerWidthRef.current;
-    velocityRef.current = 640;
-    directionRef.current = -1;
+    positionRef.current = -cardLineWidthRef.current;
     isAnimatingRef.current = true;
-    isDraggingRef.current = false;
     setIsPlaying(true);
-    if (speedDisplayRef.current) {
-      speedDisplayRef.current.textContent = '640';
-    }
     if (cardLineRef.current) {
       cardLineRef.current.style.transform = `translateX(${positionRef.current}px)`;
-      cardLineRef.current.classList.remove('dragging');
     }
-  }, []);
-
-  const changeDirection = useCallback(() => {
-    directionRef.current *= -1;
   }, []);
 
   // ---- Render ----
@@ -1207,27 +1055,6 @@ export default function ImageGenSceneV2() {
         <button onClick={resetPosition} style={controlBtnStyle}>
           Reset
         </button>
-        <button onClick={changeDirection} style={controlBtnStyle}>
-          Direction
-        </button>
-      </div>
-
-      {/* Speed Indicator (z: 100) */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 20,
-          right: 20,
-          color: 'white',
-          fontSize: 16,
-          background: 'rgba(0, 0, 0, 0.3)',
-          padding: '8px 16px',
-          borderRadius: 20,
-          backdropFilter: 'blur(5px)',
-          zIndex: 100,
-        }}
-      >
-        Speed: <span ref={speedDisplayRef}>640</span> px/s
       </div>
     </div>
   );
