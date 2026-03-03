@@ -11,6 +11,7 @@ import {
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useWebGLRecovery } from '@/hooks/useWebGLRecovery';
+import SwipeRevealText from '@/components/SwipeRevealText';
 import './image-gen-v2.css';
 
 // ============ Constants ============
@@ -41,11 +42,11 @@ function getCardHeight(index: number): number {
 
 // Title texts shown sequentially as each card passes the scanner
 const CARD_TITLES = [
-  'Minimalist',
-  'Typography',
-  'Geometric',
-  'Gradient',
-  'Abstract',
+  '> 生一個都市休閒風的文案和附圖給我，感謝',
+  '> 幫我產一張背對鏡頭的西外穿搭，以及相應的介紹文案',
+  '> 我想發跟西褲相關的限動，請你幫我產一張圖',
+  '> 請你使用資料庫的穿搭任意搭配，產生一張生活照並且附帶文案',
+  '> 請幫使用者產生一個毛衣系列穿搭貼文，並附上CTA',
 ];
 const SCRAMBLE_CHARS = '!<>-_\\/[]{}—=+*^?#________';
 
@@ -206,7 +207,7 @@ function scrambleText(
           queue[i].char =
             SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
         }
-        output += `<span style="color:#c4b5fd;text-shadow:0 0 12px currentColor">${queue[i].char}</span>`;
+        output += `<span style="color:#00ff88;text-shadow:0 0 12px currentColor">${queue[i].char}</span>`;
       } else {
         output += from;
       }
@@ -1096,6 +1097,43 @@ export default function ImageGenSceneV2() {
         overflow: 'hidden',
       }}
     >
+      {/* Swipe reveal title */}
+      <SwipeRevealText
+        title={
+          <span className="text-white">
+            Project <span className="text-pink-500">Doble</span>
+          </span>
+        }
+        description={
+          <>
+            <span>風格自學 — 模仿不同調性的</span>
+            <span className="text-blue-500">圖文內容</span>
+          </>
+        }
+        x={48}
+        y={120}
+        delay={1.0}
+        stagger={0.5}
+        duration={0.8}
+        exitDelay={3.0}
+        titleSwipeColor="#FF5858"
+        descriptionSwipeColor="#ffffff"
+        titleStyle={{
+          fontSize: 48,
+          fontWeight: 900,
+          lineHeight: 1,
+          color: '#ffffff',
+          fontFamily: 'montserrat, sans-serif',
+        }}
+        descriptionStyle={{
+          fontSize: 32,
+          fontWeight: 700,
+          lineHeight: 1,
+          color: '#ffffff',
+          fontFamily: 'montserrat, sans-serif',
+        }}
+      />
+
       {/* Title with scramble effect (z: 100) */}
       <div
         ref={titleRef}
@@ -1106,11 +1144,11 @@ export default function ImageGenSceneV2() {
           transform: 'translateX(-50%)',
           zIndex: 100,
           pointerEvents: 'none',
-          color: 'white',
+          color: '#0f0',
           fontFamily: "'Courier New', monospace",
           fontSize: '2.5rem',
           fontWeight: 'bold',
-          textShadow: '0 0 8px rgba(139, 92, 246, 0.8)',
+          textShadow: '0 0 8px currentColor',
           whiteSpace: 'nowrap',
           letterSpacing: '0.05em',
         }}

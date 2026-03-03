@@ -36,6 +36,7 @@
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
   z-index: 2;
   clip-path: inset(0 0 0 var(--clip-right, 0%));
+  /* display: block; */
 }
 
 /* ASCII card — reveals from right as scanner passes */
@@ -43,6 +44,7 @@
   background: transparent;
   z-index: 1;
   clip-path: inset(0 calc(100% - var(--clip-left, 0%)) 0 0);
+  /* display: none; */
 }
 
 /* ============ Card Image ============ */
