@@ -16,10 +16,10 @@ import './image-gen-v2.css';
 // ============ Constants ============
 
 const CARD_WIDTH_PX = 400;
-const CARD_GAP_PX = 60;
-const CARD_COUNT = 30;
+const CARD_GAP_PX = 280;
+const CARD_COUNT = 5;
 const PARTICLE_COUNT = 400;
-const SCROLL_SPEED = 200; // px/s — configurable scroll speed
+const SCROLL_SPEED = 100; // px/s — configurable scroll speed
 
 const CARD_IMAGES = [
   { src: '/images/styles/01.png', naturalWidth: 652, naturalHeight: 1110 },
@@ -143,9 +143,9 @@ function generateCode(width: number, height: number): string {
 }
 
 function calculateCodeDimensions(cardWidth: number, cardHeight: number) {
-  const fontSize = 11;
-  const lineHeight = 13;
-  const charWidth = 6;
+  const fontSize = 12;
+  const lineHeight = 15;
+  const charWidth = 7.2;
   return {
     width: Math.floor(cardWidth / charWidth),
     height: Math.floor(cardHeight / lineHeight),
@@ -865,8 +865,8 @@ export default function ImageGenSceneV2() {
   // Main animation loop — one-way left-to-right scroll
   useEffect(() => {
     calculateDimensions();
-    // Start with all cards to the left of the screen
-    positionRef.current = -cardLineWidthRef.current;
+    // Start with the last card already visible near the left edge
+    positionRef.current = -cardLineWidthRef.current + containerWidthRef.current * 0.5;
     lastTimeRef.current = performance.now();
 
     if (cardLineRef.current) {
@@ -940,7 +940,7 @@ export default function ImageGenSceneV2() {
   }, []);
 
   const resetPosition = useCallback(() => {
-    positionRef.current = -cardLineWidthRef.current;
+    positionRef.current = -cardLineWidthRef.current + containerWidthRef.current * 0.5;
     isAnimatingRef.current = true;
     setIsPlaying(true);
     if (cardLineRef.current) {
