@@ -523,7 +523,7 @@ export default function FrameGalleryV2() {
         </Canvas>
       </Suspense>
 
-      {/* Phase indicator */}
+      {/* Phase indicator (hidden — uncomment for debugging)
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[110] pointer-events-none">
         <div className="px-4 py-2 bg-black/40 backdrop-blur-md rounded-full text-white/70 text-xs font-mono uppercase tracking-wider">
           {phase === 'immersed' && 'Watching'}
@@ -533,6 +533,7 @@ export default function FrameGalleryV2() {
           {phase === 'entering' && 'Entering...'}
         </div>
       </div>
+      */}
     </div>
   );
 }
