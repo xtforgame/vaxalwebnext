@@ -42,7 +42,7 @@ export const TIMELINE: TimelineAction[] = [
   { type: 'play', time: START_TIME },
 
   { type: 'speed', time: START_TIME += 1, rate: 12 },
-  { type: 'pause', time: START_TIME += 8 },
+  { type: 'pause', time: START_TIME += 7 },
 
     //
   {

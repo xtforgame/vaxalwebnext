@@ -59,6 +59,9 @@ const FRAMES: FrameConfig[] = [
 
 const FRUSTUM_HALF_H = 5; // must match createVideoScene.ts
 
+/** How long (seconds) video 1 plays before the transition starts */
+const VIDEO1_PLAY_DURATION = 19;
+
 /**
  * Compute the content plane dimensions that fill the viewport
  * at the immersed camera distance (VIEWPORT_DIST), matching
@@ -273,7 +276,7 @@ function GalleryScene({
       cameraDirectorRef.current = new CameraDirector(FRAMES[0], FRAMES[1]);
       transitionRef.current.startTransition(1);
       console.log('[FrameGalleryV2] Transition started: frame 0 → frame 1');
-    }, 3000);
+    }, VIDEO1_PLAY_DURATION * 1000);
     return () => clearTimeout(timer);
   }, []);
 
