@@ -189,7 +189,7 @@ const SWIPE_REVEALS: SwipeRevealEntry[] = [
     description: (
       <>
         <span>連結了各種公司資料庫，</span>
-        <span className='text-red-500'>知道自己該幹嘛</span>
+        <span className='text-purple-300'>知道自己該幹嘛</span>
       </>
     ),
     x: 48,
