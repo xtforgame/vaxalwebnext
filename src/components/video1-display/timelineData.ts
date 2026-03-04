@@ -5,18 +5,18 @@ export const VIDEO_SRC = '/large-videos/reimbursement.mov';
 export const VIDEO_ASPECT = 4096 / 2206;
 
 // ─── Demo Timeline ──────────────────────────────────────────────
-const START_TIME = 0;
+let START_TIME = 0;
 
 export const TIMELINE: TimelineAction[] = [
   // 0s — start from 10s mark
-  { type: 'seek', time: START_TIME + 0, to: 8 },
+  { type: 'seek', time: START_TIME + 0, to: 7 },
   { type: 'play', time: START_TIME + 0 },
   { type: 'speed', time: START_TIME + 0, rate: 2 },
 
   // 1s — cursor appears at centre
   {
     type: 'zoom',
-    time: START_TIME + 1,
+    time: START_TIME += 2,
     scale: 2,
     focal: [0.5, 0.9],
     duration: 1,
@@ -44,7 +44,7 @@ export const TIMELINE: TimelineAction[] = [
   // 7s — zoom out to full view
   {
     type: 'zoom',
-    time: START_TIME + 5,
+    time: START_TIME += 4,
     scale: 1,
     focal: [0.5, 0.5],
     duration: 1,
@@ -52,17 +52,17 @@ export const TIMELINE: TimelineAction[] = [
   },
 
   // 10s — fast-forward + gear overlay
-  { type: 'speed', time: START_TIME + 6.5, rate: 12 },
-  { type: 'overlay-show', time: START_TIME + 6.5, text: 'AI處理中...' },
+  { type: 'speed', time: START_TIME += 1.5, rate: 12 },
+  { type: 'overlay-show', time: START_TIME, text: 'AI處理中...' },
 
 
   // 12s — normal speed + hide overlay + zoom to centre
-  { type: 'speed', time: START_TIME + 8.5, rate: 2 },
-  { type: 'overlay-hide', time: START_TIME + 8.5 },
+  { type: 'speed', time: START_TIME += 2, rate: 2 },
+  { type: 'overlay-hide', time: START_TIME },
 
-  { type: 'pause', time: START_TIME + 8.5 },
-  { type: 'seek', time: START_TIME + 8.5, to: 191 },
-  { type: 'play', time: START_TIME + 8.5 },
+  { type: 'pause', time: START_TIME },
+  { type: 'seek', time: START_TIME, to: 191 },
+  { type: 'play', time: START_TIME },
 
-  { type: 'pause', time: START_TIME + 123 },
+  { type: 'pause', time: START_TIME += 104.5 },
 ];

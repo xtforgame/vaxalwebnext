@@ -9,27 +9,27 @@ let START_TIME = 0;
 
 export const TIMELINE: TimelineAction[] = [
   //
-  { type: 'seek', time: START_TIME + 0, to: 7 },
+  { type: 'seek', time: START_TIME + 0, to: 6 },
   { type: 'play', time: START_TIME + 0 },
   { type: 'speed', time: START_TIME + 0, rate: 1 },
 
   //
   {
     type: 'zoom',
-    time: START_TIME + 1,
+    time: START_TIME += 2,
     scale: 2,
     focal: [0.5, 0.9],
     duration: 1,
     easing: 'easeInOutCubic',
   },
 
-  { type: 'speed', time: START_TIME += 2, rate: 4 },
+  { type: 'speed', time: START_TIME += 1, rate: 4 },
 
 
   //
   {
     type: 'zoom',
-    time: START_TIME += 2,
+    time: START_TIME += 2.5,
     scale: 1,
     focal: [0.5, 0.5],
     duration: 1,
@@ -103,5 +103,5 @@ export const TIMELINE: TimelineAction[] = [
 
   { type: 'speed', time: START_TIME, rate: 16 },
 
-  { type: 'pause', time: START_TIME + 123 },
+  { type: 'pause', time: START_TIME += 12 },
 ];

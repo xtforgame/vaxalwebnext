@@ -25,7 +25,8 @@ import {
   resetVideoSceneState,
   disposeVideoScene,
 } from './createVideoScene';
-import { VIDEO_SRC, VIDEO_ASPECT, TIMELINE as VIDEO_TIMELINE } from '@/components/video2-display/timelineData';
+import { VIDEO_SRC as VIDEO2_SRC, VIDEO_ASPECT as VIDEO2_ASPECT, TIMELINE as VIDEO2_TIMELINE } from '@/components/video2-display/timelineData';
+import { VIDEO_SRC as VIDEO1_SRC, VIDEO_ASPECT as VIDEO1_ASPECT, TIMELINE as VIDEO1_TIMELINE } from '@/components/video1-display/timelineData';
 
 // ============ Constants ============
 
@@ -66,20 +67,24 @@ const HUD_LIFT_AMOUNT     = 0.25;
 const HUD_LIFT_DUR        = 0.8;
 const PHASE_A_END         = HUD_DONE_AT + GO_OFFSET + 2.0;
 
-// --- Phase B–H: Transitions ---
+// --- Phase B–J: Transitions ---
 const DIAGONAL_DURATION   = 10;
 const PHASE_B_END         = PHASE_A_END + 3;             // fly → hacker (3s)
 const PHASE_C_END         = PHASE_B_END + 1;             // hacker only (1s)
 const PHASE_D_END         = PHASE_C_END + 3;             // hacker → card (3s)
 const PHASE_E_END         = PHASE_D_END + DIAGONAL_DURATION - 1; // card display
-const PHASE_F_END         = PHASE_E_END + 3;             // card → video (3s)
-const VIDEO_PHASE_DURATION = 33;                          // video display duration
-const PHASE_G_END         = PHASE_F_END + VIDEO_PHASE_DURATION; // pure video
-const PHASE_H_END         = PHASE_G_END + 3;             // video → fly (3s)
+const PHASE_F_END         = PHASE_E_END + 3;             // card → video2 (3s)
+const VIDEO2_PHASE_DURATION = 32;                          // video2 display duration
+const PHASE_G_END         = PHASE_F_END + VIDEO2_PHASE_DURATION; // pure video2
+const PHASE_H_END         = PHASE_G_END + 3;             // video2 → video1 (3s)
+const VIDEO1_PHASE_DURATION = 24;                         // video1 display duration
+const PHASE_I_END         = PHASE_H_END + VIDEO1_PHASE_DURATION; // pure video1
+const PHASE_J_END         = PHASE_I_END + 3;             // video1 → fly (3s)
 const LOOP_DURATION       = 250;
 
-// Video timeline (pre-sorted for update function)
-const VIDEO_SORTED_TIMELINE = [...VIDEO_TIMELINE].sort((a, b) => a.time - b.time);
+// Video timelines (pre-sorted for update function)
+const VIDEO2_SORTED_TIMELINE = [...VIDEO2_TIMELINE].sort((a, b) => a.time - b.time);
+const VIDEO1_SORTED_TIMELINE = [...VIDEO1_TIMELINE].sort((a, b) => a.time - b.time);
 
 // HUD timing config (passed to HudTypingGlass)
 const HUD_TIMING: HudTimingConfig = {
@@ -221,8 +226,16 @@ function Renderer({
       fboHeight: h,
     });
 
-    const video = createVideoScene({
-      videoAspect: VIDEO_ASPECT,
+    const video2 = createVideoScene({
+      videoAspect: VIDEO2_ASPECT,
+      viewWidth: size.width,
+      viewHeight: size.height,
+      fboWidth: w,
+      fboHeight: h,
+    });
+
+    const video1 = createVideoScene({
+      videoAspect: VIDEO1_ASPECT,
       viewWidth: size.width,
       viewHeight: size.height,
       fboWidth: w,
@@ -236,7 +249,7 @@ function Renderer({
       height: h,
     });
 
-    return { orthoCam, fly, hacker, card, video, compositor };
+    return { orthoCam, fly, hacker, card, video2, video1, compositor };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fontTexture, cardTexture, panoTexture, skyboxCube]);
 
@@ -246,9 +259,12 @@ function Renderer({
     NEON_PANELS.map(() => ({ seen: false, startTime: -1 }))
   );
   const prevNeedsCardRef = useRef(false);
-  const videoStateRef = useRef(createVideoSceneState());
-  const videoElRef = useRef<HTMLVideoElement | null>(null);
-  const videoTexRef = useRef<THREE.VideoTexture | null>(null);
+  const video2StateRef = useRef(createVideoSceneState());
+  const video2ElRef = useRef<HTMLVideoElement | null>(null);
+  const video2TexRef = useRef<THREE.VideoTexture | null>(null);
+  const video1StateRef = useRef(createVideoSceneState());
+  const video1ElRef = useRef<HTMLVideoElement | null>(null);
+  const video1TexRef = useRef<THREE.VideoTexture | null>(null);
 
   // Handle resize
   useEffect(() => {
@@ -264,12 +280,16 @@ function Renderer({
     res.compositor.mat.uniforms.iResolution.value.set(w, h);
     res.card.cam.aspect = size.width / size.height;
     res.card.cam.updateProjectionMatrix();
-    res.video.fbo.setSize(w, h);
+    res.video2.fbo.setSize(w, h);
+    res.video1.fbo.setSize(w, h);
     const vAspect = size.width / size.height;
     const vHalfW = 5 * vAspect;
-    res.video.cam.left = -vHalfW;
-    res.video.cam.right = vHalfW;
-    res.video.cam.updateProjectionMatrix();
+    res.video2.cam.left = -vHalfW;
+    res.video2.cam.right = vHalfW;
+    res.video2.cam.updateProjectionMatrix();
+    res.video1.cam.left = -vHalfW;
+    res.video1.cam.right = vHalfW;
+    res.video1.cam.updateProjectionMatrix();
   }, [size, gl, res]);
 
   // Toggle path visibility
@@ -296,7 +316,8 @@ function Renderer({
       res.card.crtMaterials.forEach((m) => m.dispose());
       res.card.glowMaterials.forEach((m) => m.dispose());
       disposeHudTypingGlass(res.fly.hud);
-      disposeVideoScene(res.video);
+      disposeVideoScene(res.video2);
+      disposeVideoScene(res.video1);
     };
   }, [res]);
 
@@ -378,14 +399,13 @@ function Renderer({
     video.muted = true;
     video.playsInline = true;
     video.preload = 'auto';
-    videoElRef.current = video;
+    video2ElRef.current = video;
 
     const onCanPlay = () => {
       const vTex = new THREE.VideoTexture(video);
-      vTex.colorSpace = THREE.SRGBColorSpace;
       vTex.minFilter = THREE.LinearFilter;
       vTex.magFilter = THREE.LinearFilter;
-      videoTexRef.current = vTex;
+      video2TexRef.current = vTex;
     };
     video.addEventListener('canplay', onCanPlay, { once: true });
 
@@ -394,24 +414,68 @@ function Renderer({
       if (retryCount < 5) {
         retryCount++;
         setTimeout(() => {
-          video.src = VIDEO_SRC;
+          video.src = VIDEO2_SRC;
           video.load();
         }, 2000 * retryCount);
       }
     };
     video.addEventListener('error', onError);
 
-    video.src = VIDEO_SRC;
+    video.src = VIDEO2_SRC;
 
     return () => {
       video.pause();
       video.removeAttribute('src');
       video.load();
-      videoTexRef.current?.dispose();
-      videoTexRef.current = null;
-      videoElRef.current = null;
-      res.video.videoMaterial.map = null;
-      res.video.videoMaterial.needsUpdate = true;
+      video2TexRef.current?.dispose();
+      video2TexRef.current = null;
+      video2ElRef.current = null;
+      res.video2.videoMaterial.map = null;
+      res.video2.videoMaterial.needsUpdate = true;
+    };
+  }, [res]);
+
+  // Video1 scene: create video element, swap texture when ready
+  useEffect(() => {
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.loop = false;
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    video1ElRef.current = video;
+
+    const onCanPlay = () => {
+      const vTex = new THREE.VideoTexture(video);
+      vTex.minFilter = THREE.LinearFilter;
+      vTex.magFilter = THREE.LinearFilter;
+      video1TexRef.current = vTex;
+    };
+    video.addEventListener('canplay', onCanPlay, { once: true });
+
+    let retryCount = 0;
+    const onError = () => {
+      if (retryCount < 5) {
+        retryCount++;
+        setTimeout(() => {
+          video.src = VIDEO1_SRC;
+          video.load();
+        }, 2000 * retryCount);
+      }
+    };
+    video.addEventListener('error', onError);
+
+    video.src = VIDEO1_SRC;
+
+    return () => {
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+      video1TexRef.current?.dispose();
+      video1TexRef.current = null;
+      video1ElRef.current = null;
+      res.video1.videoMaterial.map = null;
+      res.video1.videoMaterial.needsUpdate = true;
     };
   }, [res]);
 
@@ -439,20 +503,33 @@ function Renderer({
       tl.goShownTime = 0;
       resetHudTypingGlass(res.fly.hud);
       setShowGoButton(false);
-      // Reset video scene for new loop
-      resetVideoSceneState(videoStateRef.current);
-      const videoEl = videoElRef.current;
-      if (videoEl) {
-        videoEl.pause();
-        videoEl.currentTime = 0;
-        videoEl.playbackRate = 1;
+      // Reset video scenes for new loop
+      resetVideoSceneState(video2StateRef.current);
+      const v2El = video2ElRef.current;
+      if (v2El) {
+        v2El.pause();
+        v2El.currentTime = 0;
+        v2El.playbackRate = 1;
       }
-      res.video.cam.zoom = 1;
-      res.video.cam.position.set(0, 0, 5);
-      res.video.cam.updateProjectionMatrix();
-      res.video.overlayGroup.visible = false;
-      res.video.videoMaterial.map = null;
-      res.video.videoMaterial.needsUpdate = true;
+      res.video2.cam.zoom = 1;
+      res.video2.cam.position.set(0, 0, 5);
+      res.video2.cam.updateProjectionMatrix();
+      res.video2.overlayGroup.visible = false;
+      res.video2.videoMaterial.map = null;
+      res.video2.videoMaterial.needsUpdate = true;
+      resetVideoSceneState(video1StateRef.current);
+      const v1El = video1ElRef.current;
+      if (v1El) {
+        v1El.pause();
+        v1El.currentTime = 0;
+        v1El.playbackRate = 1;
+      }
+      res.video1.cam.zoom = 1;
+      res.video1.cam.position.set(0, 0, 5);
+      res.video1.cam.updateProjectionMatrix();
+      res.video1.overlayGroup.visible = false;
+      res.video1.videoMaterial.map = null;
+      res.video1.videoMaterial.needsUpdate = true;
     }
     const loopTime = tl.time;
 
@@ -463,8 +540,10 @@ function Renderer({
       res.card.cam.lookAt(res.card.diagLookCurve.getPointAt(0));
       gl.setRenderTarget(res.card.fbo);
       gl.render(res.card.scene, res.card.cam);
-      gl.setRenderTarget(res.video.fbo);
-      gl.render(res.video.scene, res.video.cam);
+      gl.setRenderTarget(res.video2.fbo);
+      gl.render(res.video2.scene, res.video2.cam);
+      gl.setRenderTarget(res.video1.fbo);
+      gl.render(res.video1.scene, res.video1.cam);
     }
 
     // Advance fly-through camera along spline
@@ -506,7 +585,8 @@ function Renderer({
     let needsFly = false;
     let needsHacker = false;
     let needsCard = false;
-    let needsVideo = false;
+    let needsVideo2 = false;
+    let needsVideo1 = false;
     let ch0 = res.fly.fbo.texture;
     let ch1 = res.fly.fbo.texture;
     let prog = 0;
@@ -544,22 +624,33 @@ function Renderer({
     } else if (loopTime < PHASE_F_END) {
       // Phase F: card → video
       needsCard = true;
-      needsVideo = true;
+      needsVideo2 = true;
       ch0 = res.card.fbo.texture;
-      ch1 = res.video.fbo.texture;
+      ch1 = res.video2.fbo.texture;
       prog = smoothstep01((loopTime - PHASE_E_END) / (PHASE_F_END - PHASE_E_END));
       brightness = CARD_BRIGHTNESS - (CARD_BRIGHTNESS - 1.0) * prog;
     } else if (loopTime < PHASE_G_END) {
       // Phase G: pure video
-      needsVideo = true;
-      ch0 = res.video.fbo.texture;
+      needsVideo2 = true;
+      ch0 = res.video2.fbo.texture;
     } else if (loopTime < PHASE_H_END) {
-      // Phase H: video → fly
-      needsVideo = true;
-      needsFly = true;
-      ch0 = res.video.fbo.texture;
-      ch1 = res.fly.fbo.texture;
+      // Phase H: video2 → video1
+      needsVideo2 = true;
+      needsVideo1 = true;
+      ch0 = res.video2.fbo.texture;
+      ch1 = res.video1.fbo.texture;
       prog = smoothstep01((loopTime - PHASE_G_END) / (PHASE_H_END - PHASE_G_END));
+    } else if (loopTime < PHASE_I_END) {
+      // Phase I: pure video1
+      needsVideo1 = true;
+      ch0 = res.video1.fbo.texture;
+    } else if (loopTime < PHASE_J_END) {
+      // Phase J: video1 → fly
+      needsVideo1 = true;
+      needsFly = true;
+      ch0 = res.video1.fbo.texture;
+      ch1 = res.fly.fbo.texture;
+      prog = smoothstep01((loopTime - PHASE_I_END) / (PHASE_J_END - PHASE_I_END));
     } else {
       // Pure fly-through until LOOP_DURATION
       needsFly = true;
@@ -645,19 +736,31 @@ function Renderer({
     }
     prevNeedsCardRef.current = needsCard;
 
-    // 4. Render video scene
-    if (needsVideo) {
-      const videoEl = videoElRef.current;
-      const videoTex = videoTexRef.current;
-      if (videoEl) {
-        const videoElapsed = loopTime - PHASE_E_END;
-        updateVideoScene(res.video, videoStateRef.current, videoEl, videoTex, videoElapsed, VIDEO_SORTED_TIMELINE);
+    // 4. Render video2 scene
+    if (needsVideo2) {
+      const v2El = video2ElRef.current;
+      const v2Tex = video2TexRef.current;
+      if (v2El) {
+        const v2Elapsed = loopTime - PHASE_E_END;
+        updateVideoScene(res.video2, video2StateRef.current, v2El, v2Tex, v2Elapsed, VIDEO2_SORTED_TIMELINE);
       }
-      gl.setRenderTarget(res.video.fbo);
-      gl.render(res.video.scene, res.video.cam);
+      gl.setRenderTarget(res.video2.fbo);
+      gl.render(res.video2.scene, res.video2.cam);
     }
 
-    // 5. Compositor to screen
+    // 5. Render video1 scene
+    if (needsVideo1) {
+      const v1El = video1ElRef.current;
+      const v1Tex = video1TexRef.current;
+      if (v1El) {
+        const v1Elapsed = loopTime - PHASE_G_END;
+        updateVideoScene(res.video1, video1StateRef.current, v1El, v1Tex, v1Elapsed, VIDEO1_SORTED_TIMELINE);
+      }
+      gl.setRenderTarget(res.video1.fbo);
+      gl.render(res.video1.scene, res.video1.cam);
+    }
+
+    // 6. Compositor to screen
     res.compositor.mat.uniforms.iChannel0.value = ch0;
     res.compositor.mat.uniforms.iChannel1.value = ch1;
     res.compositor.mat.uniforms.uProgress.value = prog;
