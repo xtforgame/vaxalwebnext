@@ -18,17 +18,17 @@ import {
   disposeVideoScene,
 } from '@/components/fly-through/createVideoScene';
 
-// Timeline data from video1-display & video2-display
+// Timeline data from video3-display & video4-display
 import {
   VIDEO_SRC as VIDEO1_SRC,
   VIDEO_ASPECT as VIDEO1_ASPECT,
   TIMELINE as VIDEO1_TIMELINE,
-} from '@/components/video1-display/timelineData';
+} from '@/components/video3-display/timelineData';
 import {
   VIDEO_SRC as VIDEO2_SRC,
   VIDEO_ASPECT as VIDEO2_ASPECT,
   TIMELINE as VIDEO2_TIMELINE,
-} from '@/components/video2-display/timelineData';
+} from '@/components/video4-display/timelineData';
 
 // Pre-sorted timelines (same pattern as fly-through)
 const VIDEO1_SORTED_TIMELINE = [...VIDEO1_TIMELINE].sort((a, b) => a.time - b.time);
@@ -40,7 +40,7 @@ const VIDEO_ASPECT = VIDEO1_ASPECT;
 /** Frame configurations — two puzzle frames on the wall */
 const FRAMES: FrameConfig[] = [
   {
-    id: 'reimbursement',
+    id: 'assistant',
     wallPosition: new THREE.Vector3(-10, 6, 0),
     radius: 2.8,
     borderWidth: 0.25,
@@ -48,7 +48,7 @@ const FRAMES: FrameConfig[] = [
     videoSrc: VIDEO1_SRC,
   },
   {
-    id: 'sales',
+    id: 'dg-cell',
     wallPosition: new THREE.Vector3(10, -6, 0),
     radius: 2.8,
     borderWidth: 0.25,
@@ -364,7 +364,9 @@ function GalleryScene({
 
     if (phase === 'entering' && !video2StartedRef.current) {
       video2StartedRef.current = true;
-      video2ElRef.current?.play().catch(() => {});
+      // Don't manually call play() here — let the timeline's own play/pause
+      // actions control playback. Video4's timeline pauses at time=0 and
+      // plays at time=1; calling play() early would desync video vs timeline.
       console.log('[FrameGalleryV2] Video 2 timeline started (entering phase)');
     }
 
