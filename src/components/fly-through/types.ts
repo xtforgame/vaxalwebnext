@@ -62,3 +62,28 @@ export interface CompositorSceneResources {
   scene: THREE.Scene;
   mat: THREE.RawShaderMaterial;
 }
+
+export interface VideoSceneResources {
+  fbo: THREE.WebGLRenderTarget;
+  scene: THREE.Scene;
+  cam: THREE.OrthographicCamera;
+  videoMaterial: THREE.MeshBasicMaterial;
+  videoPlaneGeo: THREE.PlaneGeometry;
+  planeWidth: number;
+  planeHeight: number;
+  overlayGroup: THREE.Group;
+  gearSubGroup: THREE.Group;
+  gear1: THREE.Mesh;
+  gear2: THREE.Mesh;
+  gear1Geo: THREE.ExtrudeGeometry;
+  gear2Geo: THREE.ExtrudeGeometry;
+  gear1Mat: THREE.MeshBasicMaterial;
+  gear2Mat: THREE.MeshBasicMaterial;
+  backdropGeo: THREE.PlaneGeometry;
+  backdropMat: THREE.MeshBasicMaterial;
+  textCanvas: HTMLCanvasElement;
+  textCtx: CanvasRenderingContext2D;
+  textTexture: THREE.CanvasTexture;
+  textPlaneGeo: THREE.PlaneGeometry;
+  textMat: THREE.MeshBasicMaterial;
+}

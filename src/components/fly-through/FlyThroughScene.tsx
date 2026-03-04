@@ -18,6 +18,14 @@ import { createFlyScene } from './createFlyScene';
 import { createHackerScenes } from './createHackerScenes';
 import { createCardScene } from './createCardScene';
 import { createCompositorScene } from './createCompositorScene';
+import {
+  createVideoScene,
+  createVideoSceneState,
+  updateVideoScene,
+  resetVideoSceneState,
+  disposeVideoScene,
+} from './createVideoScene';
+import { VIDEO_SRC, VIDEO_ASPECT, TIMELINE as VIDEO_TIMELINE } from '@/components/video2-display/timelineData';
 
 // ============ Constants ============
 
@@ -58,14 +66,20 @@ const HUD_LIFT_AMOUNT     = 0.25;
 const HUD_LIFT_DUR        = 0.8;
 const PHASE_A_END         = HUD_DONE_AT + GO_OFFSET + 2.0;
 
-// --- Phase B–F: Transitions ---
+// --- Phase B–H: Transitions ---
 const DIAGONAL_DURATION   = 10;
-const PHASE_B_END         = PHASE_A_END + 3;
-const PHASE_C_END         = PHASE_B_END + 1;
-const PHASE_D_END         = PHASE_C_END + 3;
-const PHASE_E_END         = PHASE_D_END + DIAGONAL_DURATION - 1;
-const PHASE_F_END         = PHASE_E_END + 3;
+const PHASE_B_END         = PHASE_A_END + 3;             // fly → hacker (3s)
+const PHASE_C_END         = PHASE_B_END + 1;             // hacker only (1s)
+const PHASE_D_END         = PHASE_C_END + 3;             // hacker → card (3s)
+const PHASE_E_END         = PHASE_D_END + DIAGONAL_DURATION - 1; // card display
+const PHASE_F_END         = PHASE_E_END + 3;             // card → video (3s)
+const VIDEO_PHASE_DURATION = 33;                          // video display duration
+const PHASE_G_END         = PHASE_F_END + VIDEO_PHASE_DURATION; // pure video
+const PHASE_H_END         = PHASE_G_END + 3;             // video → fly (3s)
 const LOOP_DURATION       = 250;
+
+// Video timeline (pre-sorted for update function)
+const VIDEO_SORTED_TIMELINE = [...VIDEO_TIMELINE].sort((a, b) => a.time - b.time);
 
 // HUD timing config (passed to HudTypingGlass)
 const HUD_TIMING: HudTimingConfig = {
@@ -207,6 +221,14 @@ function Renderer({
       fboHeight: h,
     });
 
+    const video = createVideoScene({
+      videoAspect: VIDEO_ASPECT,
+      viewWidth: size.width,
+      viewHeight: size.height,
+      fboWidth: w,
+      fboHeight: h,
+    });
+
     const compositor = createCompositorScene({
       flyTexture: fly.fbo.texture,
       hackerTexture: hacker.imgFBO.texture,
@@ -214,7 +236,7 @@ function Renderer({
       height: h,
     });
 
-    return { orthoCam, fly, hacker, card, compositor };
+    return { orthoCam, fly, hacker, card, video, compositor };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fontTexture, cardTexture, panoTexture, skyboxCube]);
 
@@ -224,6 +246,9 @@ function Renderer({
     NEON_PANELS.map(() => ({ seen: false, startTime: -1 }))
   );
   const prevNeedsCardRef = useRef(false);
+  const videoStateRef = useRef(createVideoSceneState());
+  const videoElRef = useRef<HTMLVideoElement | null>(null);
+  const videoTexRef = useRef<THREE.VideoTexture | null>(null);
 
   // Handle resize
   useEffect(() => {
@@ -239,6 +264,12 @@ function Renderer({
     res.compositor.mat.uniforms.iResolution.value.set(w, h);
     res.card.cam.aspect = size.width / size.height;
     res.card.cam.updateProjectionMatrix();
+    res.video.fbo.setSize(w, h);
+    const vAspect = size.width / size.height;
+    const vHalfW = 5 * vAspect;
+    res.video.cam.left = -vHalfW;
+    res.video.cam.right = vHalfW;
+    res.video.cam.updateProjectionMatrix();
   }, [size, gl, res]);
 
   // Toggle path visibility
@@ -265,6 +296,7 @@ function Renderer({
       res.card.crtMaterials.forEach((m) => m.dispose());
       res.card.glowMaterials.forEach((m) => m.dispose());
       disposeHudTypingGlass(res.fly.hud);
+      disposeVideoScene(res.video);
     };
   }, [res]);
 
@@ -338,6 +370,51 @@ function Renderer({
     };
   }, [res]);
 
+  // Video scene: create video element, swap texture when ready
+  useEffect(() => {
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.loop = false;
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    videoElRef.current = video;
+
+    const onCanPlay = () => {
+      const vTex = new THREE.VideoTexture(video);
+      vTex.colorSpace = THREE.SRGBColorSpace;
+      vTex.minFilter = THREE.LinearFilter;
+      vTex.magFilter = THREE.LinearFilter;
+      videoTexRef.current = vTex;
+    };
+    video.addEventListener('canplay', onCanPlay, { once: true });
+
+    let retryCount = 0;
+    const onError = () => {
+      if (retryCount < 5) {
+        retryCount++;
+        setTimeout(() => {
+          video.src = VIDEO_SRC;
+          video.load();
+        }, 2000 * retryCount);
+      }
+    };
+    video.addEventListener('error', onError);
+
+    video.src = VIDEO_SRC;
+
+    return () => {
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+      videoTexRef.current?.dispose();
+      videoTexRef.current = null;
+      videoElRef.current = null;
+      res.video.videoMaterial.map = null;
+      res.video.videoMaterial.needsUpdate = true;
+    };
+  }, [res]);
+
   // ---- Render loop (priority 1 → disables R3F auto-render) ----
   useFrame((state, delta) => {
     const time = state.clock.elapsedTime;
@@ -362,16 +439,32 @@ function Renderer({
       tl.goShownTime = 0;
       resetHudTypingGlass(res.fly.hud);
       setShowGoButton(false);
+      // Reset video scene for new loop
+      resetVideoSceneState(videoStateRef.current);
+      const videoEl = videoElRef.current;
+      if (videoEl) {
+        videoEl.pause();
+        videoEl.currentTime = 0;
+        videoEl.playbackRate = 1;
+      }
+      res.video.cam.zoom = 1;
+      res.video.cam.position.set(0, 0, 5);
+      res.video.cam.updateProjectionMatrix();
+      res.video.overlayGroup.visible = false;
+      res.video.videoMaterial.map = null;
+      res.video.videoMaterial.needsUpdate = true;
     }
     const loopTime = tl.time;
 
-    // Warm-up: render card scene once on first frame to compile shaders & upload textures
+    // Warm-up: render card + video scenes once on first frame to compile shaders
     if (!warmupRef.current) {
       warmupRef.current = true;
       res.card.cam.position.copy(res.card.diagPosCurve.getPointAt(0));
       res.card.cam.lookAt(res.card.diagLookCurve.getPointAt(0));
       gl.setRenderTarget(res.card.fbo);
       gl.render(res.card.scene, res.card.cam);
+      gl.setRenderTarget(res.video.fbo);
+      gl.render(res.video.scene, res.video.cam);
     }
 
     // Advance fly-through camera along spline
@@ -413,6 +506,7 @@ function Renderer({
     let needsFly = false;
     let needsHacker = false;
     let needsCard = false;
+    let needsVideo = false;
     let ch0 = res.fly.fbo.texture;
     let ch1 = res.fly.fbo.texture;
     let prog = 0;
@@ -420,18 +514,22 @@ function Renderer({
     const CARD_BRIGHTNESS = 1.4;
 
     if (loopTime < PHASE_A_END) {
+      // Phase A: pure fly-through
       needsFly = true;
       ch0 = res.fly.fbo.texture;
     } else if (loopTime < PHASE_B_END) {
+      // Phase B: fly → hacker
       needsFly = true;
       needsHacker = true;
       ch0 = res.fly.fbo.texture;
       ch1 = res.hacker.imgFBO.texture;
       prog = smoothstep01((loopTime - PHASE_A_END) / (PHASE_B_END - PHASE_A_END));
     } else if (loopTime < PHASE_C_END) {
+      // Phase C: pure hacker
       needsHacker = true;
       ch0 = res.hacker.imgFBO.texture;
     } else if (loopTime < PHASE_D_END) {
+      // Phase D: hacker → card
       needsHacker = true;
       needsCard = true;
       ch0 = res.hacker.imgFBO.texture;
@@ -439,17 +537,31 @@ function Renderer({
       prog = smoothstep01((loopTime - PHASE_C_END) / (PHASE_D_END - PHASE_C_END));
       brightness = 1.0 + (CARD_BRIGHTNESS - 1.0) * prog;
     } else if (loopTime < PHASE_E_END) {
+      // Phase E: pure card
       needsCard = true;
       ch0 = res.card.fbo.texture;
       brightness = CARD_BRIGHTNESS;
     } else if (loopTime < PHASE_F_END) {
+      // Phase F: card → video
       needsCard = true;
-      needsFly = true;
+      needsVideo = true;
       ch0 = res.card.fbo.texture;
-      ch1 = res.fly.fbo.texture;
+      ch1 = res.video.fbo.texture;
       prog = smoothstep01((loopTime - PHASE_E_END) / (PHASE_F_END - PHASE_E_END));
       brightness = CARD_BRIGHTNESS - (CARD_BRIGHTNESS - 1.0) * prog;
+    } else if (loopTime < PHASE_G_END) {
+      // Phase G: pure video
+      needsVideo = true;
+      ch0 = res.video.fbo.texture;
+    } else if (loopTime < PHASE_H_END) {
+      // Phase H: video → fly
+      needsVideo = true;
+      needsFly = true;
+      ch0 = res.video.fbo.texture;
+      ch1 = res.fly.fbo.texture;
+      prog = smoothstep01((loopTime - PHASE_G_END) / (PHASE_H_END - PHASE_G_END));
     } else {
+      // Pure fly-through until LOOP_DURATION
       needsFly = true;
       ch0 = res.fly.fbo.texture;
     }
@@ -533,7 +645,19 @@ function Renderer({
     }
     prevNeedsCardRef.current = needsCard;
 
-    // 4. Compositor to screen
+    // 4. Render video scene
+    if (needsVideo) {
+      const videoEl = videoElRef.current;
+      const videoTex = videoTexRef.current;
+      if (videoEl) {
+        const videoElapsed = loopTime - PHASE_E_END;
+        updateVideoScene(res.video, videoStateRef.current, videoEl, videoTex, videoElapsed, VIDEO_SORTED_TIMELINE);
+      }
+      gl.setRenderTarget(res.video.fbo);
+      gl.render(res.video.scene, res.video.cam);
+    }
+
+    // 5. Compositor to screen
     res.compositor.mat.uniforms.iChannel0.value = ch0;
     res.compositor.mat.uniforms.iChannel1.value = ch1;
     res.compositor.mat.uniforms.uProgress.value = prog;
