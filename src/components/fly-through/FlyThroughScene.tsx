@@ -122,13 +122,18 @@ const DIAG_LOOK_ATS = [
 ];
 
 // Neon video panels flanking the card
+const HUD_VIDEOS = [
+  { src: '/large-videos/FuturisticHUD1.mp4', aspect: 720 / 720 },
+  { src: '/large-videos/FuturisticHUD2.mp4', aspect: 1280 / 720 },
+  { src: '/large-videos/FuturisticHUD3.mp4', aspect: 720 / 1280 },
+];
 const NEON_PANELS: NeonPanelConfig[] = [
-  { pos: [-3.0, 5.0, -3], rot: [0, Math.PI / 6, 0], color: '#00ffff', video: '/video/BigBuckBunny.mp4' },
-  { pos: [-3.5, 0.0, -4], rot: [0, Math.PI / 5, 0], color: '#00ffff', video: '/video/ElephantsDream.mp4' },
-  { pos: [-5.7, -5.0, -3], rot: [0, Math.PI / 6, 0], color: '#00ffcc', video: '/video/BigBuckBunny.mp4' },
-  { pos: [4.0, 3.5, -3], rot: [0, -Math.PI / 6, 0], color: '#00ffff', video: '/video/ElephantsDream.mp4' },
-  { pos: [3.5, -1.5, -4], rot: [0, -Math.PI / 5, 0], color: '#00ffff', video: '/video/BigBuckBunny.mp4' },
-  { pos: [2.0, -4.5, -3], rot: [0, -Math.PI / 6, 0], color: '#00ffcc', video: '/video/ElephantsDream.mp4' },
+  { pos: [-3.0, 5.0, -3], rot: [0, Math.PI / 6, 0], color: '#00ffff', video: HUD_VIDEOS[0].src, videoAspect: HUD_VIDEOS[0].aspect },
+  { pos: [-3.5, 0.0, -4], rot: [0, Math.PI / 5, 0], color: '#00ffff', video: HUD_VIDEOS[2].src, videoAspect: HUD_VIDEOS[2].aspect },
+  { pos: [-5.7, -5.0, -3], rot: [0, Math.PI / 6, 0], color: '#00ffcc', video: HUD_VIDEOS[1].src, videoAspect: HUD_VIDEOS[1].aspect },
+  { pos: [4.0, 3.5, -3], rot: [0, -Math.PI / 6, 0], color: '#00ffff', video: HUD_VIDEOS[1].src, videoAspect: HUD_VIDEOS[1].aspect },
+  { pos: [3.5, -1.5, -4], rot: [0, -Math.PI / 5, 0], color: '#00ffff', video: HUD_VIDEOS[0].src, videoAspect: HUD_VIDEOS[0].aspect },
+  { pos: [2.0, -4.5, -3], rot: [0, -Math.PI / 6, 0], color: '#00ffcc', video: HUD_VIDEOS[2].src, videoAspect: HUD_VIDEOS[2].aspect },
 ];
 const PANEL_VIDEO_W = 2.4;
 const PANEL_VIDEO_H = 1.44;

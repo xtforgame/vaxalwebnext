@@ -14,7 +14,24 @@ export const panelCrtFrag = /* glsl */ `
   uniform sampler2D map;
   uniform float time;
   uniform float powerOn; // 0=off, 0..1=booting, 1=fully on
+  uniform float uVideoAspect;  // video width / height
+  uniform float uPlaneAspect;  // plane width / height
   varying vec2 vUv;
+
+  // Remap UVs for contain-fit (letterbox / pillarbox)
+  vec2 containUV(vec2 uv) {
+    if (uVideoAspect > uPlaneAspect) {
+      // Video wider → fit width, letterbox top/bottom
+      float scale = uPlaneAspect / uVideoAspect;
+      uv.y = (uv.y - 0.5) / scale + 0.5;
+    } else {
+      // Video taller → fit height, pillarbox left/right
+      float scale = uVideoAspect / uPlaneAspect;
+      uv.x = (uv.x - 0.5) / scale + 0.5;
+    }
+    return uv;
+  }
+
   void main() {
     // Still off — fully transparent
     if (powerOn <= 0.0) {
@@ -31,14 +48,23 @@ export const panelCrtFrag = /* glsl */ `
       return;
     }
 
-    // Chromatic aberration — RGB channel offset
-    float aberration = 0.004;
-    float r = texture2D(map, vUv + vec2(aberration, 0.0)).r;
-    float g = texture2D(map, vUv).g;
-    float b = texture2D(map, vUv - vec2(aberration, 0.0)).b;
-    vec3 col = vec3(r, g, b);
+    // Contain-fit UV mapping
+    vec2 cuv = containUV(vUv);
+    bool outOfBounds = cuv.x < 0.0 || cuv.x > 1.0 || cuv.y < 0.0 || cuv.y > 1.0;
 
-    // CRT scanlines
+    // Chromatic aberration — RGB channel offset (applied in contain UV space)
+    float aberration = 0.004;
+    vec3 col;
+    if (outOfBounds) {
+      col = vec3(0.0);
+    } else {
+      float r = texture2D(map, cuv + vec2(aberration, 0.0)).r;
+      float g = texture2D(map, cuv).g;
+      float b = texture2D(map, cuv - vec2(aberration, 0.0)).b;
+      col = vec3(r, g, b);
+    }
+
+    // CRT scanlines (in original UV space for consistent line density)
     float scanline = sin(vUv.y * 800.0 - time * 10.0) * 0.08;
     col -= scanline;
 

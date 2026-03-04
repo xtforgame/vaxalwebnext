@@ -20,6 +20,7 @@ export interface NeonPanelConfig {
   rot: [number, number, number];
   color: string;
   video: string;
+  videoAspect: number;
 }
 
 // ============ Scene resource interfaces ============

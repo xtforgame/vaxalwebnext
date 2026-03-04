@@ -90,6 +90,8 @@ export function createCardScene(cfg: CardSceneConfig): CardSceneResources {
         map: { value: placeholderTex },
         time: { value: 0 },
         powerOn: { value: 0 },
+        uVideoAspect: { value: panelCfg.videoAspect },
+        uPlaneAspect: { value: cfg.panelVideoW / cfg.panelVideoH },
       },
       transparent: true,
       toneMapped: false,
