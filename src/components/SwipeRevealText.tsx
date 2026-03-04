@@ -85,8 +85,8 @@ function SwipeRevealLine({
 // ============ SwipeRevealText (title + description) ============
 
 interface SwipeRevealTextProps {
-  title: React.ReactNode;
-  description: React.ReactNode;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
   x?: number;
   y?: number;
   delay?: number;
@@ -113,10 +113,14 @@ export default function SwipeRevealText({
   descriptionStyle,
   exitDelay,
 }: SwipeRevealTextProps) {
-  // Last entrance finishes at: delay + stagger + duration
-  // Exit begins at: delay + stagger + duration + exitDelay
-  const exitStart =
-    exitDelay != null ? delay + stagger + duration + exitDelay : undefined;
+  const hasTitle = !!title;
+  const hasDesc = !!description;
+
+  // Description delay: stagger after title, or just delay if title is absent
+  const descDelay = hasTitle ? delay + stagger : delay;
+  // Exit starts after the last line finishes its entrance
+  const lastLineEnd = hasDesc ? descDelay + duration : delay + duration;
+  const exitStart = exitDelay != null ? lastLineEnd + exitDelay : undefined;
 
   return (
     <div
@@ -131,28 +135,32 @@ export default function SwipeRevealText({
         pointerEvents: 'none',
       }}
     >
-      <SwipeRevealLine
-        content={title}
-        delay={delay}
-        duration={duration}
-        swipeColor={titleSwipeColor}
-        exitAt={exitStart}
-        style={{
-          padding: '12px 20px',
-          ...titleStyle,
-        }}
-      />
-      <SwipeRevealLine
-        content={description}
-        delay={delay + stagger}
-        duration={duration}
-        swipeColor={descriptionSwipeColor}
-        exitAt={exitStart != null ? exitStart + stagger : undefined}
-        style={{
-          padding: '8px 14px',
-          ...descriptionStyle,
-        }}
-      />
+      {hasTitle && (
+        <SwipeRevealLine
+          content={title}
+          delay={delay}
+          duration={duration}
+          swipeColor={titleSwipeColor}
+          exitAt={exitStart}
+          style={{
+            padding: '12px 20px',
+            ...titleStyle,
+          }}
+        />
+      )}
+      {hasDesc && (
+        <SwipeRevealLine
+          content={description}
+          delay={descDelay}
+          duration={duration}
+          swipeColor={descriptionSwipeColor}
+          exitAt={exitStart != null ? exitStart + stagger : undefined}
+          style={{
+            padding: '8px 14px',
+            ...descriptionStyle,
+          }}
+        />
+      )}
     </div>
   );
 }

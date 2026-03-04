@@ -142,6 +142,87 @@ const PANEL_FRAME_H = 1.8;
 const PANEL_FRAME_THICKNESS = 0.02;
 const PANEL_FRAME_CUT = 0.15;
 
+// ============ Swipe Reveal Configs ============
+
+interface SwipeRevealEntry {
+  showAt: number;
+  hideAt: number;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+  x?: number;
+  y?: number;
+  delay?: number;
+  stagger?: number;
+  duration?: number;
+  exitDelay?: number;
+  titleSwipeColor?: string;
+  descriptionSwipeColor?: string;
+  titleStyle?: React.CSSProperties;
+  descriptionStyle?: React.CSSProperties;
+}
+
+const SWIPE_REVEALS: SwipeRevealEntry[] = [
+  {
+    showAt: 0,
+    hideAt: PHASE_A_END,
+    title: <span className='text-white'>Project <span className='text-cyan-500'>R.O.S.I.E.</span></span>,
+    description: (
+      <>
+        <span>訓練有素 — Studio Doe專屬的</span>
+        <span className='text-red-500'>AI平台核心</span>
+      </>
+    ),
+    x: 48,
+    y: 120,
+    delay: TITLE_DELAY,
+    stagger: TITLE_STAGGER,
+    duration: TITLE_DURATION,
+    exitDelay: TITLE_EXIT_DELAY,
+    titleStyle: { fontSize: 48, fontWeight: 900, lineHeight: 1, color: '#ffffff', fontFamily: 'montserrat, sans-serif' },
+    descriptionStyle: { fontSize: 32, fontWeight: 700, lineHeight: 1, color: '#ffffff', fontFamily: 'montserrat, sans-serif' },
+  },
+
+  {
+    showAt: PHASE_F_END + 6,
+    hideAt: PHASE_G_END,
+    title: <span className='text-white'>只需要講重點 <span className='text-cyan-500'>R.O.S.I.E.</span> 就能懂</span>,
+    description: (
+      <>
+        <span>連結了各種公司資料庫，</span>
+        <span className='text-red-500'>知道自己該幹嘛</span>
+      </>
+    ),
+    x: 48,
+    y: 120,
+    delay: 0,
+    stagger: TITLE_STAGGER,
+    duration: TITLE_DURATION,
+    exitDelay: 5,
+    titleStyle: { backgroundColor: 'rgba(128, 128, 128, 1)', fontSize: 48, fontWeight: 900, lineHeight: 1, color: '#ffffff', fontFamily: 'montserrat, sans-serif' },
+    descriptionStyle: { backgroundColor: 'rgba(128, 128, 128, 1)', fontSize: 32, fontWeight: 700, lineHeight: 1, color: '#ffffff', fontFamily: 'montserrat, sans-serif' },
+  },
+
+  {
+    showAt: PHASE_H_END,
+    hideAt: PHASE_I_END,
+    title: <span className='text-white'>請款，簡單</span>,
+    // description: (
+    //   <>
+    //     <span>連結了各種公司資料庫，</span>
+    //     <span className='text-red-500'>知道自己該幹嘛</span>
+    //   </>
+    // ),
+    x: 48,
+    y: 120,
+    delay: 0,
+    stagger: TITLE_STAGGER,
+    duration: TITLE_DURATION,
+    exitDelay: 5,
+    titleStyle: { backgroundColor: 'rgba(128, 128, 128, 1)', fontSize: 48, fontWeight: 900, lineHeight: 1, color: '#ffffff', fontFamily: 'montserrat, sans-serif' },
+    descriptionStyle: { backgroundColor: 'rgba(128, 128, 128, 1)', fontSize: 32, fontWeight: 700, lineHeight: 1, color: '#ffffff', fontFamily: 'montserrat, sans-serif' },
+  },
+];
+
 // ============ Helpers ============
 
 function smoothstep01(t: number): number {
@@ -161,10 +242,12 @@ function Renderer({
   showPath,
   tlRef,
   setShowGoButton,
+  setActiveSwipe,
 }: {
   showPath: boolean;
   tlRef: React.MutableRefObject<TimelineControl>;
   setShowGoButton: React.Dispatch<React.SetStateAction<boolean>>;
+  setActiveSwipe: React.Dispatch<React.SetStateAction<number>>;
 }) {
   const { gl, size, camera } = useThree();
   const fontTexture = useTexture('/codepage12.png');
@@ -264,6 +347,7 @@ function Renderer({
     NEON_PANELS.map(() => ({ seen: false, startTime: -1 }))
   );
   const prevNeedsCardRef = useRef(false);
+  const prevSwipeRef = useRef(-1);
   const video2StateRef = useRef(createVideoSceneState());
   const video2ElRef = useRef<HTMLVideoElement | null>(null);
   const video2TexRef = useRef<THREE.VideoTexture | null>(null);
@@ -508,6 +592,7 @@ function Renderer({
       tl.goShownTime = 0;
       resetHudTypingGlass(res.fly.hud);
       setShowGoButton(false);
+      prevSwipeRef.current = -1;
       // Reset video scenes for new loop
       resetVideoSceneState(video2StateRef.current);
       const v2El = video2ElRef.current;
@@ -765,6 +850,19 @@ function Renderer({
       gl.render(res.video1.scene, res.video1.cam);
     }
 
+    // Determine active swipe reveal
+    let newSwipe = -1;
+    for (let i = 0; i < SWIPE_REVEALS.length; i++) {
+      if (loopTime >= SWIPE_REVEALS[i].showAt && loopTime < SWIPE_REVEALS[i].hideAt) {
+        newSwipe = i;
+        break;
+      }
+    }
+    if (newSwipe !== prevSwipeRef.current) {
+      prevSwipeRef.current = newSwipe;
+      setActiveSwipe(newSwipe);
+    }
+
     // 6. Compositor to screen
     res.compositor.mat.uniforms.iChannel0.value = ch0;
     res.compositor.mat.uniforms.iChannel1.value = ch1;
@@ -783,6 +881,7 @@ export default function FlyThroughScene() {
   const { contextLost, canvasKey, handleCreated } = useWebGLRecovery('FlyThrough');
   const [showPath, setShowPath] = useState(false);
   const [showGoButton, setShowGoButton] = useState(false);
+  const [activeSwipe, setActiveSwipe] = useState(-1);
   const tlRef = useRef<TimelineControl>({
     time: 0,
     paused: false,
@@ -842,40 +941,15 @@ export default function FlyThroughScene() {
           dpr={[1, 2]}
           onCreated={handleCreated}
         >
-          <Renderer showPath={showPath} tlRef={tlRef} setShowGoButton={setShowGoButton} />
+          <Renderer showPath={showPath} tlRef={tlRef} setShowGoButton={setShowGoButton} setActiveSwipe={setActiveSwipe} />
         </Canvas>
       </Suspense>
 
-      {/* Swipe reveal title */}
-      <SwipeRevealText
-        title={<span className='text-white'>Project <span className='text-cyan-500'>R.O.S.I.E.</span></span>}
-        description={
-          <>
-            <span>訓練有素 — Studio Doe專屬的</span>
-            <span className='text-red-500'>AI平台核心</span>
-          </>
-        }
-        x={48}
-        y={120}
-        delay={TITLE_DELAY}
-        stagger={TITLE_STAGGER}
-        duration={TITLE_DURATION}
-        exitDelay={TITLE_EXIT_DELAY}
-        titleStyle={{
-          fontSize: 48,
-          fontWeight: 900,
-          lineHeight: 1,
-          color: '#ffffff',
-          fontFamily: 'montserrat, sans-serif',
-        }}
-        descriptionStyle={{
-          fontSize: 32,
-          fontWeight: 700,
-          lineHeight: 1,
-          color: '#ffffff',
-          fontFamily: 'montserrat, sans-serif',
-        }}
-      />
+      {/* Swipe reveal text (data-driven) */}
+      {activeSwipe >= 0 && (() => {
+        const { showAt: _, hideAt: __, ...props } = SWIPE_REVEALS[activeSwipe];
+        return <SwipeRevealText key={activeSwipe} {...props} />;
+      })()}
 
       {/* GO button — appears after HUD typing completes */}
       <GoButton visible={showGoButton} autoDelay={0.7} onClick={handleGoClick} />
