@@ -9,6 +9,7 @@ export function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
+export const CAMERA_FOV = 50;
 export const IMMERSED_Z = -6;
 export const VIEWPORT_DIST = 6;
 export const RESTING_Z = -0.1;

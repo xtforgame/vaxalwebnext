@@ -4,32 +4,60 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Suspense, useEffect, useRef, useMemo, useCallback, useState } from 'react';
 import * as THREE from 'three';
 import WallScene from './WallScene';
-import { CameraDirector, IMMERSED_Z, VIEWPORT_DIST, RESTING_Z } from './CameraDirector';
+import { CameraDirector, CAMERA_FOV, IMMERSED_Z, VIEWPORT_DIST, RESTING_Z } from './CameraDirector';
 import { TransitionController } from './TransitionController';
 import { FrameSceneManager } from './SceneManager';
 import type { FrameConfig, TransitionPhase } from './types';
 
-/** Frame configurations — two hexagonal frames on the wall */
+/** Video aspect ratio — 4096 x 2206 */
+const VIDEO_ASPECT = 4096 / 2206;
+
+/** Frame configurations — two puzzle frames on the wall */
 const FRAMES: FrameConfig[] = [
   {
-    id: 'bigbuckbunny',
+    id: 'reimbursement',
     wallPosition: new THREE.Vector3(-10, 6, 0),
     radius: 2.8,
     borderWidth: 0.25,
     frameDepth: 0.3,
-    videoSrc: '/video/BigBuckBunny.mp4',
-    staticSrc: '/video/BigBuckBunny.jpg',
+    videoSrc: '/large-videos/reimbursement.mov',
   },
   {
-    id: 'elephantsdream',
+    id: 'products',
     wallPosition: new THREE.Vector3(10, -6, 0),
     radius: 2.8,
     borderWidth: 0.25,
     frameDepth: 0.3,
-    videoSrc: '/video/ElephantsDream.mp4',
-    staticSrc: '/video/ElephantsDream.jpg',
+    videoSrc: '/large-videos/products.mov',
   },
 ];
+
+/**
+ * Compute the content plane dimensions that fill the viewport
+ * at the immersed camera distance (VIEWPORT_DIST), matching
+ * video1-display's "contain" behaviour.
+ *
+ * With a perspective camera at distance d from the plane:
+ *   visibleHeight = 2 * d * tan(FOV/2)
+ *   visibleWidth  = visibleHeight * viewportAspect
+ *
+ * "Contain" — fit entire video in viewport:
+ *   viewportAspect > videoAspect → height-limited (black bars on sides)
+ *   viewportAspect ≤ videoAspect → width-limited  (black bars top/bottom)
+ */
+function computeContentDimensions(viewAspect: number) {
+  const halfFov = (CAMERA_FOV * Math.PI / 180) / 2;
+  const visibleHeight = 2 * VIEWPORT_DIST * Math.tan(halfFov);
+  const visibleWidth = visibleHeight * viewAspect;
+
+  if (viewAspect > VIDEO_ASPECT) {
+    // Viewport is wider than video — fill height, video narrower than viewport
+    return { contentWidth: visibleHeight * VIDEO_ASPECT, contentHeight: visibleHeight };
+  } else {
+    // Viewport is narrower/equal — fill width, video taller than viewport height
+    return { contentWidth: visibleWidth, contentHeight: visibleWidth / VIDEO_ASPECT };
+  }
+}
 
 /**
  * Compute the Z position for a video plane.
@@ -76,7 +104,7 @@ function GalleryScene({
 }: {
   onPhaseChange?: (phase: TransitionPhase) => void;
 }) {
-  const { camera } = useThree();
+  const { camera, size } = useThree();
   const textureLoader = useMemo(() => new THREE.TextureLoader(), []);
 
   const sceneManagers = useMemo(
@@ -104,6 +132,13 @@ function GalleryScene({
   // Debug: throttled logging
   const debugTimerRef = useRef(0);
   const lastPhaseRef = useRef<TransitionPhase>('immersed');
+
+  // Responsive content plane dimensions (updates on resize)
+  const viewAspect = size.width / size.height;
+  const { contentWidth, contentHeight } = useMemo(
+    () => computeContentDimensions(viewAspect),
+    [viewAspect]
+  );
 
   useEffect(() => {
     transitionRef.current.onPhaseChange = (phase: TransitionPhase) => {
@@ -215,6 +250,8 @@ function GalleryScene({
       <WallScene
         frames={FRAMES}
         sceneTextures={sceneTextures}
+        contentWidth={contentWidth}
+        contentHeight={contentHeight}
         trailProgressRef={trailProgressRef}
         trailVisibleRef={trailVisibleRef}
       />
@@ -234,7 +271,7 @@ export default function FrameGallery() {
       style={{
         width: '100vw',
         height: '100vh',
-        backgroundColor: '#0a0a1a',
+        backgroundColor: '#000',
         overflow: 'hidden',
       }}
     >
@@ -254,8 +291,8 @@ export default function FrameGallery() {
             powerPreference: 'high-performance',
           }}
           camera={{
-            position: [FRAMES[0].wallPosition.x, 0, IMMERSED_Z],
-            fov: 50,
+            position: [FRAMES[0].wallPosition.x, FRAMES[0].wallPosition.y, IMMERSED_Z],
+            fov: CAMERA_FOV,
             near: 0.01,
             far: 100,
           }}

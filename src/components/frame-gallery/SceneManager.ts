@@ -7,14 +7,14 @@ import * as THREE from 'three';
 export class FrameSceneManager {
   video: HTMLVideoElement;
   videoTexture: THREE.VideoTexture;
-  staticTexture: THREE.Texture;
+  staticTexture: THREE.Texture | null;
   /** 0 = fully static, 1 = fully video */
   blendFactor = 0;
   private _ready = false;
 
   constructor(
     videoSrc: string,
-    staticSrc: string,
+    staticSrc: string | undefined,
     private textureLoader: THREE.TextureLoader
   ) {
     // Create video element
@@ -32,9 +32,13 @@ export class FrameSceneManager {
     this.videoTexture.minFilter = THREE.LinearFilter;
     this.videoTexture.magFilter = THREE.LinearFilter;
 
-    // Static texture
-    this.staticTexture = textureLoader.load(staticSrc);
-    this.staticTexture.colorSpace = THREE.SRGBColorSpace;
+    // Static texture (optional)
+    if (staticSrc) {
+      this.staticTexture = textureLoader.load(staticSrc);
+      this.staticTexture.colorSpace = THREE.SRGBColorSpace;
+    } else {
+      this.staticTexture = null;
+    }
 
     this.video.addEventListener('canplaythrough', () => {
       this._ready = true;
@@ -52,6 +56,7 @@ export class FrameSceneManager {
    * provides a simple fallback.
    */
   get activeTexture(): THREE.Texture {
+    if (!this.staticTexture) return this.videoTexture;
     return this.blendFactor > 0.5 ? this.videoTexture : this.staticTexture;
   }
 
@@ -90,6 +95,6 @@ export class FrameSceneManager {
     this.video.removeAttribute('src');
     this.video.load();
     this.videoTexture.dispose();
-    this.staticTexture.dispose();
+    this.staticTexture?.dispose();
   }
 }

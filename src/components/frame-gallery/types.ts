@@ -20,7 +20,7 @@ export interface FrameConfig {
   /** Video source URL */
   videoSrc: string;
   /** Static image URL (shown when not active) */
-  staticSrc: string;
+  staticSrc?: string;
 }
 
 export interface TransitionState {

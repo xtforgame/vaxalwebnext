@@ -7,15 +7,14 @@ import LightTrail from './LightTrail';
 import { createPuzzleShape } from './PuzzleShapeUtils';
 import type { FrameConfig } from './types';
 
-const CONTENT_WIDTH = 10;
-const CONTENT_HEIGHT = CONTENT_WIDTH * (9 / 16); // 5.625
-
 interface WallSceneProps {
   frames: FrameConfig[];
   sceneTextures: {
     videoTexture: THREE.Texture;
     contentZRef: { current: number };
   }[];
+  contentWidth: number;
+  contentHeight: number;
   trailProgressRef: { current: number };
   trailVisibleRef: { current: boolean };
 }
@@ -26,7 +25,7 @@ interface WallSceneProps {
  * 2. Stencil-masked wall (puzzle-shaped holes, no earcut)
  * 3. Light trail between frames
  */
-export default function WallScene({ frames, sceneTextures, trailProgressRef, trailVisibleRef }: WallSceneProps) {
+export default function WallScene({ frames, sceneTextures, contentWidth, contentHeight, trailProgressRef, trailVisibleRef }: WallSceneProps) {
   const contentMeshRefs = useRef<(THREE.Mesh | null)[]>([]);
 
   // Flat puzzle shapes for stencil masks (confirmed clean in Step 1)
@@ -53,11 +52,11 @@ export default function WallScene({ frames, sceneTextures, trailProgressRef, tra
       {/* Video content planes — Z updated every frame via ref */}
       {frames.map((f, i) => (
         <mesh
-          key={f.id}
+          key={`${f.id}-${contentWidth.toFixed(2)}-${contentHeight.toFixed(2)}`}
           ref={(el) => { contentMeshRefs.current[i] = el; }}
           position={[f.wallPosition.x, f.wallPosition.y, sceneTextures[i].contentZRef.current]}
         >
-          <planeGeometry args={[CONTENT_WIDTH, CONTENT_HEIGHT]} />
+          <planeGeometry args={[contentWidth, contentHeight]} />
           <meshBasicMaterial
             map={sceneTextures[i].videoTexture}
             toneMapped={false}
