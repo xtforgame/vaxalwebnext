@@ -5,9 +5,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useTexture, useCubeTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { useWebGLRecovery } from '@/hooks/useWebGLRecovery';
-import { FlyThroughCamera, DEFAULT_WAYPOINTS } from './FlyThroughCamera';
 import {
-  createHudTypingGlass,
   updateHudTypingGlass,
   disposeHudTypingGlass,
   resetHudTypingGlass,
@@ -15,6 +13,11 @@ import {
 } from './HudTypingGlass';
 import SwipeRevealText from '@/components/SwipeRevealText';
 import GoButton from './GoButton';
+import type { TimelineControl, NeonPanelConfig } from './types';
+import { createFlyScene } from './createFlyScene';
+import { createHackerScenes } from './createHackerScenes';
+import { createCardScene } from './createCardScene';
+import { createCompositorScene } from './createCompositorScene';
 
 // ============ Constants ============
 
@@ -25,26 +28,21 @@ const SCATTER_RADIUS = 50;
 // ============ Timeline phases (seconds within each loop) ============
 
 // --- Phase A: Fly-through + title + HUD typing + GO button ---
-const TITLE_DELAY         = 2.0;                         // title text entrance
-const TITLE_STAGGER       = 0.5;                         // stagger between title lines
-const TITLE_DURATION      = 0.8;                         // swipe reveal duration
-const TITLE_EXIT_DELAY    = 3.0;                         // title exit after entrance
+const TITLE_DELAY         = 2.0;
+const TITLE_STAGGER       = 0.5;
+const TITLE_DURATION      = 0.8;
+const TITLE_EXIT_DELAY    = 3.0;
 
-const HUD_ENTER           = TITLE_DELAY + 3;             // HUD glass starts appearing
-const HUD_FADE_DUR        = 0.8;                         // HUD fade-in + slide
-const HUD_SLIDE_DIST      = 0.12;                        // HUD slide distance (world units)
-const HUD_TYPE_WAIT       = 1.0;                         // pause before typing starts
-const HUD_TYPE_SPEED      = 0.05;                        // seconds per character
+const HUD_ENTER           = TITLE_DELAY + 3;
+const HUD_FADE_DUR        = 0.8;
+const HUD_SLIDE_DIST      = 0.12;
+const HUD_TYPE_WAIT       = 1.0;
+const HUD_TYPE_SPEED      = 0.05;
 const HUD_MESSAGES: string[] = [
   '> Rosie，請幫我分析上個月的銷售數據，感謝',
-  // 'Initializing neural pathways...',
-  // 'Scanning quantum environment...',
-  // 'Loading holographic display...',
-  // 'Rendering volumetric data...',
-  // 'System calibration complete.',
 ];
-const HUD_MSG_PAUSE       = 2.0;                         // pause between messages
-const HUD_BLINK           = 0.53;                        // cursor blink interval
+const HUD_MSG_PAUSE       = 2.0;
+const HUD_BLINK           = 0.53;
 
 // Computed: total typing duration
 const _typeDur = HUD_MESSAGES.reduce(
@@ -53,21 +51,21 @@ const _typeDur = HUD_MESSAGES.reduce(
   0
 );
 const HUD_DONE_AT         = HUD_ENTER + HUD_FADE_DUR + HUD_TYPE_WAIT + _typeDur;
-const HUD_DONE_PAUSE      = 1.0;                         // pause after typing done before lift starts
+const HUD_DONE_PAUSE      = 1.0;
 
-const GO_OFFSET           = HUD_DONE_PAUSE + 0.5;       // GO appears after pause + half beat
-const HUD_LIFT_AMOUNT     = 0.25;                        // HUD lift (world units)
-const HUD_LIFT_DUR        = 0.8;                         // HUD lift duration
-const PHASE_A_END         = HUD_DONE_AT + GO_OFFSET + 2.0; // + GO lifecycle (appear → auto → exit)
+const GO_OFFSET           = HUD_DONE_PAUSE + 0.5;
+const HUD_LIFT_AMOUNT     = 0.25;
+const HUD_LIFT_DUR        = 0.8;
+const PHASE_A_END         = HUD_DONE_AT + GO_OFFSET + 2.0;
 
 // --- Phase B–F: Transitions ---
 const DIAGONAL_DURATION   = 10;
-const PHASE_B_END         = PHASE_A_END + 3;             // fly → hacker (3s)
-const PHASE_C_END         = PHASE_B_END + 1;             // hacker only (1s)
-const PHASE_D_END         = PHASE_C_END + 3;             // hacker → card (3s)
-const PHASE_E_END         = PHASE_D_END + DIAGONAL_DURATION - 1; // card display
-const PHASE_F_END         = PHASE_E_END + 3;             // card → fly (3s)
-const LOOP_DURATION       = 50;
+const PHASE_B_END         = PHASE_A_END + 3;
+const PHASE_C_END         = PHASE_B_END + 1;
+const PHASE_D_END         = PHASE_C_END + 3;
+const PHASE_E_END         = PHASE_D_END + DIAGONAL_DURATION - 1;
+const PHASE_F_END         = PHASE_E_END + 3;
+const LOOP_DURATION       = 250;
 
 // HUD timing config (passed to HudTypingGlass)
 const HUD_TIMING: HudTimingConfig = {
@@ -105,17 +103,10 @@ const DIAG_LOOK_ATS = [
 ];
 
 // Neon video panels flanking the card
-const NEON_PANELS: {
-  pos: [number, number, number];
-  rot: [number, number, number];
-  color: string;
-  video: string;
-}[] = [
-  // Left side (angled toward card)
+const NEON_PANELS: NeonPanelConfig[] = [
   { pos: [-3.0, 5.0, -3], rot: [0, Math.PI / 6, 0], color: '#00ffff', video: '/video/BigBuckBunny.mp4' },
   { pos: [-3.5, 0.0, -4], rot: [0, Math.PI / 5, 0], color: '#00ffff', video: '/video/ElephantsDream.mp4' },
   { pos: [-5.7, -5.0, -3], rot: [0, Math.PI / 6, 0], color: '#00ffcc', video: '/video/BigBuckBunny.mp4' },
-  // Right side (angled toward card)
   { pos: [4.0, 3.5, -3], rot: [0, -Math.PI / 6, 0], color: '#00ffff', video: '/video/ElephantsDream.mp4' },
   { pos: [3.5, -1.5, -4], rot: [0, -Math.PI / 5, 0], color: '#00ffff', video: '/video/BigBuckBunny.mp4' },
   { pos: [2.0, -4.5, -3], rot: [0, -Math.PI / 6, 0], color: '#00ffcc', video: '/video/ElephantsDream.mp4' },
@@ -126,516 +117,6 @@ const PANEL_FRAME_W = 2.8;
 const PANEL_FRAME_H = 1.8;
 const PANEL_FRAME_THICKNESS = 0.02;
 const PANEL_FRAME_CUT = 0.15;
-
-// Compute correct polygon inset: each vertex offset along bisector of adjacent
-// edge normals so that perpendicular distance = t for ALL edges (including 45°).
-function insetCW(pts: [number, number][], t: number): [number, number][] {
-  const n = pts.length;
-  const out: [number, number][] = [];
-  for (let i = 0; i < n; i++) {
-    const prev = (i - 1 + n) % n;
-    const next = (i + 1) % n;
-    // Inward normals (right perpendicular for CW winding)
-    const dx1 = pts[i][0] - pts[prev][0];
-    const dy1 = pts[i][1] - pts[prev][1];
-    const l1 = Math.hypot(dx1, dy1) || 1;
-    const nx1 = dy1 / l1, ny1 = -dx1 / l1;
-    const dx2 = pts[next][0] - pts[i][0];
-    const dy2 = pts[next][1] - pts[i][1];
-    const l2 = Math.hypot(dx2, dy2) || 1;
-    const nx2 = dy2 / l2, ny2 = -dx2 / l2;
-    // Bisector scaled so perpendicular offset = t
-    const bx = nx1 + nx2, by = ny1 + ny2;
-    const dot = bx * nx1 + by * ny1;
-    const s = Math.abs(dot) > 1e-10 ? t / dot : t;
-    out.push([pts[i][0] + bx * s, pts[i][1] + by * s]);
-  }
-  return out;
-}
-
-// Shared outer contour for frame geometry and glow SDF
-function getFrameContour(w: number, h: number, cutSize: number): [number, number][] {
-  const hw = w / 2;
-  const hh = h / 2;
-  const dipH     = cutSize;
-  const peakW    = cutSize * 0.8;
-  const brCham   = cutSize * 1.5;
-  const stepDrop = cutSize;
-  const blFlat   = cutSize * 1.8;
-  const bodyTop  = hh - dipH;
-  const upperBot = -hh + stepDrop;
-  return [
-    [-hw, bodyTop],                          // B
-    [-hw + dipH, hh],                        // C
-    [-hw + dipH + peakW, hh],                // D
-    [-hw + 2 * dipH + peakW, bodyTop],       // E
-    [hw - peakW - dipH, bodyTop],            // F
-    [hw - peakW, hh],                        // G
-    [hw, hh],                                // H
-    [hw, upperBot + brCham],                 // I
-    [hw - brCham, upperBot],                 // BR chamfer end
-    [-hw + blFlat + stepDrop, upperBot],     // J
-    [-hw + blFlat, -hh],                     // K
-    [-hw, -hh],                              // A
-  ];
-}
-
-function buildNeonFrameGeometry(
-  w: number, h: number, thickness: number, cutSize: number
-): THREE.BufferGeometry {
-  // Sci-fi frame — dipped body with raised peaks at left & right top corners
-  // Built as manual triangle-strip ring to avoid earcut artifacts on concave top.
-  //
-  //        C──D                  G──H
-  //       ╱    ╲________________╱    │  ← body (E–F) LOWER than peaks (C–D, G–H)
-  //      B      E              F     │
-  //      │                           │
-  //      │                           I
-  //      │          J______________╱
-  //      │         ╱
-  //      A───────K
-
-  const outer = getFrameContour(w, h, cutSize);
-
-  // Inner contour — proper polygon inset (uniform perpendicular distance)
-  const inner = insetCW(outer, thickness);
-
-  const halfD = thickness / 2;
-  const n = outer.length;
-  const pos: number[] = [];
-  const nrm: number[] = [];
-  const ids: number[] = [];
-  let vi = 0;
-  const v = (x: number, y: number, z: number, nx: number, ny: number, nz: number) => {
-    pos.push(x, y, z);
-    nrm.push(nx, ny, nz);
-    return vi++;
-  };
-
-  // Front ring (z = +halfD, normal +Z)
-  for (let i = 0; i < n; i++) {
-    const j = (i + 1) % n;
-    const a = v(outer[i][0], outer[i][1], halfD, 0, 0, 1);
-    const b = v(outer[j][0], outer[j][1], halfD, 0, 0, 1);
-    const c = v(inner[j][0], inner[j][1], halfD, 0, 0, 1);
-    const d = v(inner[i][0], inner[i][1], halfD, 0, 0, 1);
-    ids.push(a, d, c, a, c, b);
-  }
-
-  // Back ring (z = -halfD, normal -Z, reversed winding)
-  for (let i = 0; i < n; i++) {
-    const j = (i + 1) % n;
-    const a = v(outer[i][0], outer[i][1], -halfD, 0, 0, -1);
-    const b = v(outer[j][0], outer[j][1], -halfD, 0, 0, -1);
-    const c = v(inner[j][0], inner[j][1], -halfD, 0, 0, -1);
-    const d = v(inner[i][0], inner[i][1], -halfD, 0, 0, -1);
-    ids.push(a, b, c, a, c, d);
-  }
-
-  // Outer side faces (outward normals)
-  for (let i = 0; i < n; i++) {
-    const j = (i + 1) % n;
-    const dx = outer[j][0] - outer[i][0];
-    const dy = outer[j][1] - outer[i][1];
-    const len = Math.hypot(dx, dy) || 1;
-    const nx = -dy / len;
-    const ny = dx / len;
-    const a = v(outer[i][0], outer[i][1], halfD, nx, ny, 0);
-    const b = v(outer[j][0], outer[j][1], halfD, nx, ny, 0);
-    const c = v(outer[j][0], outer[j][1], -halfD, nx, ny, 0);
-    const d = v(outer[i][0], outer[i][1], -halfD, nx, ny, 0);
-    ids.push(a, b, c, a, c, d);
-  }
-
-  // Inner side faces (inward normals, toward frame center)
-  for (let i = 0; i < n; i++) {
-    const j = (i + 1) % n;
-    const dx = inner[j][0] - inner[i][0];
-    const dy = inner[j][1] - inner[i][1];
-    const len = Math.hypot(dx, dy) || 1;
-    const nx = dy / len;
-    const ny = -dx / len;
-    const a = v(inner[i][0], inner[i][1], halfD, nx, ny, 0);
-    const b = v(inner[j][0], inner[j][1], halfD, nx, ny, 0);
-    const c = v(inner[j][0], inner[j][1], -halfD, nx, ny, 0);
-    const d = v(inner[i][0], inner[i][1], -halfD, nx, ny, 0);
-    ids.push(a, d, c, a, c, b);
-  }
-
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  geo.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
-  geo.setIndex(ids);
-  return geo;
-}
-
-const panelCrtVert = /* glsl */ `
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`;
-
-const panelCrtFrag = /* glsl */ `
-  uniform sampler2D map;
-  uniform float time;
-  uniform float powerOn; // 0=off, 0..1=booting, 1=fully on
-  varying vec2 vUv;
-  void main() {
-    // Still off — fully transparent
-    if (powerOn <= 0.0) {
-      gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
-      return;
-    }
-
-    // Flicker pattern: ON/OFF/ON/OFF/ON
-    // t<0.3: ON, 0.3–0.6: OFF, 0.6–0.8: ON, 0.8–1.0: OFF, >=1.0: ON
-    float t = powerOn;
-    bool visible = (t < 0.3) || (t >= 0.6 && t < 0.8) || (t >= 1.0);
-    if (!visible) {
-      gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
-      return;
-    }
-
-    // Chromatic aberration — RGB channel offset
-    float aberration = 0.004;
-    float r = texture2D(map, vUv + vec2(aberration, 0.0)).r;
-    float g = texture2D(map, vUv).g;
-    float b = texture2D(map, vUv - vec2(aberration, 0.0)).b;
-    vec3 col = vec3(r, g, b);
-
-    // CRT scanlines
-    float scanline = sin(vUv.y * 800.0 - time * 10.0) * 0.08;
-    col -= scanline;
-
-    // Horizontal interference bands
-    float interference = sin(vUv.y * 200.0 + time * 3.0) * 0.02;
-    col += interference;
-
-    // Radial vignette
-    float edgeDist = distance(vUv, vec2(0.5));
-    col *= smoothstep(0.8, 0.2, edgeDist);
-
-    // Corner darkening
-    col *= 1.0 - pow(edgeDist * 1.4, 2.5);
-
-    // Sci-fi tint
-    col *= vec3(0.92, 1.0, 1.05);
-
-    gl_FragColor = vec4(col, 1.0);
-  }
-`;
-
-// Glow plane behind neon frames (fake bloom)
-const panelGlowVert = /* glsl */ `
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`;
-
-const FRAME_VERT_COUNT = 12;
-const panelGlowFrag = /* glsl */ `
-  uniform vec3 glowColor;
-  uniform float intensity;
-  uniform vec2 frameVerts[${FRAME_VERT_COUNT}]; // outer contour in world units
-  uniform vec2 glowHalf;       // glow plane half-size in world units
-  varying vec2 vUv;
-
-  // Polygon signed-distance (Inigo Quilez)
-  float polySD(vec2 p) {
-    float d = dot(p - frameVerts[0], p - frameVerts[0]);
-    float s = 1.0;
-    for (int i = 0, j = ${FRAME_VERT_COUNT - 1}; i < ${FRAME_VERT_COUNT}; j = i, i++) {
-      vec2 e = frameVerts[j] - frameVerts[i];
-      vec2 w = p - frameVerts[i];
-      vec2 b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
-      d = min(d, dot(b, b));
-      bvec3 cond = bvec3(p.y >= frameVerts[i].y, p.y < frameVerts[j].y,
-                          e.x * w.y > e.y * w.x);
-      if (all(cond) || all(not(cond))) s *= -1.0;
-    }
-    return s * sqrt(d);
-  }
-
-  void main() {
-    vec2 p = (vUv - 0.5) * glowHalf * 2.0;
-    float sd = polySD(p);
-    float falloff = sd < 0.0 ? 40.0 : 10.0;
-    float glow = exp(-abs(sd) * falloff) * intensity;
-    gl_FragColor = vec4(glowColor * glow, glow);
-  }
-`;
-
-// ============ GLSL Shaders ============
-
-const fullscreenVert = /* glsl */ `in vec3 position;
-void main() {
-  gl_Position = vec4(position.xy, 0.0, 1.0);
-}`;
-
-const commonGLSL = /* glsl */ `
-#define GRID_X 32.0
-#define GRID_Y 9.0
-#define FBM
-
-float random(in vec2 uv) {
-  return fract(sin(dot(uv.xy, vec2(12.9898, 78.233))) * 43758.5453123);
-}
-
-float noise(in vec2 uv) {
-  vec2 i = floor(uv);
-  vec2 f = fract(uv);
-  float a = random(i);
-  float b = random(i + vec2(1.0, 0.0));
-  float c = random(i + vec2(0.0, 1.0));
-  float d = random(i + vec2(1.0, 1.0));
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(a, b, u.x) +
-         (c - a) * u.y * (1.0 - u.x) +
-         (d - b) * u.x * u.y;
-}
-
-float sdBox(in vec2 p, in vec2 b) {
-  vec2 d = abs(p) - b;
-  return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
-}
-`;
-
-const bufferAFrag = /* glsl */ `precision highp float;
-
-uniform float iTime;
-uniform vec2 iResolution;
-uniform vec4 iMouse;
-uniform sampler2D iChannel0;
-
-${commonGLSL}
-
-float getChar(
-  vec2 uvid,
-  vec2 uvst,
-  vec2 uv,
-  vec2 id,
-  float dmult,
-  float gmip,
-  float gmult
-) {
-  vec2 dx = (dFdx(uv) * vec2(GRID_X, GRID_Y) / 16.0) * dmult;
-  vec2 dy = (dFdy(uv) * vec2(GRID_X, GRID_Y) / 16.0) * dmult;
-  vec2 s = (uvst - 0.5) / 16.0 + 1.0 / 32.0 + id / 16.0;
-  float ch = textureGrad(iChannel0, s, dx, dy).r;
-  ch = max(ch, textureLod(iChannel0, s, gmip).r * gmult
-          * smoothstep(0.1, 0.0, sdBox(uvst - 0.5, vec2(0.36))));
-  ch *= step(sdBox(uvst - 0.5, vec2(1.0)), 0.0);
-  return ch;
-}
-
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 uv = fragCoord / iResolution.xy;
-  vec2 uvid = floor(uv * vec2(GRID_X, GRID_Y));
-  vec2 uvst = fract(uv * vec2(GRID_X, GRID_Y));
-
-  float randX = random(uvid.xx) * 3.0;
-  float progress = iTime * (randX * 0.3 + 0.4) + randX * (GRID_Y - 0.01) + 1.0;
-  float rowLength = floor(progress);
-  float iter = floor(rowLength / (GRID_Y + 2.0));
-  rowLength = mod(rowLength, GRID_Y + 2.0);
-
-  float ch = 0.0;
-  float time = 0.0;
-  float glowMip = 3.0;
-  float glowMult = 1.0;
-
-  float timer = mod(progress, GRID_Y + 2.0) / (GRID_Y + 2.0);
-
-  if (uvid.y > GRID_Y - rowLength - 1.0) {
-    if (uvid.y == GRID_Y - rowLength) {
-      time = floor(mod(iTime * 26.0, 260.0));
-      glowMip = 3.6;
-      glowMult = 2.6;
-    }
-    uvid /= vec2(GRID_X, GRID_Y);
-    vec2 cid = vec2(
-      floor(random(uvid + iter) * 14.0 + 1.0),
-      floor(random(uvid + 0.5 + time) * 5.0 + 8.0)
-    );
-    float dmult = clamp((GRID_Y - timer * GRID_Y * 2.0), 1.0, 6.0);
-    ch = getChar(uvid, uvst, uv, cid, dmult, glowMip, glowMult);
-  }
-
-  vec3 blue = vec3(0.0, 0.8, 1.0);
-  vec3 green = vec3(0.0, 1.0, 0.8);
-  vec3 col = mix(blue, green, random(uvid + iter)) * ch;
-
-  col.r = mod(iter * 0.01 + random(uvid.xx), 1.0);
-
-  fragColor = vec4(col, timer);
-}
-
-out vec4 outColor;
-void main() {
-  vec4 fragColor;
-  mainImage(fragColor, gl_FragCoord.xy);
-  outColor = fragColor;
-}`;
-
-const hackerImageFrag = /* glsl */ `precision highp float;
-
-uniform float iTime;
-uniform vec2 iResolution;
-uniform vec4 iMouse;
-uniform sampler2D iChannel0;
-
-${commonGLSL}
-
-#define NUM_OCTAVES 3
-#ifdef FBM
-float fbm(in vec2 uv) {
-  float v = 0.0;
-  float a = 0.55;
-  vec2 shift = vec2(10.0);
-  mat2 rot = mat2(cos(0.001 * iTime), tan(0.005),
-                  -sin(0.005), cos(0.001 * iTime));
-  for (int i = 0; i < NUM_OCTAVES; ++i) {
-    v += a * noise(uv);
-    uv = rot * uv * 2.0 + shift;
-    a *= 0.5;
-  }
-  return v;
-}
-#endif
-
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 uv = (fragCoord - 0.5 * iResolution.xy) / iResolution.y;
-
-  vec2 mc = (iMouse.xy - 0.5 * iResolution.xy) / iResolution.y;
-  if (length(iMouse.xy) < 20.0) {
-    mc = vec2(0.0);
-  }
-
-  vec3 blue = vec3(0.3, 0.35, 0.4);
-  float n = noise((uv.xx + iTime * 0.02) * 20.0) * max(-uv.x, 0.0);
-  n += noise((uv.xx + iTime * -0.02) * 20.0) * max(uv.x, 0.0);
-
-  float frbm = 0.4;
-  #ifdef FBM
-  frbm = fbm(uv * 6.0 + vec2(0.0, iTime * 0.2));
-  #endif
-  float s = max((uv.y / abs(uv.x) + 0.5) * abs(uv.x), 0.0);
-  vec3 col = mix(vec3(0.0), blue, (n + frbm) * s);
-
-  for (float i = 0.0; i < GRID_X; i++) {
-    float coord = ((i * iResolution.x + 0.5) / (GRID_X - 1.0));
-    vec2 t = texelFetch(iChannel0, ivec2(coord, iResolution.y - 0.5), 0).xw;
-
-    vec2 stuv = uv * (2.0 - t.y * 2.0) *
-      vec2(GRID_Y, GRID_X) / (GRID_X > GRID_Y ? GRID_Y : GRID_X) + 0.5;
-
-    vec2 st = vec2(stuv.x + i / GRID_X - 0.5, stuv.y - 0.5);
-    vec2 epos = vec2(random(vec2(i + t.x)) * 0.6 - 0.3, random(vec2(i + t.x + 0.1)) + 0.3);
-
-    st += mix(epos * vec2(0.5, 3.0) - vec2(0.0, 3.0), epos, t.y);
-    st += mc * 0.25;
-
-    float sbox = step(sdBox(
-      st - vec2((i + 0.5) / GRID_X, 0.5),
-      vec2(0.5 / GRID_X, 0.5)),
-      0.0);
-
-    float fade = min(t.y * 2.0, 1.0) * clamp((1.0 - t.y) * 10.0, 0.0, 1.0);
-
-    vec3 tex = texture(iChannel0, st).rgb;
-    tex.r = 0.3 * (tex.g + tex.b);
-    col += tex * sbox * fade;
-  }
-
-  fragColor = vec4(col, 1.0);
-}
-
-out vec4 outColor;
-void main() {
-  vec4 fragColor;
-  mainImage(fragColor, gl_FragCoord.xy);
-  outColor = fragColor;
-}`;
-
-const compositorFrag = /* glsl */ `precision highp float;
-
-uniform vec2 iResolution;
-uniform float uProgress;
-uniform float uBrightness;
-uniform sampler2D iChannel0;
-uniform sampler2D iChannel1;
-
-const float strength = 0.3;
-const float PI = 3.141592653589793;
-
-float Linear_ease(in float begin, in float change, in float duration, in float time) {
-  return change * time / duration + begin;
-}
-
-float Exponential_easeInOut(in float begin, in float change, in float duration, in float time) {
-  if (time == 0.0) return begin;
-  else if (time == duration) return begin + change;
-  time = time / (duration / 2.0);
-  if (time < 1.0) return change / 2.0 * pow(2.0, 10.0 * (time - 1.0)) + begin;
-  return change / 2.0 * (-pow(2.0, -10.0 * (time - 1.0)) + 2.0) + begin;
-}
-
-float Sinusoidal_easeInOut(in float begin, in float change, in float duration, in float time) {
-  return -change / 2.0 * (cos(PI * time / duration) - 1.0) + begin;
-}
-
-float rand(in vec3 scale, in float seed) {
-  return fract(sin(dot(gl_FragCoord.xyz + seed, scale)) * 43758.5453 + seed);
-}
-
-vec3 crossFade(in vec2 uv, in float dissolve) {
-  return mix(texture(iChannel0, uv).rgb, texture(iChannel1, uv).rgb, dissolve);
-}
-
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 texCoord = fragCoord.xy / iResolution.xy;
-  float progress = uProgress;
-
-  // Fast path: no transition
-  if (progress <= 0.0) {
-    fragColor = vec4(texture(iChannel0, texCoord).rgb * uBrightness, 1.0);
-    return;
-  }
-  if (progress >= 1.0) {
-    fragColor = vec4(texture(iChannel1, texCoord).rgb * uBrightness, 1.0);
-    return;
-  }
-
-  vec2 center = vec2(Linear_ease(0.5, 0.0, 1.0, progress), 0.5);
-  float dissolve = Exponential_easeInOut(0.0, 1.0, 1.0, progress);
-  float str = Sinusoidal_easeInOut(0.0, strength, 0.5, progress);
-
-  vec3 color = vec3(0.0);
-  float total = 0.0;
-  vec2 toCenter = center - texCoord;
-
-  float offset = rand(vec3(12.9898, 78.233, 151.7182), 0.0) * 0.5;
-
-  for (float t = 0.0; t <= 20.0; t++) {
-    float percent = (t + offset) / 20.0;
-    float weight = 1.0 * (percent - percent * percent);
-    color += crossFade(texCoord + toCenter * percent * str, dissolve) * weight;
-    total += weight;
-  }
-
-  fragColor = vec4((color / total) * uBrightness, 1.0);
-}
-
-out vec4 outColor;
-void main() {
-  vec4 fragColor;
-  mainImage(fragColor, gl_FragCoord.xy);
-  outColor = fragColor;
-}`;
 
 // ============ Helpers ============
 
@@ -648,20 +129,7 @@ function smoothstep01(t: number): number {
 const _frustum = new THREE.Frustum();
 const _projScreenMat = new THREE.Matrix4();
 const _tmpPos = new THREE.Vector3();
-const POWER_ON_DURATION = 0.15; // seconds for CRT boot animation
-
-// ============ Timeline control ============
-
-interface TimelineControl {
-  time: number;
-  paused: boolean;
-  goClicked: boolean;
-  phaseAStart: number;
-  hudDone: boolean;
-  hudDoneTime: number;
-  goShown: boolean;
-  goShownTime: number;
-}
+const POWER_ON_DURATION = 0.15;
 
 // ============ All-in-One Renderer ============
 
@@ -697,306 +165,56 @@ function Renderer({
     panoTexture.colorSpace = THREE.SRGBColorSpace;
   }, [fontTexture, cardTexture, panoTexture]);
 
-  // Create all resources (scenes, FBOs, materials) once
+  // Create all resources via factory functions
   const res = useMemo(() => {
     const d = gl.getPixelRatio();
     const w = Math.floor(size.width * d);
     const h = Math.floor(size.height * d);
 
-    // ---- FBOs ----
-    const flyFBO = new THREE.WebGLRenderTarget(w, h, {
-      minFilter: THREE.LinearFilter,
-      magFilter: THREE.LinearFilter,
-      format: THREE.RGBAFormat,
-    });
-    const hackerBufFBO = new THREE.WebGLRenderTarget(w, h, {
-      minFilter: THREE.LinearFilter,
-      magFilter: THREE.LinearFilter,
-      type: THREE.HalfFloatType,
-      format: THREE.RGBAFormat,
-    });
-    const hackerImgFBO = new THREE.WebGLRenderTarget(w, h, {
-      minFilter: THREE.LinearFilter,
-      magFilter: THREE.LinearFilter,
-      type: THREE.HalfFloatType,
-      format: THREE.RGBAFormat,
-    });
-
     const orthoCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    const fsGeo = new THREE.PlaneGeometry(2, 2);
 
-    // ---- Fly-through scene ----
-    const flyScene = new THREE.Scene();
-    flyScene.background = skyboxCube;
-    flyScene.backgroundIntensity = 2.5;
-    flyScene.environment = skyboxCube;
-    flyScene.environmentIntensity = 1.5;
-    // flyScene.add(new THREE.AmbientLight(0xffffff, 0.3));
-    flyScene.add(new THREE.AmbientLight(0xffffff, 1.3));
-    const dir1 = new THREE.DirectionalLight(0xffffff, 1.5);
-    dir1.position.set(50, 50, 50);
-    flyScene.add(dir1);
-    const dir2 = new THREE.DirectionalLight(0xffffff, 0.5);
-    dir2.position.set(-30, -20, -40);
-    flyScene.add(dir2);
-    const pointLight = new THREE.PointLight(0xffffff, 2, 30);
-    flyScene.add(pointLight);
-
-    // Instanced cubes
-    const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
-    const cubeMat = new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.3 });
-    const cubes = new THREE.InstancedMesh(cubeGeo, cubeMat, CUBE_COUNT);
-    const dummy = new THREE.Object3D();
-    const color = new THREE.Color();
-    for (let i = 0; i < CUBE_COUNT; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const radius = Math.random() * SCATTER_RADIUS;
-      dummy.position.set(
-        Math.cos(angle) * radius + (Math.random() - 0.5) * 40,
-        (Math.random() - 0.5) * 60,
-        Math.random() * 130 - 25
-      );
-      dummy.rotation.set(
-        Math.random() * Math.PI,
-        Math.random() * Math.PI,
-        Math.random() * Math.PI
-      );
-      dummy.scale.setScalar(0.3 + Math.random() * 1.7);
-      dummy.updateMatrix();
-      cubes.setMatrixAt(i, dummy.matrix);
-      color.setHSL(Math.random(), 0.6 + Math.random() * 0.3, 0.4 + Math.random() * 0.3);
-      cubes.setColorAt(i, color);
-    }
-    cubes.instanceMatrix.needsUpdate = true;
-    if (cubes.instanceColor) cubes.instanceColor.needsUpdate = true;
-    flyScene.add(cubes);
-
-    // Path visualization
-    const flyCam = new FlyThroughCamera(DEFAULT_WAYPOINTS, 0.35);
-    const pathGeo = new THREE.TubeGeometry(flyCam.getCurve(), 200, 0.15, 8, true);
-    const pathMesh = new THREE.Mesh(
-      pathGeo,
-      new THREE.MeshBasicMaterial({ color: 0x00ffff, opacity: 0.35, transparent: true })
-    );
-    pathMesh.visible = false;
-    flyScene.add(pathMesh);
-
-    // ---- Hacker buffer A scene ----
-    const hackerBufMat = new THREE.RawShaderMaterial({
-      glslVersion: THREE.GLSL3,
-      uniforms: {
-        iTime: { value: 0 },
-        iResolution: { value: new THREE.Vector2(w, h) },
-        iMouse: { value: new THREE.Vector4(0, 0, 0, 0) },
-        iChannel0: { value: fontTexture },
-      },
-      vertexShader: fullscreenVert,
-      fragmentShader: bufferAFrag,
-    });
-    const hackerBufScene = new THREE.Scene();
-    hackerBufScene.add(new THREE.Mesh(fsGeo, hackerBufMat));
-
-    // ---- Hacker image scene ----
-    const hackerImgMat = new THREE.RawShaderMaterial({
-      glslVersion: THREE.GLSL3,
-      uniforms: {
-        iTime: { value: 0 },
-        iResolution: { value: new THREE.Vector2(w, h) },
-        iMouse: { value: new THREE.Vector4(0, 0, 0, 0) },
-        iChannel0: { value: hackerBufFBO.texture },
-      },
-      vertexShader: fullscreenVert,
-      fragmentShader: hackerImageFrag,
-    });
-    const hackerImgScene = new THREE.Scene();
-    hackerImgScene.add(new THREE.Mesh(fsGeo, hackerImgMat));
-
-    // ---- Compositor scene (blur-transition) ----
-    const compositorMat = new THREE.RawShaderMaterial({
-      glslVersion: THREE.GLSL3,
-      uniforms: {
-        iResolution: { value: new THREE.Vector2(w, h) },
-        uProgress: { value: 0 },
-        uBrightness: { value: 1.0 },
-        iChannel0: { value: flyFBO.texture },
-        iChannel1: { value: hackerImgFBO.texture },
-      },
-      vertexShader: fullscreenVert,
-      fragmentShader: compositorFrag,
-    });
-    const compositorScene = new THREE.Scene();
-    compositorScene.add(new THREE.Mesh(fsGeo, compositorMat));
-
-    // ---- Card display scene ----
-    const cardFBO = new THREE.WebGLRenderTarget(w, h, {
-      minFilter: THREE.LinearFilter,
-      magFilter: THREE.LinearFilter,
-      format: THREE.RGBAFormat,
+    const fly = createFlyScene({
+      skyboxCube,
+      cubeCount: CUBE_COUNT,
+      scatterRadius: SCATTER_RADIUS,
+      width: w,
+      height: h,
     });
 
-    const cardScene = new THREE.Scene();
-    cardScene.background = panoTexture;
-    cardScene.environment = panoTexture;
-    cardScene.backgroundRotation = new THREE.Euler(0, Math.PI, 0);
-    cardScene.environmentRotation = new THREE.Euler(0, Math.PI, 0);
-
-    cardScene.add(new THREE.AmbientLight(0xffffff, 1.0));
-    const cardSpot = new THREE.SpotLight(0xffffff, 3, 0, 0.4, 1);
-    cardSpot.position.set(5, 8, 5);
-    cardScene.add(cardSpot);
-    const cardBluePoint = new THREE.PointLight(0x3db5e6, 1.5);
-    cardBluePoint.position.set(-5, -3, -5);
-    cardScene.add(cardBluePoint);
-    const cardWhitePoint = new THREE.PointLight(0xffffff, 1.0);
-    cardWhitePoint.position.set(5, 3, 5);
-    cardScene.add(cardWhitePoint);
-
-    const cardGeo = new THREE.PlaneGeometry(CARD_WIDTH, CARD_HEIGHT);
-    const cardMeshMat = new THREE.MeshPhysicalMaterial({
-      map: cardTexture,
-      transparent: true,
-      alphaTest: 0.5,
-      side: THREE.DoubleSide,
-      roughness: 0.35,
-      metalness: 0.1,
-      clearcoat: 0.6,
-      clearcoatRoughness: 0.15,
-      reflectivity: 0.4,
-      envMapIntensity: 0.8,
-    });
-    cardScene.add(new THREE.Mesh(cardGeo, cardMeshMat));
-
-    // ---- Neon video panels flanking the card ----
-    const neonFrameGeo = buildNeonFrameGeometry(
-      PANEL_FRAME_W, PANEL_FRAME_H, PANEL_FRAME_THICKNESS, PANEL_FRAME_CUT
-    );
-    const videoPlaneGeo = new THREE.PlaneGeometry(PANEL_VIDEO_W, PANEL_VIDEO_H, 1, 1);
-    // Glow plane: 60% larger than frame so the bloom halo extends well beyond
-    const glowPlaneGeo = new THREE.PlaneGeometry(
-      PANEL_FRAME_W * 1.6, PANEL_FRAME_H * 1.6, 1, 1
-    );
-
-    // 1×1 black placeholder — videos are attached later via useEffect
-    const placeholderTex = new THREE.DataTexture(
-      new Uint8Array([0, 0, 0, 255]), 1, 1, THREE.RGBAFormat
-    );
-    placeholderTex.needsUpdate = true;
-
-    const neonMaterials: THREE.MeshStandardMaterial[] = [];
-    const crtMaterials: THREE.ShaderMaterial[] = [];
-    const glowMaterials: THREE.ShaderMaterial[] = [];
-
-    NEON_PANELS.forEach((cfg) => {
-      const crtMat = new THREE.ShaderMaterial({
-        vertexShader: panelCrtVert,
-        fragmentShader: panelCrtFrag,
-        uniforms: {
-          map: { value: placeholderTex },
-          time: { value: 0 },
-          powerOn: { value: 0 },
-        },
-        transparent: true,
-        toneMapped: false,
-      });
-      crtMaterials.push(crtMat);
-
-      const neonColor = new THREE.Color(cfg.color);
-
-      // Neon frame — boosted emissive, color-matched surface
-      const neonMat = new THREE.MeshStandardMaterial({
-        color: neonColor,
-        emissive: neonColor,
-        emissiveIntensity: 5.0,
-        roughness: 0.15,
-        metalness: 0.9,
-        toneMapped: false,
-      });
-      neonMaterials.push(neonMat);
-
-      // Glow halo plane (fake bloom) — additive blending behind frame
-      const glowMat = new THREE.ShaderMaterial({
-        vertexShader: panelGlowVert,
-        fragmentShader: panelGlowFrag,
-        uniforms: {
-          glowColor: { value: neonColor },
-          intensity: { value: 1.2 },
-          frameVerts: {
-            value: getFrameContour(PANEL_FRAME_W, PANEL_FRAME_H, PANEL_FRAME_CUT)
-              .map(([x, y]) => new THREE.Vector2(x, y)),
-          },
-          glowHalf: { value: new THREE.Vector2(PANEL_FRAME_W * 1.6 / 2, PANEL_FRAME_H * 1.6 / 2) },
-        },
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        toneMapped: false,
-      });
-      glowMaterials.push(glowMat);
-
-      const group = new THREE.Group();
-      group.position.set(...cfg.pos);
-      group.rotation.set(...cfg.rot);
-
-      // Glow plane sits just behind neon frame (minimal offset to avoid parallax gap)
-      const glowMesh = new THREE.Mesh(glowPlaneGeo, glowMat);
-      glowMesh.position.z = -0.005;
-      group.add(glowMesh);
-      group.add(new THREE.Mesh(neonFrameGeo, neonMat));
-      group.add(new THREE.Mesh(videoPlaneGeo, crtMat));
-
-      cardScene.add(group);
+    const hacker = createHackerScenes({
+      fontTexture,
+      width: w,
+      height: h,
     });
 
-    // Pre-compute world positions for frustum checks
-    const panelPositions = NEON_PANELS.map(
-      (cfg) => new THREE.Vector3(...cfg.pos)
-    );
+    const card = createCardScene({
+      cardTexture,
+      panoTexture,
+      cardWidth: CARD_WIDTH,
+      cardHeight: CARD_HEIGHT,
+      diagPositions: DIAG_POSITIONS,
+      diagLookAts: DIAG_LOOK_ATS,
+      neonPanels: NEON_PANELS,
+      panelVideoW: PANEL_VIDEO_W,
+      panelVideoH: PANEL_VIDEO_H,
+      panelFrameW: PANEL_FRAME_W,
+      panelFrameH: PANEL_FRAME_H,
+      panelFrameThickness: PANEL_FRAME_THICKNESS,
+      panelFrameCut: PANEL_FRAME_CUT,
+      viewWidth: size.width,
+      viewHeight: size.height,
+      fboWidth: w,
+      fboHeight: h,
+    });
 
-    const cardCam = new THREE.PerspectiveCamera(
-      40, size.width / size.height, 0.1, 100
-    );
-    const diagPosCurve = new THREE.CatmullRomCurve3(
-      DIAG_POSITIONS, false, 'catmullrom', 0.35
-    );
-    const diagLookCurve = new THREE.CatmullRomCurve3(
-      DIAG_LOOK_ATS, false, 'catmullrom', 0.35
-    );
+    const compositor = createCompositorScene({
+      flyTexture: fly.fbo.texture,
+      hackerTexture: hacker.imgFBO.texture,
+      width: w,
+      height: h,
+    });
 
-    // ---- HUD Typing Glass Block ----
-    const hud = createHudTypingGlass(skyboxCube);
-    flyScene.add(hud.group);
-
-    return {
-      flyFBO,
-      hackerBufFBO,
-      hackerImgFBO,
-      cardFBO,
-      orthoCam,
-      flyScene,
-      pointLight,
-      flyCam,
-      pathMesh,
-      hackerBufScene,
-      hackerBufMat,
-      hackerImgScene,
-      hackerImgMat,
-      compositorScene,
-      compositorMat,
-      cardScene,
-      cardCam,
-      cardMeshMat,
-      diagPosCurve,
-      diagLookCurve,
-      neonFrameGeo,
-      videoPlaneGeo,
-      glowPlaneGeo,
-      placeholderTex,
-      neonMaterials,
-      crtMaterials,
-      glowMaterials,
-      panelPositions,
-      hud,
-    };
+    return { orthoCam, fly, hacker, card, compositor };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fontTexture, cardTexture, panoTexture, skyboxCube]);
 
@@ -1012,43 +230,41 @@ function Renderer({
     const d = gl.getPixelRatio();
     const w = Math.floor(size.width * d);
     const h = Math.floor(size.height * d);
-    res.flyFBO.setSize(w, h);
-    res.hackerBufFBO.setSize(w, h);
-    res.hackerImgFBO.setSize(w, h);
-    res.cardFBO.setSize(w, h);
-    res.hackerBufMat.uniforms.iResolution.value.set(w, h);
-    res.hackerImgMat.uniforms.iResolution.value.set(w, h);
-    res.compositorMat.uniforms.iResolution.value.set(w, h);
-    res.cardCam.aspect = size.width / size.height;
-    res.cardCam.updateProjectionMatrix();
+    res.fly.fbo.setSize(w, h);
+    res.hacker.bufFBO.setSize(w, h);
+    res.hacker.imgFBO.setSize(w, h);
+    res.card.fbo.setSize(w, h);
+    res.hacker.bufMat.uniforms.iResolution.value.set(w, h);
+    res.hacker.imgMat.uniforms.iResolution.value.set(w, h);
+    res.compositor.mat.uniforms.iResolution.value.set(w, h);
+    res.card.cam.aspect = size.width / size.height;
+    res.card.cam.updateProjectionMatrix();
   }, [size, gl, res]);
 
   // Toggle path visibility
   useEffect(() => {
-    res.pathMesh.visible = showPath;
+    res.fly.pathMesh.visible = showPath;
   }, [showPath, res]);
 
   // Cleanup
   useEffect(() => {
     return () => {
-      res.flyFBO.dispose();
-      res.hackerBufFBO.dispose();
-      res.hackerImgFBO.dispose();
-      res.cardFBO.dispose();
-      res.hackerBufMat.dispose();
-      res.hackerImgMat.dispose();
-      res.compositorMat.dispose();
-      res.cardMeshMat.dispose();
-      // Neon panel resources (videos cleaned up by their own useEffect)
-      res.neonFrameGeo.dispose();
-      res.videoPlaneGeo.dispose();
-      res.glowPlaneGeo.dispose();
-      res.placeholderTex.dispose();
-      res.neonMaterials.forEach((m) => m.dispose());
-      res.crtMaterials.forEach((m) => m.dispose());
-      res.glowMaterials.forEach((m) => m.dispose());
-      // HUD cleanup
-      disposeHudTypingGlass(res.hud);
+      res.fly.fbo.dispose();
+      res.hacker.bufFBO.dispose();
+      res.hacker.imgFBO.dispose();
+      res.card.fbo.dispose();
+      res.hacker.bufMat.dispose();
+      res.hacker.imgMat.dispose();
+      res.compositor.mat.dispose();
+      res.card.cardMeshMat.dispose();
+      res.card.neonFrameGeo.dispose();
+      res.card.videoPlaneGeo.dispose();
+      res.card.glowPlaneGeo.dispose();
+      res.card.placeholderTex.dispose();
+      res.card.neonMaterials.forEach((m) => m.dispose());
+      res.card.crtMaterials.forEach((m) => m.dispose());
+      res.card.glowMaterials.forEach((m) => m.dispose());
+      disposeHudTypingGlass(res.fly.hud);
     };
   }, [res]);
 
@@ -1077,7 +293,7 @@ function Renderer({
         vTex.minFilter = THREE.LinearFilter;
         vTex.magFilter = THREE.LinearFilter;
         textures.push(vTex);
-        res.crtMaterials[i].uniforms.map.value = vTex;
+        res.card.crtMaterials[i].uniforms.map.value = vTex;
         tryPlay();
       };
       video.addEventListener('canplay', onCanPlay, { once: true });
@@ -1094,11 +310,9 @@ function Renderer({
       };
       video.addEventListener('error', onError);
 
-      // Start loading
       video.src = cfg.video;
     });
 
-    // Resume paused videos when tab becomes visible again
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         videos.forEach((v) => {
@@ -1118,9 +332,8 @@ function Renderer({
         v.load();
       });
       textures.forEach((t) => t.dispose());
-      // Reset CRT materials back to placeholder
-      res.crtMaterials.forEach((m) => {
-        m.uniforms.map.value = res.placeholderTex;
+      res.card.crtMaterials.forEach((m) => {
+        m.uniforms.map.value = res.card.placeholderTex;
       });
     };
   }, [res]);
@@ -1147,7 +360,7 @@ function Renderer({
       tl.hudDoneTime = 0;
       tl.goShown = false;
       tl.goShownTime = 0;
-      resetHudTypingGlass(res.hud);
+      resetHudTypingGlass(res.fly.hud);
       setShowGoButton(false);
     }
     const loopTime = tl.time;
@@ -1155,23 +368,22 @@ function Renderer({
     // Warm-up: render card scene once on first frame to compile shaders & upload textures
     if (!warmupRef.current) {
       warmupRef.current = true;
-      res.cardCam.position.copy(res.diagPosCurve.getPointAt(0));
-      res.cardCam.lookAt(res.diagLookCurve.getPointAt(0));
-      gl.setRenderTarget(res.cardFBO);
-      gl.render(res.cardScene, res.cardCam);
+      res.card.cam.position.copy(res.card.diagPosCurve.getPointAt(0));
+      res.card.cam.lookAt(res.card.diagLookCurve.getPointAt(0));
+      gl.setRenderTarget(res.card.fbo);
+      gl.render(res.card.scene, res.card.cam);
     }
 
-    // Advance fly-through camera along spline (always, independent of timeline)
+    // Advance fly-through camera along spline
     tRef.current = (tRef.current + delta * SPEED) % 1;
-    const { position, lookAt } = res.flyCam.evaluate(tRef.current);
+    const { position, lookAt } = res.fly.flyCam.evaluate(tRef.current);
     camera.position.copy(position);
     camera.lookAt(lookAt);
-    res.pointLight.position.copy(position);
+    res.fly.pointLight.position.copy(position);
 
     // ---- HUD Typing Glass Block Update (only during Phase A) ----
     const hudTime = time - tl.phaseAStart;
     if (loopTime <= PHASE_B_END) {
-      // HUD starts lifting after HUD_DONE_PAUSE (before GO button appears)
       let hudLift = 0;
       if (tl.hudDone) {
         const liftElapsed = time - tl.hudDoneTime - HUD_DONE_PAUSE;
@@ -1180,92 +392,83 @@ function Renderer({
         }
       }
 
-      const done = updateHudTypingGlass(res.hud, camera, hudTime, hudLift, HUD_TIMING);
+      const done = updateHudTypingGlass(res.fly.hud, camera, hudTime, hudLift, HUD_TIMING);
 
-      // Track when typing finishes
       if (done && !tl.hudDone) {
         tl.hudDone = true;
         tl.hudDoneTime = time;
       }
 
-      // Show GO button after delay (HUD already lifting by now)
       if (tl.hudDone && !tl.goShown && time - tl.hudDoneTime >= GO_OFFSET) {
         tl.goShown = true;
         tl.goShownTime = time;
         setShowGoButton(true);
       }
     } else {
-      res.hud.glassMat.opacity = 0;
-      res.hud.textMat.opacity = 0;
+      res.fly.hud.glassMat.opacity = 0;
+      res.fly.hud.textMat.opacity = 0;
     }
 
     // Determine which scenes are visible and compositor inputs
     let needsFly = false;
     let needsHacker = false;
     let needsCard = false;
-    let ch0 = res.flyFBO.texture;
-    let ch1 = res.flyFBO.texture;
+    let ch0 = res.fly.fbo.texture;
+    let ch1 = res.fly.fbo.texture;
     let prog = 0;
     let brightness = 1.0;
     const CARD_BRIGHTNESS = 1.4;
 
     if (loopTime < PHASE_A_END) {
-      // Pure fly-through
       needsFly = true;
-      ch0 = res.flyFBO.texture;
+      ch0 = res.fly.fbo.texture;
     } else if (loopTime < PHASE_B_END) {
-      // Transition fly → hacker
       needsFly = true;
       needsHacker = true;
-      ch0 = res.flyFBO.texture;
-      ch1 = res.hackerImgFBO.texture;
+      ch0 = res.fly.fbo.texture;
+      ch1 = res.hacker.imgFBO.texture;
       prog = smoothstep01((loopTime - PHASE_A_END) / (PHASE_B_END - PHASE_A_END));
     } else if (loopTime < PHASE_C_END) {
-      // Pure hacker
       needsHacker = true;
-      ch0 = res.hackerImgFBO.texture;
+      ch0 = res.hacker.imgFBO.texture;
     } else if (loopTime < PHASE_D_END) {
-      // Transition hacker → card — ramp brightness up with transition
       needsHacker = true;
       needsCard = true;
-      ch0 = res.hackerImgFBO.texture;
-      ch1 = res.cardFBO.texture;
+      ch0 = res.hacker.imgFBO.texture;
+      ch1 = res.card.fbo.texture;
       prog = smoothstep01((loopTime - PHASE_C_END) / (PHASE_D_END - PHASE_C_END));
       brightness = 1.0 + (CARD_BRIGHTNESS - 1.0) * prog;
     } else if (loopTime < PHASE_E_END) {
-      // Pure card (DIAGONAL playing)
       needsCard = true;
-      ch0 = res.cardFBO.texture;
+      ch0 = res.card.fbo.texture;
       brightness = CARD_BRIGHTNESS;
     } else if (loopTime < PHASE_F_END) {
-      // Transition card → fly — ramp brightness back down
       needsCard = true;
       needsFly = true;
-      ch0 = res.cardFBO.texture;
-      ch1 = res.flyFBO.texture;
+      ch0 = res.card.fbo.texture;
+      ch1 = res.fly.fbo.texture;
       prog = smoothstep01((loopTime - PHASE_E_END) / (PHASE_F_END - PHASE_E_END));
       brightness = CARD_BRIGHTNESS - (CARD_BRIGHTNESS - 1.0) * prog;
     } else {
-      // Pure fly-through
       needsFly = true;
-      ch0 = res.flyFBO.texture;
+      ch0 = res.fly.fbo.texture;
     }
 
     // 1. Render fly-through scene
     if (needsFly) {
-      gl.setRenderTarget(res.flyFBO);
-      gl.render(res.flyScene, camera);
+      gl.setRenderTarget(res.fly.fbo);
+      gl.render(res.fly.scene, camera);
     }
 
     // 2. Render hacker passes
     if (needsHacker) {
-      res.hackerBufMat.uniforms.iTime.value = time;
-      gl.setRenderTarget(res.hackerBufFBO);
-      gl.render(res.hackerBufScene, res.orthoCam);
+      res.hacker.bufMat.uniforms.iTime.value = time;
+      gl.setRenderTarget(res.hacker.bufFBO);
+      gl.render(res.hacker.bufScene, res.orthoCam);
 
-      res.hackerImgMat.uniforms.iTime.value = time;
-      gl.setRenderTarget(res.hackerImgFBO);
-      gl.render(res.hackerImgScene, res.orthoCam);
+      res.hacker.imgMat.uniforms.iTime.value = time;
+      gl.setRenderTarget(res.hacker.imgFBO);
+      gl.render(res.hacker.imgScene, res.orthoCam);
     }
 
     // 3. Render card scene with DIAGONAL camera
@@ -1275,28 +478,26 @@ function Renderer({
         (loopTime - diagStart) / DIAGONAL_DURATION
       ));
       const cardEased = smoothstep01(cardT);
-      res.cardCam.position.copy(res.diagPosCurve.getPointAt(cardEased));
-      const lookTarget = res.diagLookCurve.getPointAt(cardEased);
-      res.cardCam.lookAt(lookTarget);
+      res.card.cam.position.copy(res.card.diagPosCurve.getPointAt(cardEased));
+      const lookTarget = res.card.diagLookCurve.getPointAt(cardEased);
+      res.card.cam.lookAt(lookTarget);
 
-      // Frustum detection + CRT power-on animation
-      // Only start detecting after the hacker→card transition is fully complete
       const neonTime = state.clock.getElapsedTime();
       const transitionDone = loopTime >= PHASE_D_END;
 
       if (transitionDone) {
-        res.cardCam.updateMatrixWorld();
+        res.card.cam.updateMatrixWorld();
         _projScreenMat.multiplyMatrices(
-          res.cardCam.projectionMatrix,
-          res.cardCam.matrixWorldInverse
+          res.card.cam.projectionMatrix,
+          res.card.cam.matrixWorldInverse
         );
         _frustum.setFromProjectionMatrix(_projScreenMat);
       }
 
       const states = panelStatesRef.current;
-      for (let i = 0; i < res.crtMaterials.length; i++) {
+      for (let i = 0; i < res.card.crtMaterials.length; i++) {
         if (transitionDone) {
-          _tmpPos.copy(res.panelPositions[i]);
+          _tmpPos.copy(res.card.panelPositions[i]);
           const inView = _frustum.containsPoint(_tmpPos);
 
           if (inView && !states[i].seen) {
@@ -1311,12 +512,12 @@ function Renderer({
           powerOn = Math.min(1, elapsed / POWER_ON_DURATION);
         }
 
-        res.crtMaterials[i].uniforms.powerOn.value = powerOn;
-        res.crtMaterials[i].uniforms.time.value = neonTime;
+        res.card.crtMaterials[i].uniforms.powerOn.value = powerOn;
+        res.card.crtMaterials[i].uniforms.time.value = neonTime;
       }
 
-      gl.setRenderTarget(res.cardFBO);
-      gl.render(res.cardScene, res.cardCam);
+      gl.setRenderTarget(res.card.fbo);
+      gl.render(res.card.scene, res.card.cam);
     }
 
     // Reset panel power-on states when leaving card phase
@@ -1326,19 +527,19 @@ function Renderer({
         states[i].seen = false;
         states[i].startTime = -1;
       }
-      for (let i = 0; i < res.crtMaterials.length; i++) {
-        res.crtMaterials[i].uniforms.powerOn.value = 0;
+      for (let i = 0; i < res.card.crtMaterials.length; i++) {
+        res.card.crtMaterials[i].uniforms.powerOn.value = 0;
       }
     }
     prevNeedsCardRef.current = needsCard;
 
     // 4. Compositor to screen
-    res.compositorMat.uniforms.iChannel0.value = ch0;
-    res.compositorMat.uniforms.iChannel1.value = ch1;
-    res.compositorMat.uniforms.uProgress.value = prog;
-    res.compositorMat.uniforms.uBrightness.value = brightness;
+    res.compositor.mat.uniforms.iChannel0.value = ch0;
+    res.compositor.mat.uniforms.iChannel1.value = ch1;
+    res.compositor.mat.uniforms.uProgress.value = prog;
+    res.compositor.mat.uniforms.uBrightness.value = brightness;
     gl.setRenderTarget(null);
-    gl.render(res.compositorScene, res.orthoCam);
+    gl.render(res.compositor.scene, res.orthoCam);
   }, 1);
 
   return null;
@@ -1433,7 +634,6 @@ export default function FlyThroughScene() {
           fontWeight: 900,
           lineHeight: 1,
           color: '#ffffff',
-          // textTransform: 'uppercase',
           fontFamily: 'montserrat, sans-serif',
         }}
         descriptionStyle={{
@@ -1441,7 +641,6 @@ export default function FlyThroughScene() {
           fontWeight: 700,
           lineHeight: 1,
           color: '#ffffff',
-          // textTransform: 'uppercase',
           fontFamily: 'montserrat, sans-serif',
         }}
       />

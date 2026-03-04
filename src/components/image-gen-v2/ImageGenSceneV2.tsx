@@ -20,7 +20,7 @@ const CARD_WIDTH_PX = 400;
 const CARD_GAP_PX = 280;
 const CARD_COUNT = 5;
 const PARTICLE_COUNT = 400;
-const SCROLL_SPEED = 100; // px/s — configurable scroll speed
+const SCROLL_SPEED = 150; // px/s — configurable scroll speed
 
 const CARD_IMAGES = [
   { src: '/images/styles/01.png', naturalWidth: 652, naturalHeight: 1110 },
