@@ -223,7 +223,73 @@ const SWIPE_REVEALS: SwipeRevealEntry[] = [
   },
 ];
 
+// ============ Scramble Text Configs ============
+
+interface ScrambleEntry {
+  at: number;   // loopTime when this text triggers
+  text: string; // '' to clear
+}
+
+const SCRAMBLE_TEXTS: ScrambleEntry[] = [
+  // Add entries here, e.g.:
+  { at: PHASE_I_END + 3, text: '> 一些文字' },
+  { at: PHASE_I_END + 7, text: 'wgeg' },
+  { at: PHASE_I_END + 11, text: 'rbnynyn' },
+];
+
 // ============ Helpers ============
+
+const SCRAMBLE_CHARS = '!<>-_\\/[]{}—=+*^?#________';
+
+function scrambleText(
+  el: HTMLElement,
+  newText: string,
+  animRef: React.RefObject<number>,
+) {
+  const oldText = el.innerText;
+  const length = Math.max(oldText.length, newText.length);
+  const queue: { from: string; to: string; start: number; end: number; char?: string }[] = [];
+
+  for (let i = 0; i < length; i++) {
+    const from = oldText[i] || '';
+    const to = newText[i] || '';
+    const start = Math.floor(Math.random() * 40);
+    const end = start + Math.floor(Math.random() * 40);
+    queue.push({ from, to, start, end });
+  }
+
+  cancelAnimationFrame(animRef.current);
+  let frame = 0;
+
+  const update = () => {
+    let output = '';
+    let complete = 0;
+
+    for (let i = 0; i < queue.length; i++) {
+      const { from, to, start, end } = queue[i];
+      if (frame >= end) {
+        complete++;
+        output += to;
+      } else if (frame >= start) {
+        if (!queue[i].char || Math.random() < 0.28) {
+          queue[i].char = SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
+        }
+        output += `<span style="color:#aaaaaa;text-shadow:0 0 12px currentColor">${queue[i].char}</span>`;
+      } else {
+        output += from;
+      }
+    }
+
+    el.innerHTML = output;
+
+    if (complete < queue.length) {
+      animRef.current = requestAnimationFrame(update);
+      frame++;
+    }
+  };
+
+  update();
+}
 
 function smoothstep01(t: number): number {
   const c = Math.max(0, Math.min(1, t));
@@ -243,11 +309,13 @@ function Renderer({
   tlRef,
   setShowGoButton,
   setActiveSwipe,
+  setScrambleIndex,
 }: {
   showPath: boolean;
   tlRef: React.MutableRefObject<TimelineControl>;
   setShowGoButton: React.Dispatch<React.SetStateAction<boolean>>;
   setActiveSwipe: React.Dispatch<React.SetStateAction<number>>;
+  setScrambleIndex: React.Dispatch<React.SetStateAction<number>>;
 }) {
   const { gl, size, camera } = useThree();
   const fontTexture = useTexture('/codepage12.png');
@@ -348,6 +416,7 @@ function Renderer({
   );
   const prevNeedsCardRef = useRef(false);
   const prevSwipeRef = useRef(-1);
+  const prevScrambleRef = useRef(-1);
   const video2StateRef = useRef(createVideoSceneState());
   const video2ElRef = useRef<HTMLVideoElement | null>(null);
   const video2TexRef = useRef<THREE.VideoTexture | null>(null);
@@ -593,6 +662,8 @@ function Renderer({
       resetHudTypingGlass(res.fly.hud);
       setShowGoButton(false);
       prevSwipeRef.current = -1;
+      prevScrambleRef.current = -1;
+      setScrambleIndex(-1);
       // Reset video scenes for new loop
       resetVideoSceneState(video2StateRef.current);
       const v2El = video2ElRef.current;
@@ -863,6 +934,19 @@ function Renderer({
       setActiveSwipe(newSwipe);
     }
 
+    // Determine active scramble text (find last entry where loopTime >= at)
+    let newScramble = -1;
+    for (let i = SCRAMBLE_TEXTS.length - 1; i >= 0; i--) {
+      if (loopTime >= SCRAMBLE_TEXTS[i].at) {
+        newScramble = i;
+        break;
+      }
+    }
+    if (newScramble !== prevScrambleRef.current) {
+      prevScrambleRef.current = newScramble;
+      setScrambleIndex(newScramble);
+    }
+
     // 6. Compositor to screen
     res.compositor.mat.uniforms.iChannel0.value = ch0;
     res.compositor.mat.uniforms.iChannel1.value = ch1;
@@ -882,6 +966,9 @@ export default function FlyThroughScene() {
   const [showPath, setShowPath] = useState(false);
   const [showGoButton, setShowGoButton] = useState(false);
   const [activeSwipe, setActiveSwipe] = useState(-1);
+  const [scrambleIndex, setScrambleIndex] = useState(-1);
+  const scrambleElRef = useRef<HTMLDivElement>(null);
+  const scrambleAnimRef = useRef(0);
   const tlRef = useRef<TimelineControl>({
     time: 0,
     paused: false,
@@ -892,6 +979,31 @@ export default function FlyThroughScene() {
     goShown: false,
     goShownTime: 0,
   });
+
+  // Scramble text effect
+  useEffect(() => {
+    const el = scrambleElRef.current;
+    if (!el) return;
+
+    if (scrambleIndex < 0 || scrambleIndex >= SCRAMBLE_TEXTS.length) {
+      el.innerHTML = '';
+      cancelAnimationFrame(scrambleAnimRef.current);
+      return;
+    }
+
+    const { text } = SCRAMBLE_TEXTS[scrambleIndex];
+    if (text === '') {
+      el.innerHTML = '';
+      cancelAnimationFrame(scrambleAnimRef.current);
+    } else {
+      scrambleText(el, text, scrambleAnimRef);
+    }
+  }, [scrambleIndex]);
+
+  // Cleanup scramble animation on unmount
+  useEffect(() => {
+    return () => cancelAnimationFrame(scrambleAnimRef.current);
+  }, []);
 
   const handleGoClick = () => {
     tlRef.current.goClicked = true;
@@ -941,7 +1053,7 @@ export default function FlyThroughScene() {
           dpr={[1, 2]}
           onCreated={handleCreated}
         >
-          <Renderer showPath={showPath} tlRef={tlRef} setShowGoButton={setShowGoButton} setActiveSwipe={setActiveSwipe} />
+          <Renderer showPath={showPath} tlRef={tlRef} setShowGoButton={setShowGoButton} setActiveSwipe={setActiveSwipe} setScrambleIndex={setScrambleIndex} />
         </Canvas>
       </Suspense>
 
@@ -950,6 +1062,26 @@ export default function FlyThroughScene() {
         const { showAt: _, hideAt: __, ...props } = SWIPE_REVEALS[activeSwipe];
         return <SwipeRevealText key={activeSwipe} {...props} />;
       })()}
+
+      {/* Scramble text overlay */}
+      <div
+        ref={scrambleElRef}
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 100,
+          pointerEvents: 'none',
+          color: '#ffffff',
+          fontFamily: "'Courier New', monospace",
+          fontSize: '4rem',
+          fontWeight: 'bold',
+          textShadow: '0 0 8px currentColor',
+          whiteSpace: 'nowrap',
+          letterSpacing: '0.05em',
+        }}
+      />
 
       {/* GO button — appears after HUD typing completes */}
       <GoButton visible={showGoButton} autoDelay={0.7} onClick={handleGoClick} />
