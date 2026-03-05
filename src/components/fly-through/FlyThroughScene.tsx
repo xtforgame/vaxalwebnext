@@ -232,7 +232,7 @@ interface ScrambleEntry {
 
 const SCRAMBLE_TEXTS: ScrambleEntry[] = [
   // Add entries here, e.g.:
-  { at: PHASE_I_END + 3, text: '> 一些文字' },
+  { at: PHASE_I_END + 4, text: '> 一些文字' },
   { at: PHASE_I_END + 7, text: 'wgeg' },
   { at: PHASE_I_END + 11, text: 'rbnynyn' },
 ];

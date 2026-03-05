@@ -41,8 +41,10 @@ export const TIMELINE: TimelineAction[] = [
   { type: 'seek', time: START_TIME, to: 36 },
   { type: 'play', time: START_TIME },
 
+  { type: 'overlay-show', time: START_TIME + 2, text: '讓狗狗們自行討論和分工...' },
   { type: 'speed', time: START_TIME += 1, rate: 12 },
   { type: 'pause', time: START_TIME += 7 },
+  { type: 'overlay-hide', time: START_TIME },
 
     //
   {
@@ -54,9 +56,27 @@ export const TIMELINE: TimelineAction[] = [
     easing: 'easeInOutCubic',
   },
 
-  { type: 'play', time: START_TIME += 10000 },
+
+  {
+    type: 'zoom',
+    time: START_TIME += 3,
+    scale: 1,
+    focal: [0.5, 0.5],
+    duration: 1,
+    easing: 'easeInOutCubic',
+  },
+  { type: 'play', time: START_TIME += 1 },
   { type: 'speed', time: START_TIME, rate: 12 },
 
+  { type: 'pause', time: START_TIME += 5 },
+  {
+    type: 'zoom',
+    time: START_TIME,
+    scale: 1.5,
+    focal: [0.5, 0.6],
+    duration: 1,
+    easing: 'easeInOutCubic',
+  },
 
   // //
   // {
