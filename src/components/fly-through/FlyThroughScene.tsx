@@ -27,6 +27,7 @@ import {
 } from './createVideoScene';
 import { VIDEO_SRC as VIDEO2_SRC, VIDEO_ASPECT as VIDEO2_ASPECT, TIMELINE as VIDEO2_TIMELINE } from '@/components/video2-display/timelineData';
 import { VIDEO_SRC as VIDEO1_SRC, VIDEO_ASPECT as VIDEO1_ASPECT, TIMELINE as VIDEO1_TIMELINE } from '@/components/video1-display/timelineData';
+import { VIDEO_SRC as VIDEO5_SRC, VIDEO_ASPECT as VIDEO5_ASPECT, TIMELINE as VIDEO5_TIMELINE } from '@/components/video5-display/timelineData';
 
 // ============ Constants ============
 
@@ -81,11 +82,16 @@ const VIDEO1_PHASE_DURATION = 24;                         // video1 display dura
 const PHASE_I_END         = PHASE_H_END + VIDEO1_PHASE_DURATION; // pure video1
 const PHASE_J_END         = PHASE_I_END + 3;             // video1 → fly (3s)
 const PHASE_K_END         = PHASE_J_END + 7;             // fly → show text (7s)
-const LOOP_DURATION       = 250;
+const PHASE_L_END         = PHASE_K_END + 3;             // fly → video5 (3s)
+const VIDEO5_PHASE_DURATION = 54;                         // video5 display duration
+const PHASE_M_END         = PHASE_L_END + VIDEO5_PHASE_DURATION; // pure video5
+const PHASE_N_END         = PHASE_M_END + 3;             // video5 → fly (3s)
+const LOOP_DURATION       = 350;
 
 // Video timelines (pre-sorted for update function)
 const VIDEO2_SORTED_TIMELINE = [...VIDEO2_TIMELINE].sort((a, b) => a.time - b.time);
 const VIDEO1_SORTED_TIMELINE = [...VIDEO1_TIMELINE].sort((a, b) => a.time - b.time);
+const VIDEO5_SORTED_TIMELINE = [...VIDEO5_TIMELINE].sort((a, b) => a.time - b.time);
 
 // HUD timing config (passed to HudTypingGlass)
 const HUD_TIMING: HudTimingConfig = {
@@ -236,6 +242,7 @@ const SCRAMBLE_TEXTS: ScrambleEntry[] = [
   { at: PHASE_J_END + 1, text: '> Roise不只能回答問題，更能主動工作' },
   { at: PHASE_J_END + 4, text: '> 一隻Roise不能解決的問題' },
   { at: PHASE_J_END + 6, text: '> 那就兩隻、三隻' },
+  { at: PHASE_J_END + 8, text: '' },
 ];
 
 // ============ Helpers ============
@@ -399,6 +406,14 @@ function Renderer({
       fboHeight: h,
     });
 
+    const video5 = createVideoScene({
+      videoAspect: VIDEO5_ASPECT,
+      viewWidth: size.width,
+      viewHeight: size.height,
+      fboWidth: w,
+      fboHeight: h,
+    });
+
     const compositor = createCompositorScene({
       flyTexture: fly.fbo.texture,
       hackerTexture: hacker.imgFBO.texture,
@@ -406,7 +421,7 @@ function Renderer({
       height: h,
     });
 
-    return { orthoCam, fly, hacker, card, video2, video1, compositor };
+    return { orthoCam, fly, hacker, card, video2, video1, video5, compositor };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fontTexture, cardTexture, panoTexture, skyboxCube]);
 
@@ -424,6 +439,9 @@ function Renderer({
   const video1StateRef = useRef(createVideoSceneState());
   const video1ElRef = useRef<HTMLVideoElement | null>(null);
   const video1TexRef = useRef<THREE.VideoTexture | null>(null);
+  const video5StateRef = useRef(createVideoSceneState());
+  const video5ElRef = useRef<HTMLVideoElement | null>(null);
+  const video5TexRef = useRef<THREE.VideoTexture | null>(null);
 
   // Handle resize
   useEffect(() => {
@@ -449,6 +467,10 @@ function Renderer({
     res.video1.cam.left = -vHalfW;
     res.video1.cam.right = vHalfW;
     res.video1.cam.updateProjectionMatrix();
+    res.video5.fbo.setSize(w, h);
+    res.video5.cam.left = -vHalfW;
+    res.video5.cam.right = vHalfW;
+    res.video5.cam.updateProjectionMatrix();
   }, [size, gl, res]);
 
   // Toggle path visibility
@@ -477,6 +499,7 @@ function Renderer({
       disposeHudTypingGlass(res.fly.hud);
       disposeVideoScene(res.video2);
       disposeVideoScene(res.video1);
+      disposeVideoScene(res.video5);
     };
   }, [res]);
 
@@ -638,6 +661,50 @@ function Renderer({
     };
   }, [res]);
 
+  // Video5 scene: create video element, swap texture when ready
+  useEffect(() => {
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.loop = false;
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    video5ElRef.current = video;
+
+    const onCanPlay = () => {
+      const vTex = new THREE.VideoTexture(video);
+      vTex.minFilter = THREE.LinearFilter;
+      vTex.magFilter = THREE.LinearFilter;
+      video5TexRef.current = vTex;
+    };
+    video.addEventListener('canplay', onCanPlay, { once: true });
+
+    let retryCount = 0;
+    const onError = () => {
+      if (retryCount < 5) {
+        retryCount++;
+        setTimeout(() => {
+          video.src = VIDEO5_SRC;
+          video.load();
+        }, 2000 * retryCount);
+      }
+    };
+    video.addEventListener('error', onError);
+
+    video.src = VIDEO5_SRC;
+
+    return () => {
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+      video5TexRef.current?.dispose();
+      video5TexRef.current = null;
+      video5ElRef.current = null;
+      res.video5.videoMaterial.map = null;
+      res.video5.videoMaterial.needsUpdate = true;
+    };
+  }, [res]);
+
   // ---- Render loop (priority 1 → disables R3F auto-render) ----
   useFrame((state, delta) => {
     const time = state.clock.elapsedTime;
@@ -692,6 +759,19 @@ function Renderer({
       res.video1.overlayGroup.visible = false;
       res.video1.videoMaterial.map = null;
       res.video1.videoMaterial.needsUpdate = true;
+      resetVideoSceneState(video5StateRef.current);
+      const v5El = video5ElRef.current;
+      if (v5El) {
+        v5El.pause();
+        v5El.currentTime = 0;
+        v5El.playbackRate = 1;
+      }
+      res.video5.cam.zoom = 1;
+      res.video5.cam.position.set(0, 0, 5);
+      res.video5.cam.updateProjectionMatrix();
+      res.video5.overlayGroup.visible = false;
+      res.video5.videoMaterial.map = null;
+      res.video5.videoMaterial.needsUpdate = true;
     }
     const loopTime = tl.time;
 
@@ -706,6 +786,8 @@ function Renderer({
       gl.render(res.video2.scene, res.video2.cam);
       gl.setRenderTarget(res.video1.fbo);
       gl.render(res.video1.scene, res.video1.cam);
+      gl.setRenderTarget(res.video5.fbo);
+      gl.render(res.video5.scene, res.video5.cam);
     }
 
     // Advance fly-through camera along spline
@@ -749,6 +831,7 @@ function Renderer({
     let needsCard = false;
     let needsVideo2 = false;
     let needsVideo1 = false;
+    let needsVideo5 = false;
     let ch0 = res.fly.fbo.texture;
     let ch1 = res.fly.fbo.texture;
     let prog = 0;
@@ -813,6 +896,24 @@ function Renderer({
       ch0 = res.video1.fbo.texture;
       ch1 = res.fly.fbo.texture;
       prog = smoothstep01((loopTime - PHASE_I_END) / (PHASE_J_END - PHASE_I_END));
+    } else if (loopTime < PHASE_L_END) {
+      // Phase K→L: fly → video5
+      needsFly = true;
+      needsVideo5 = true;
+      ch0 = res.fly.fbo.texture;
+      ch1 = res.video5.fbo.texture;
+      prog = smoothstep01((loopTime - PHASE_K_END) / (PHASE_L_END - PHASE_K_END));
+    } else if (loopTime < PHASE_M_END) {
+      // Phase M: pure video5
+      needsVideo5 = true;
+      ch0 = res.video5.fbo.texture;
+    } else if (loopTime < PHASE_N_END) {
+      // Phase N: video5 → fly
+      needsVideo5 = true;
+      needsFly = true;
+      ch0 = res.video5.fbo.texture;
+      ch1 = res.fly.fbo.texture;
+      prog = smoothstep01((loopTime - PHASE_M_END) / (PHASE_N_END - PHASE_M_END));
     } else {
       // Pure fly-through until LOOP_DURATION
       needsFly = true;
@@ -920,6 +1021,18 @@ function Renderer({
       }
       gl.setRenderTarget(res.video1.fbo);
       gl.render(res.video1.scene, res.video1.cam);
+    }
+
+    // 6. Render video5 scene
+    if (needsVideo5) {
+      const v5El = video5ElRef.current;
+      const v5Tex = video5TexRef.current;
+      if (v5El) {
+        const v5Elapsed = loopTime - PHASE_K_END;
+        updateVideoScene(res.video5, video5StateRef.current, v5El, v5Tex, v5Elapsed, VIDEO5_SORTED_TIMELINE);
+      }
+      gl.setRenderTarget(res.video5.fbo);
+      gl.render(res.video5.scene, res.video5.cam);
     }
 
     // Determine active swipe reveal
