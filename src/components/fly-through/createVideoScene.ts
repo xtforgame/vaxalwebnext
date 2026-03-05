@@ -202,7 +202,7 @@ export function createVideoScene(cfg: VideoSceneConfig): VideoSceneResources {
     overlayGroup, gearSubGroup,
     gear1, gear2, gear1Geo, gear2Geo, gear1Mat, gear2Mat,
     backdropGeo, backdropMat,
-    textCanvas, textCtx, textTexture, textPlaneGeo, textMat,
+    textCanvas, textCtx, textTexture, textPlaneGeo, textMat, textMesh,
   };
 }
 
@@ -351,14 +351,40 @@ export function updateVideoScene(
 
 function renderOverlayText(res: VideoSceneResources, text: string): void {
   const { textCtx: ctx, textCanvas: cvs, textTexture: tex } = res;
-  ctx.clearRect(0, 0, cvs.width, cvs.height);
-  if (text) {
-    ctx.font = 'bold 92px sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, cvs.width / 2, cvs.height / 2);
+
+  if (!text) {
+    // Reset to base size
+    if (cvs.width !== TEXT_CANVAS_W) {
+      cvs.width = TEXT_CANVAS_W;
+    }
+    ctx.clearRect(0, 0, cvs.width, cvs.height);
+    res.textMesh.scale.x = 1;
+    tex.needsUpdate = true;
+    return;
   }
+
+  // Measure at fixed font size
+  ctx.font = 'bold 92px sans-serif';
+  const measured = ctx.measureText(text).width;
+  const needed = Math.ceil(measured * 1.15); // 15% padding
+
+  // Widen canvas if text overflows, otherwise reset to base
+  const targetW = Math.max(TEXT_CANVAS_W, needed);
+  if (cvs.width !== targetW) {
+    cvs.width = targetW;
+    ctx.font = 'bold 92px sans-serif'; // context resets on resize
+  }
+  ctx.clearRect(0, 0, cvs.width, cvs.height);
+
+  // Scale mesh X so wider canvas maps to a wider plane, keeping text height unchanged
+  res.textMesh.scale.x = targetW / TEXT_CANVAS_W;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, cvs.width / 2, cvs.height / 2);
+
+  tex.image = cvs;
   tex.needsUpdate = true;
 }
 

@@ -87,4 +87,5 @@ export interface VideoSceneResources {
   textTexture: THREE.CanvasTexture;
   textPlaneGeo: THREE.PlaneGeometry;
   textMat: THREE.MeshBasicMaterial;
+  textMesh: THREE.Mesh;
 }
