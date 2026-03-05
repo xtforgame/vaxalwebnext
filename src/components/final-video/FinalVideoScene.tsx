@@ -112,12 +112,19 @@ export default function FinalVideoScene() {
     return () => clearTimeout(t);
   }, []);
 
-  // ── Advance to next video on timer ──
+  // ── Advance to next video / pause last video on timer ──
   useEffect(() => {
     if (currentIndex < 0 || currentIndex >= VIDEO_SEQUENCE.length) return;
     const cfg = VIDEO_SEQUENCE[currentIndex];
-    if (currentIndex >= VIDEO_SEQUENCE.length - 1) return; // last video stays
-    const t = setTimeout(() => setCurrentIndex((i) => i + 1), cfg.durationMs);
+    const isLast = currentIndex >= VIDEO_SEQUENCE.length - 1;
+    const t = setTimeout(() => {
+      if (isLast) {
+        // Pause the last video when its duration ends
+        videoRefs.current[currentIndex]?.pause();
+      } else {
+        setCurrentIndex((i) => i + 1);
+      }
+    }, cfg.durationMs);
     return () => clearTimeout(t);
   }, [currentIndex]);
 
