@@ -1,24 +1,40 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
-// ─── Configuration ───────────────────────────────────────────────
-const YEAR_INTERVAL_MS = 3000; // k: time between year changes (ms)
-const START_YEAR = 2023;
-const END_YEAR = 2025;
+// ═══════════════════════════════════════════════════════════════════
+// Configuration — adjust these values to control the scene
+// ═══════════════════════════════════════════════════════════════════
 
-// Videos mapped to each year. startTime = seconds to begin playback from (default 0).
-const VIDEO_SOURCES: Record<number, { src: string; startTime: number }> = {
-  2023: { src: '/video/BigBuckBunny.mp4', startTime: 5 },
-  2024: { src: '/video/ElephantsDream.mp4', startTime: 5 },
-  2025: { src: '/video/BigBuckBunny.mp4', startTime: 5 },
+/** How long each year is displayed before advancing (ms) */
+const YEAR_DURATION_MS: Record<number, number> = {
+  2024: 9000,
+  2025: 9000,
 };
 
-const VIDEO_ASPECT = 1280 / 720; // 16:9
+/** Video config per year: source path, start time (seconds), playback speed (1 = normal) */
+const VIDEO_CONFIG: Record<
+  number,
+  { src: string; startTime: number; playbackRate: number }
+> = {
+  2024: { src: '/large-videos/2024code.mov', startTime: 3, playbackRate: 2 },
+  2025: { src: '/large-videos/2025code.mov', startTime: 16, playbackRate: 4 },
+};
+
+/** Video aspect ratio (width / height). Adjust to match your video files. */
+const VIDEO_ASPECT = 16 / 9;
+
+// ═══════════════════════════════════════════════════════════════════
 
 // ─── Odometer Digit ──────────────────────────────────────────────
-function OdometerDigit({ digit }: { digit: string }) {
+function OdometerDigit({
+  digit,
+  duration = 0.6,
+}: {
+  digit: string;
+  duration?: number;
+}) {
   return (
     <div
       style={{
@@ -35,7 +51,7 @@ function OdometerDigit({ digit }: { digit: string }) {
           initial={{ y: '-100%' }}
           animate={{ y: '0%' }}
           exit={{ y: '100%' }}
-          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+          transition={{ duration, ease: [0.4, 0, 0.2, 1] }}
           style={{
             position: 'absolute',
             left: 0,
@@ -54,14 +70,19 @@ function OdometerDigit({ digit }: { digit: string }) {
 }
 
 // ─── Odometer Year ───────────────────────────────────────────────
-function OdometerYear({ year }: { year: number }) {
+function OdometerYear({
+  year,
+  digitDuration = 0.6,
+}: {
+  year: number;
+  digitDuration?: number;
+}) {
   const digits = String(year).split('');
   return (
     <div
       style={{
         display: 'flex',
         justifyContent: 'center',
-        fontSize: 'clamp(3rem, 8vw, 6rem)',
         fontWeight: 700,
         fontVariantNumeric: 'tabular-nums',
         color: '#fff',
@@ -71,153 +92,164 @@ function OdometerYear({ year }: { year: number }) {
       }}
     >
       {digits.map((d, i) => (
-        <OdometerDigit key={`pos-${i}`} digit={d} />
+        <OdometerDigit key={`pos-${i}`} digit={d} duration={digitDuration} />
       ))}
     </div>
   );
 }
 
-// ─── Video Player with Preload + Fade ────────────────────────────
-function usePreloadedVideos(sources: string[]) {
-  const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
-
-  useEffect(() => {
-    const map = videoRefs.current;
-    for (const src of sources) {
-      if (!map.has(src)) {
-        const video = document.createElement('video');
-        video.src = src;
-        video.muted = true;
-        video.loop = true;
-        video.playsInline = true;
-        video.preload = 'auto';
-        // Start buffering
-        video.load();
-        map.set(src, video);
-      }
-    }
-    return () => {
-      for (const [, video] of map) {
-        video.pause();
-        video.removeAttribute('src');
-        video.load();
-      }
-      map.clear();
-    };
-  }, [sources]);
-
-  return videoRefs;
-}
-
-function FadeVideo({ src, isActive, startTime = 0 }: { src: string; isActive: boolean; startTime?: number }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (isActive) {
-      video.currentTime = startTime;
-      video.play().catch(() => {});
-    } else {
-      video.pause();
-    }
-  }, [isActive, startTime]);
-
-  return (
-    <motion.video
-      ref={videoRef}
-      src={src}
-      muted
-      loop
-      playsInline
-      preload="auto"
-      initial={false}
-      animate={{ opacity: isActive ? 1 : 0 }}
-      transition={
-        isActive
-          ? { duration: 0.8, ease: 'easeInOut' }
-          : { duration: 0, delay: 0.8 }
-      }
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        objectFit: 'contain',
-        zIndex: isActive ? 1 : 0,
-      }}
-    />
-  );
-}
+// ─── Phase machine ───────────────────────────────────────────────
+// playing → outro (video fades + text moves to center + slow digit roll, all simultaneous)
+//         → outroFade (text fades out) → done
+type Phase = 'playing' | 'outro' | 'outroFade' | 'done';
 
 // ─── Main Scene ──────────────────────────────────────────────────
 export default function YearVideosScene() {
-  const [currentYear, setCurrentYear] = useState(START_YEAR);
+  const [currentYear, setCurrentYear] = useState(2024);
+  const [phase, setPhase] = useState<Phase>('playing');
+  const video2024Ref = useRef<HTMLVideoElement>(null);
+  const video2025Ref = useRef<HTMLVideoElement>(null);
 
-  // Unique video src paths for preloading
-  const allSrcPaths = useMemo(
-    () => [...new Set(Object.values(VIDEO_SOURCES).map((v) => v.src))],
-    [],
-  );
-
-  // Preload all videos on mount
-  usePreloadedVideos(allSrcPaths);
-
-  // Year cycling timer
+  // ── Advance year on timer; entering 2026 triggers outro simultaneously ──
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentYear((prev) => {
-        if (prev >= END_YEAR) return START_YEAR;
-        return prev + 1;
-      });
-    }, YEAR_INTERVAL_MS);
-    return () => clearInterval(timer);
-  }, []);
+    if (phase !== 'playing') return;
+    const duration = YEAR_DURATION_MS[currentYear];
+    if (!duration) return;
+    const t = setTimeout(() => {
+      const next = currentYear + 1;
+      if (next === 2026) {
+        // Batch both updates → same render → slow digit duration applies immediately
+        setPhase('outro');
+      }
+      setCurrentYear(next);
+    }, duration);
+    return () => clearTimeout(t);
+  }, [currentYear, phase]);
 
-  // Get current video config
-  const currentConfig = VIDEO_SOURCES[currentYear] ?? { src: allSrcPaths[0], startTime: 0 };
+  // ── Outro phase sequencer ──
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout>;
+    if (phase === 'outro') {
+      // Wait for text movement + slow digit roll to settle
+      t = setTimeout(() => setPhase('outroFade'), 2800);
+    } else if (phase === 'outroFade') {
+      t = setTimeout(() => setPhase('done'), 1500);
+    }
+    return () => clearTimeout(t!);
+  }, [phase]);
 
-  // Build list of all unique sources with their active state + startTime
-  const videoEntries = useMemo(() => {
-    return allSrcPaths.map((src) => ({
-      src,
-      isActive: src === currentConfig.src,
-      startTime: src === currentConfig.src ? currentConfig.startTime : 0,
-    }));
-  }, [allSrcPaths, currentConfig]);
+  // ── Video playback control ──
+  useEffect(() => {
+    const v2024 = video2024Ref.current;
+    const v2025 = video2025Ref.current;
+
+    if (currentYear === 2024 && v2024) {
+      const cfg = VIDEO_CONFIG[2024];
+      v2024.currentTime = cfg.startTime;
+      v2024.playbackRate = cfg.playbackRate;
+      v2024.play().catch(() => {});
+      v2025?.pause();
+    } else if (currentYear === 2025 && v2025) {
+      const cfg = VIDEO_CONFIG[2025];
+      v2025.currentTime = cfg.startTime;
+      v2025.playbackRate = cfg.playbackRate;
+      v2025.play().catch(() => {});
+      v2024?.pause();
+    }
+  }, [currentYear]);
+
+  // ── Derived animation states ──
+  const isOutro = phase === 'outro' || phase === 'outroFade' || phase === 'done';
+  const videoOpacity = phase === 'playing' ? 1 : 0;
+  const textOpacity = phase === 'outroFade' || phase === 'done' ? 0 : 1;
+
+  // Digit roll speed: normal → slow → dramatic
+  const digitDuration = isOutro ? 2.8 : 1.8;
 
   return (
     <div
       style={{
+        position: 'relative',
         width: '100vw',
         height: '100vh',
         backgroundColor: '#000',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 'clamp(1.5rem, 4vh, 3rem)',
         overflow: 'hidden',
       }}
     >
-      {/* Year Odometer */}
-      <OdometerYear year={currentYear} />
-
-      {/* Video Container — 16:9 responsive */}
-      <div
+      {/* ── Video Layer ── */}
+      <motion.div
+        initial={false}
+        animate={{ opacity: videoOpacity }}
+        transition={{ duration: 1.5, ease: 'easeInOut' }}
         style={{
-          position: 'relative',
-          width: 'min(80vw, 720px)',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
           aspectRatio: `${VIDEO_ASPECT}`,
-          borderRadius: '8px',
-          overflow: 'hidden',
         }}
       >
-        {videoEntries.map(({ src, isActive, startTime }) => (
-          <FadeVideo key={src} src={src} isActive={isActive} startTime={startTime} />
-        ))}
-      </div>
+        <motion.video
+          ref={video2024Ref}
+          src={VIDEO_CONFIG[2024].src}
+          muted
+          loop
+          playsInline
+          preload="auto"
+          initial={false}
+          animate={{ opacity: currentYear === 2024 ? 1 : 0 }}
+          transition={{ duration: 1.8, ease: 'easeInOut' }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
+        <motion.video
+          ref={video2025Ref}
+          src={VIDEO_CONFIG[2025].src}
+          muted
+          loop
+          playsInline
+          preload="auto"
+          initial={false}
+          animate={{ opacity: currentYear >= 2025 ? 1 : 0 }}
+          transition={{ duration: 1.8, ease: 'easeInOut' }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
+      </motion.div>
+
+      {/* ── Year Text Overlay ── */}
+      <motion.div
+        initial={false}
+        animate={{
+          top: isOutro ? '50%' : '5%',
+          y: isOutro ? '-50%' : '0%',
+          scale: isOutro ? 2.5 : 1,
+          opacity: textOpacity,
+        }}
+        transition={{ duration: isOutro ? 2.2 : 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+        style={{
+          position: 'absolute',
+          left: '50%',
+          x: '-50%',
+          zIndex: 10,
+          fontSize: 'clamp(3rem, 8vw, 6rem)',
+          pointerEvents: 'none',
+        }}
+      >
+        <OdometerYear year={currentYear} digitDuration={digitDuration} />
+      </motion.div>
     </div>
   );
 }
