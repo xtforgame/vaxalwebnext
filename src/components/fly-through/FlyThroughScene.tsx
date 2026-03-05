@@ -92,7 +92,8 @@ const PHASE_P_END         = PHASE_O_END + 3;             // fly → video6 (3s)
 const VIDEO6_PHASE_DURATION = 25;                         // video6 display duration
 const PHASE_Q_END         = PHASE_P_END + VIDEO6_PHASE_DURATION; // pure video6
 const PHASE_R_END         = PHASE_Q_END + 3;             // video6 → fly (3s)
-const PHASE_FINISH         = PHASE_R_END + 7;             // finish (7s)
+const PHASE_SCENE_FADE_OUT_START  = PHASE_R_END + 3;     // scene fade out (5s)
+const PHASE_SCENE_FADE_OUT_END  = PHASE_SCENE_FADE_OUT_START + 5;             // scene fade out end (5s)
 const LOOP_DURATION       = 350;
 
 // Video timelines (pre-sorted for update function)
