@@ -232,9 +232,9 @@ interface ScrambleEntry {
 
 const SCRAMBLE_TEXTS: ScrambleEntry[] = [
   // Add entries here, e.g.:
-  { at: PHASE_I_END + 4, text: '> 一些文字' },
-  { at: PHASE_I_END + 7, text: 'wgeg' },
-  { at: PHASE_I_END + 11, text: 'rbnynyn' },
+  { at: PHASE_I_END + 4, text: '> Roise不只能回答問題，更能主動工作' },
+  { at: PHASE_I_END + 7, text: '> 一隻Roise不能解決的問題' },
+  { at: PHASE_I_END + 9, text: '> 那就兩隻、三隻' },
 ];
 
 // ============ Helpers ============
