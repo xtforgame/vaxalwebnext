@@ -228,6 +228,47 @@ const SWIPE_REVEALS: SwipeRevealEntry[] = [
     titleStyle: { backgroundColor: 'rgba(128, 128, 128, 1)', fontSize: 48, fontWeight: 900, lineHeight: 1, color: '#ffffff', fontFamily: 'montserrat, sans-serif' },
     descriptionStyle: { backgroundColor: 'rgba(128, 128, 128, 1)', fontSize: 32, fontWeight: 700, lineHeight: 1, color: '#ffffff', fontFamily: 'montserrat, sans-serif' },
   },
+
+  {
+    showAt: PHASE_L_END + 2,
+    hideAt: PHASE_L_END + 11,
+    title: <span className='text-white'>R.O.S.I.E. <span className='text-orange-500'>Embedded Mode （內嵌模式）</span></span>,
+    description: (
+      <>
+        <span>新後台內建 R.O.S.I.E. </span>
+        <span className='text-yellow-500'>協助您操作後台</span>
+      </>
+    ),
+    x: 48,
+    y: 120,
+    delay: 0,
+    stagger: TITLE_STAGGER,
+    duration: TITLE_DURATION,
+    exitDelay: 5,
+    titleStyle: { backgroundColor: '#000000', fontSize: 48, fontWeight: 900, lineHeight: 1, color: '#ffffff', fontFamily: 'montserrat, sans-serif' },
+    descriptionStyle: { backgroundColor: '#000000', fontSize: 32, fontWeight: 700, lineHeight: 1, color: '#ffffff', fontFamily: 'montserrat, sans-serif' },
+  },
+
+
+  {
+    showAt: PHASE_L_END + 20,
+    hideAt: PHASE_M_END,
+    title: <span className='text-white'>Project <span className='text-orange-500'>Dg Cell</span></span>,
+    description: (
+      <>
+        <span>由Rosie PM、Rosie工程師、Rosie測試員</span>
+        <span className='text-green-500'>接手整個開發流程</span>
+      </>
+    ),
+    x: 48,
+    y: 120,
+    delay: 0,
+    stagger: TITLE_STAGGER,
+    duration: TITLE_DURATION,
+    exitDelay: 5,
+    titleStyle: { fontSize: 48, fontWeight: 900, lineHeight: 1, color: '#ffffff', fontFamily: 'montserrat, sans-serif' },
+    descriptionStyle: { fontSize: 32, fontWeight: 700, lineHeight: 1, color: '#ffffff', fontFamily: 'montserrat, sans-serif' },
+  },
 ];
 
 // ============ Scramble Text Configs ============
@@ -239,8 +280,8 @@ interface ScrambleEntry {
 
 const SCRAMBLE_TEXTS: ScrambleEntry[] = [
   // Add entries here, e.g.:
-  { at: PHASE_J_END + 1, text: '> Roise不只能回答問題，更能主動工作' },
-  { at: PHASE_J_END + 4, text: '> 一隻Roise不能解決的問題' },
+  { at: PHASE_J_END + 1, text: '> Rosie不只能回答問題，更能主動工作' },
+  { at: PHASE_J_END + 4, text: '> 一隻Rosie不能解決的問題' },
   { at: PHASE_J_END + 6, text: '> 那就兩隻、三隻' },
   { at: PHASE_J_END + 8, text: '' },
 ];
