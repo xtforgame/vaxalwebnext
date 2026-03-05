@@ -80,6 +80,7 @@ const PHASE_H_END         = PHASE_G_END + 3;             // video2 → video1 (3
 const VIDEO1_PHASE_DURATION = 24;                         // video1 display duration
 const PHASE_I_END         = PHASE_H_END + VIDEO1_PHASE_DURATION; // pure video1
 const PHASE_J_END         = PHASE_I_END + 3;             // video1 → fly (3s)
+const PHASE_K_END         = PHASE_J_END + 7;             // fly → show text (7s)
 const LOOP_DURATION       = 250;
 
 // Video timelines (pre-sorted for update function)
@@ -232,9 +233,9 @@ interface ScrambleEntry {
 
 const SCRAMBLE_TEXTS: ScrambleEntry[] = [
   // Add entries here, e.g.:
-  { at: PHASE_I_END + 4, text: '> Roise不只能回答問題，更能主動工作' },
-  { at: PHASE_I_END + 7, text: '> 一隻Roise不能解決的問題' },
-  { at: PHASE_I_END + 9, text: '> 那就兩隻、三隻' },
+  { at: PHASE_J_END + 1, text: '> Roise不只能回答問題，更能主動工作' },
+  { at: PHASE_J_END + 4, text: '> 一隻Roise不能解決的問題' },
+  { at: PHASE_J_END + 6, text: '> 那就兩隻、三隻' },
 ];
 
 // ============ Helpers ============
