@@ -35,7 +35,7 @@ export function createFlyScene(cfg: FlySceneConfig): FlySceneResources & { hud: 
 
   // Instanced cubes
   const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
-  const cubeMat = new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.3 });
+  const cubeMat = new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.3, transparent: true });
   const cubes = new THREE.InstancedMesh(cubeGeo, cubeMat, cfg.cubeCount);
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
@@ -76,5 +76,5 @@ export function createFlyScene(cfg: FlySceneConfig): FlySceneResources & { hud: 
   const hud = createHudTypingGlass(cfg.skyboxCube);
   scene.add(hud.group);
 
-  return { fbo, scene, pointLight, flyCam, pathMesh, hud };
+  return { fbo, scene, pointLight, flyCam, pathMesh, cubeMat, hud };
 }

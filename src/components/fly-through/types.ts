@@ -31,6 +31,7 @@ export interface FlySceneResources {
   pointLight: THREE.PointLight;
   flyCam: import('./FlyThroughCamera').FlyThroughCamera;
   pathMesh: THREE.Mesh;
+  cubeMat: THREE.MeshStandardMaterial;
 }
 
 export interface HackerScenesResources {

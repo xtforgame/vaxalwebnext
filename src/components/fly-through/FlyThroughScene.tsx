@@ -82,18 +82,18 @@ const PHASE_H_END         = PHASE_G_END + 3;             // video2 → video1 (3
 const VIDEO1_PHASE_DURATION = 24;                         // video1 display duration
 const PHASE_I_END         = PHASE_H_END + VIDEO1_PHASE_DURATION; // pure video1
 const PHASE_J_END         = PHASE_I_END + 3;             // video1 → fly (3s)
-const PHASE_K_END         = PHASE_J_END + 7;             // fly → show text (7s)
+const PHASE_K_END         = PHASE_J_END + 8;             // fly → show text (7s)
 const PHASE_L_END         = PHASE_K_END + 3;             // fly → video5 (3s)
-const VIDEO5_PHASE_DURATION = 47;                         // video5 display duration
+const VIDEO5_PHASE_DURATION = 50;                         // video5 display duration
 const PHASE_M_END         = PHASE_L_END + VIDEO5_PHASE_DURATION; // pure video5
 const PHASE_N_END         = PHASE_M_END + 3;             // video5 → fly (3s)
-const PHASE_O_END         = PHASE_N_END + 7;             // fly → show text (7s)
+const PHASE_O_END         = PHASE_N_END + 8;             // fly → show text (7s)
 const PHASE_P_END         = PHASE_O_END + 3;             // fly → video6 (3s)
 const VIDEO6_PHASE_DURATION = 25;                         // video6 display duration
 const PHASE_Q_END         = PHASE_P_END + VIDEO6_PHASE_DURATION; // pure video6
 const PHASE_R_END         = PHASE_Q_END + 3;             // video6 → fly (3s)
 const PHASE_SCENE_FADE_OUT_START  = PHASE_R_END + 3;     // scene fade out (5s)
-const PHASE_SCENE_FADE_OUT_END  = PHASE_SCENE_FADE_OUT_START + 5;             // scene fade out end (5s)
+const PHASE_SCENE_FADE_OUT_END  = PHASE_SCENE_FADE_OUT_START + 2;             // scene fade out end (5s)
 const LOOP_DURATION       = 350;
 
 // Video timelines (pre-sorted for update function)
@@ -292,12 +292,15 @@ const SCRAMBLE_TEXTS: ScrambleEntry[] = [
   { at: PHASE_J_END + 1, text: '> Rosie不只能回答問題，更能主動工作' },
   { at: PHASE_J_END + 4, text: '> 一隻Rosie不能解決的問題' },
   { at: PHASE_J_END + 6, text: '> 那就兩隻、三隻' },
-  { at: PHASE_J_END + 8, text: '' },
+  { at: PHASE_J_END + 9, text: '' },
 
   { at: PHASE_N_END + 1, text: '> What\'s next?' },
   { at: PHASE_N_END + 4, text: '> 還有一些實驗性的專案' },
   { at: PHASE_N_END + 6, text: '> 將陸續解放更多AI的可能性' },
-  { at: PHASE_N_END + 8, text: '' },
+  { at: PHASE_N_END + 9, text: '' },
+  { at: PHASE_R_END + 4, text: '> 2026' },
+  { at: PHASE_R_END + 6, text: '> We will go further with AI.' },
+  { at: PHASE_R_END + 10, text: '> We lead. Rosie supports.' },
 ];
 
 // ============ Helpers ============
@@ -843,6 +846,10 @@ function Renderer({
       tl.goShown = false;
       tl.goShownTime = 0;
       resetHudTypingGlass(res.fly.hud);
+      // Restore fly scene from fade-out
+      res.fly.cubeMat.opacity = 1;
+      res.fly.scene.backgroundIntensity = 2.5;
+      res.fly.scene.environmentIntensity = 1.5;
       setShowGoButton(false);
       prevSwipeRef.current = -1;
       prevScrambleRef.current = -1;
@@ -1063,10 +1070,22 @@ function Renderer({
       ch0 = res.video6.fbo.texture;
       ch1 = res.fly.fbo.texture;
       prog = smoothstep01((loopTime - PHASE_Q_END) / (PHASE_R_END - PHASE_Q_END));
-    } else {
-      // Pure fly-through until LOOP_DURATION
+    } else if (loopTime < PHASE_SCENE_FADE_OUT_END) {
+      // Fly-through with fade-out
       needsFly = true;
       ch0 = res.fly.fbo.texture;
+      if (loopTime >= PHASE_SCENE_FADE_OUT_START) {
+        const fadeT = smoothstep01((loopTime - PHASE_SCENE_FADE_OUT_START) / (PHASE_SCENE_FADE_OUT_END - PHASE_SCENE_FADE_OUT_START));
+        // Fade cubes to transparent
+        res.fly.cubeMat.opacity = 1 - fadeT;
+        // Fade skybox & environment
+        res.fly.scene.backgroundIntensity = 2.5 * (1 - fadeT);
+        res.fly.scene.environmentIntensity = 1.5 * (1 - fadeT);
+      }
+    } else {
+      // Fully faded — black screen, skip fly render
+      ch0 = res.fly.fbo.texture;
+      brightness = 0;
     }
 
     // 1. Render fly-through scene
