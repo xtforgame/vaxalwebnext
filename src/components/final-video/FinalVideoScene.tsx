@@ -21,7 +21,7 @@ const VIDEO_SEQUENCE = [
 const CROSSFADE_DURATION = 1.8;
 
 /** Video aspect ratio (width / height) */
-const VIDEO_ASPECT = 16 / 9;
+const VIDEO_ASPECT = 4096 / 2206;
 
 /** Background audio configuration */
 const AUDIO_CONFIG = {
@@ -185,7 +185,7 @@ export default function FinalVideoScene() {
               left: 0,
               width: '100%',
               height: '100%',
-              objectFit: 'cover',
+              objectFit: 'contain',
             }}
           />
         ))}
