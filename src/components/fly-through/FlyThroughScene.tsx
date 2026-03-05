@@ -28,6 +28,7 @@ import {
 import { VIDEO_SRC as VIDEO2_SRC, VIDEO_ASPECT as VIDEO2_ASPECT, TIMELINE as VIDEO2_TIMELINE } from '@/components/video2-display/timelineData';
 import { VIDEO_SRC as VIDEO1_SRC, VIDEO_ASPECT as VIDEO1_ASPECT, TIMELINE as VIDEO1_TIMELINE } from '@/components/video1-display/timelineData';
 import { VIDEO_SRC as VIDEO5_SRC, VIDEO_ASPECT as VIDEO5_ASPECT, TIMELINE as VIDEO5_TIMELINE } from '@/components/video5-display/timelineData';
+import { VIDEO_SRC as VIDEO6_SRC, VIDEO_ASPECT as VIDEO6_ASPECT, TIMELINE as VIDEO6_TIMELINE } from '@/components/video6-display/timelineData';
 
 // ============ Constants ============
 
@@ -83,15 +84,22 @@ const PHASE_I_END         = PHASE_H_END + VIDEO1_PHASE_DURATION; // pure video1
 const PHASE_J_END         = PHASE_I_END + 3;             // video1 → fly (3s)
 const PHASE_K_END         = PHASE_J_END + 7;             // fly → show text (7s)
 const PHASE_L_END         = PHASE_K_END + 3;             // fly → video5 (3s)
-const VIDEO5_PHASE_DURATION = 54;                         // video5 display duration
+const VIDEO5_PHASE_DURATION = 47;                         // video5 display duration
 const PHASE_M_END         = PHASE_L_END + VIDEO5_PHASE_DURATION; // pure video5
 const PHASE_N_END         = PHASE_M_END + 3;             // video5 → fly (3s)
+const PHASE_O_END         = PHASE_N_END + 7;             // fly → show text (7s)
+const PHASE_P_END         = PHASE_O_END + 3;             // fly → video6 (3s)
+const VIDEO6_PHASE_DURATION = 25;                         // video6 display duration
+const PHASE_Q_END         = PHASE_P_END + VIDEO6_PHASE_DURATION; // pure video6
+const PHASE_R_END         = PHASE_Q_END + 3;             // video6 → fly (3s)
+const PHASE_FINISH         = PHASE_R_END + 7;             // finish (7s)
 const LOOP_DURATION       = 350;
 
 // Video timelines (pre-sorted for update function)
 const VIDEO2_SORTED_TIMELINE = [...VIDEO2_TIMELINE].sort((a, b) => a.time - b.time);
 const VIDEO1_SORTED_TIMELINE = [...VIDEO1_TIMELINE].sort((a, b) => a.time - b.time);
 const VIDEO5_SORTED_TIMELINE = [...VIDEO5_TIMELINE].sort((a, b) => a.time - b.time);
+const VIDEO6_SORTED_TIMELINE = [...VIDEO6_TIMELINE].sort((a, b) => a.time - b.time);
 
 // HUD timing config (passed to HudTypingGlass)
 const HUD_TIMING: HudTimingConfig = {
@@ -235,8 +243,8 @@ const SWIPE_REVEALS: SwipeRevealEntry[] = [
     title: <span className='text-white'>R.O.S.I.E. <span className='text-orange-500'>Embedded Mode （內嵌模式）</span></span>,
     description: (
       <>
-        <span>新後台內建 R.O.S.I.E. </span>
-        <span className='text-yellow-500'>協助您操作後台</span>
+        <span>新後台內建 R.O.S.I.E. ，開啟您的</span>
+        <span className='text-yellow-500'>自動駕駛體驗</span>
       </>
     ),
     x: 48,
@@ -256,7 +264,7 @@ const SWIPE_REVEALS: SwipeRevealEntry[] = [
     title: <span className='text-white'>Project <span className='text-orange-500'>Dg Cell</span></span>,
     description: (
       <>
-        <span>由Rosie PM、Rosie工程師、Rosie測試員</span>
+        <span>完全由多個R.O.S.I.E.組成的<span className='text-yellow-500'>無人開發團隊</span>，</span>
         <span className='text-green-500'>接手整個開發流程</span>
       </>
     ),
@@ -284,6 +292,11 @@ const SCRAMBLE_TEXTS: ScrambleEntry[] = [
   { at: PHASE_J_END + 4, text: '> 一隻Rosie不能解決的問題' },
   { at: PHASE_J_END + 6, text: '> 那就兩隻、三隻' },
   { at: PHASE_J_END + 8, text: '' },
+
+  { at: PHASE_N_END + 1, text: '> What\'s next?' },
+  { at: PHASE_N_END + 4, text: '> 還有一些實驗性的專案' },
+  { at: PHASE_N_END + 6, text: '> 將陸續解放更多AI的可能性' },
+  { at: PHASE_N_END + 8, text: '' },
 ];
 
 // ============ Helpers ============
@@ -455,6 +468,14 @@ function Renderer({
       fboHeight: h,
     });
 
+    const video6 = createVideoScene({
+      videoAspect: VIDEO6_ASPECT,
+      viewWidth: size.width,
+      viewHeight: size.height,
+      fboWidth: w,
+      fboHeight: h,
+    });
+
     const compositor = createCompositorScene({
       flyTexture: fly.fbo.texture,
       hackerTexture: hacker.imgFBO.texture,
@@ -462,7 +483,7 @@ function Renderer({
       height: h,
     });
 
-    return { orthoCam, fly, hacker, card, video2, video1, video5, compositor };
+    return { orthoCam, fly, hacker, card, video2, video1, video5, video6, compositor };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fontTexture, cardTexture, panoTexture, skyboxCube]);
 
@@ -483,6 +504,9 @@ function Renderer({
   const video5StateRef = useRef(createVideoSceneState());
   const video5ElRef = useRef<HTMLVideoElement | null>(null);
   const video5TexRef = useRef<THREE.VideoTexture | null>(null);
+  const video6StateRef = useRef(createVideoSceneState());
+  const video6ElRef = useRef<HTMLVideoElement | null>(null);
+  const video6TexRef = useRef<THREE.VideoTexture | null>(null);
 
   // Handle resize
   useEffect(() => {
@@ -512,6 +536,10 @@ function Renderer({
     res.video5.cam.left = -vHalfW;
     res.video5.cam.right = vHalfW;
     res.video5.cam.updateProjectionMatrix();
+    res.video6.fbo.setSize(w, h);
+    res.video6.cam.left = -vHalfW;
+    res.video6.cam.right = vHalfW;
+    res.video6.cam.updateProjectionMatrix();
   }, [size, gl, res]);
 
   // Toggle path visibility
@@ -541,6 +569,7 @@ function Renderer({
       disposeVideoScene(res.video2);
       disposeVideoScene(res.video1);
       disposeVideoScene(res.video5);
+      disposeVideoScene(res.video6);
     };
   }, [res]);
 
@@ -746,6 +775,50 @@ function Renderer({
     };
   }, [res]);
 
+  // Video6 scene: create video element, swap texture when ready
+  useEffect(() => {
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.loop = false;
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    video6ElRef.current = video;
+
+    const onCanPlay = () => {
+      const vTex = new THREE.VideoTexture(video);
+      vTex.minFilter = THREE.LinearFilter;
+      vTex.magFilter = THREE.LinearFilter;
+      video6TexRef.current = vTex;
+    };
+    video.addEventListener('canplay', onCanPlay, { once: true });
+
+    let retryCount = 0;
+    const onError = () => {
+      if (retryCount < 5) {
+        retryCount++;
+        setTimeout(() => {
+          video.src = VIDEO6_SRC;
+          video.load();
+        }, 2000 * retryCount);
+      }
+    };
+    video.addEventListener('error', onError);
+
+    video.src = VIDEO6_SRC;
+
+    return () => {
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+      video6TexRef.current?.dispose();
+      video6TexRef.current = null;
+      video6ElRef.current = null;
+      res.video6.videoMaterial.map = null;
+      res.video6.videoMaterial.needsUpdate = true;
+    };
+  }, [res]);
+
   // ---- Render loop (priority 1 → disables R3F auto-render) ----
   useFrame((state, delta) => {
     const time = state.clock.elapsedTime;
@@ -813,6 +886,19 @@ function Renderer({
       res.video5.overlayGroup.visible = false;
       res.video5.videoMaterial.map = null;
       res.video5.videoMaterial.needsUpdate = true;
+      resetVideoSceneState(video6StateRef.current);
+      const v6El = video6ElRef.current;
+      if (v6El) {
+        v6El.pause();
+        v6El.currentTime = 0;
+        v6El.playbackRate = 1;
+      }
+      res.video6.cam.zoom = 1;
+      res.video6.cam.position.set(0, 0, 5);
+      res.video6.cam.updateProjectionMatrix();
+      res.video6.overlayGroup.visible = false;
+      res.video6.videoMaterial.map = null;
+      res.video6.videoMaterial.needsUpdate = true;
     }
     const loopTime = tl.time;
 
@@ -829,6 +915,8 @@ function Renderer({
       gl.render(res.video1.scene, res.video1.cam);
       gl.setRenderTarget(res.video5.fbo);
       gl.render(res.video5.scene, res.video5.cam);
+      gl.setRenderTarget(res.video6.fbo);
+      gl.render(res.video6.scene, res.video6.cam);
     }
 
     // Advance fly-through camera along spline
@@ -873,6 +961,7 @@ function Renderer({
     let needsVideo2 = false;
     let needsVideo1 = false;
     let needsVideo5 = false;
+    let needsVideo6 = false;
     let ch0 = res.fly.fbo.texture;
     let ch1 = res.fly.fbo.texture;
     let prog = 0;
@@ -955,6 +1044,24 @@ function Renderer({
       ch0 = res.video5.fbo.texture;
       ch1 = res.fly.fbo.texture;
       prog = smoothstep01((loopTime - PHASE_M_END) / (PHASE_N_END - PHASE_M_END));
+    } else if (loopTime < PHASE_P_END) {
+      // Phase O→P: fly → video6
+      needsFly = true;
+      needsVideo6 = true;
+      ch0 = res.fly.fbo.texture;
+      ch1 = res.video6.fbo.texture;
+      prog = smoothstep01((loopTime - PHASE_O_END) / (PHASE_P_END - PHASE_O_END));
+    } else if (loopTime < PHASE_Q_END) {
+      // Phase Q: pure video6
+      needsVideo6 = true;
+      ch0 = res.video6.fbo.texture;
+    } else if (loopTime < PHASE_R_END) {
+      // Phase R: video6 → fly
+      needsVideo6 = true;
+      needsFly = true;
+      ch0 = res.video6.fbo.texture;
+      ch1 = res.fly.fbo.texture;
+      prog = smoothstep01((loopTime - PHASE_Q_END) / (PHASE_R_END - PHASE_Q_END));
     } else {
       // Pure fly-through until LOOP_DURATION
       needsFly = true;
@@ -1074,6 +1181,18 @@ function Renderer({
       }
       gl.setRenderTarget(res.video5.fbo);
       gl.render(res.video5.scene, res.video5.cam);
+    }
+
+    // 7. Render video6 scene
+    if (needsVideo6) {
+      const v6El = video6ElRef.current;
+      const v6Tex = video6TexRef.current;
+      if (v6El) {
+        const v6Elapsed = loopTime - PHASE_O_END;
+        updateVideoScene(res.video6, video6StateRef.current, v6El, v6Tex, v6Elapsed, VIDEO6_SORTED_TIMELINE);
+      }
+      gl.setRenderTarget(res.video6.fbo);
+      gl.render(res.video6.scene, res.video6.cam);
     }
 
     // Determine active swipe reveal

@@ -1218,7 +1218,7 @@ export default function ImageGenSceneV2() {
       </div>
 
       {/* Controls (z: 100) */}
-      <div
+      {/* <div
         style={{
           position: 'absolute',
           top: 20,
@@ -1234,7 +1234,7 @@ export default function ImageGenSceneV2() {
         <button onClick={resetPosition} style={controlBtnStyle}>
           Reset
         </button>
-      </div>
+      </div> */}
     </div>
   );
 }
