@@ -6,6 +6,9 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 const nextConfig: NextConfig = {
   output: 'standalone',
   devIndicators: false,
+  compiler: {
+    emotion: true,
+  },
 };
 
 export default withNextIntl(nextConfig);
