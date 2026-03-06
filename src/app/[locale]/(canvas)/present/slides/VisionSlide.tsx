@@ -2,12 +2,28 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import SlideContainer, { SlideTitle, Card, Mono, BodyText } from '../components/SlideContainer';
+import { Database, Shield, Rocket } from 'lucide-react';
+import SlideContainer, { SlideTitle, Mono } from '../components/SlideContainer';
 
-const advantages = [
-  { key: '數據自主:', val: '擁有完全掌控的私有電商數據，不被 SaaS 綁架。' },
-  { key: '實業護城河:', val: '實體品牌價值抗跌，無懼 AI 泡沫化風險。' },
-  { key: '敏捷團隊:', val: '自有開發團隊，迭代速度遠超外包與傳統競品。' },
+const pillars = [
+  {
+    Icon: Database,
+    en: 'DATA SOVEREIGNTY',
+    label: '數據自主',
+    desc: '擁有完全掌控的私有電商數據，不被 SaaS 綁架。數據即武器，主權在我。',
+  },
+  {
+    Icon: Shield,
+    en: 'BRAND MOAT',
+    label: '實業護城河',
+    desc: '實體品牌價值抗跌，無懼 AI 泡沫化風險。實業根基穩固，不怕泡沫。',
+  },
+  {
+    Icon: Rocket,
+    en: 'AGILE FORCE',
+    label: '敏捷團隊',
+    desc: '自有開發團隊，迭代速度遠超外包與傳統競品。別人一週，我們兩天。',
+  },
 ];
 
 export const VisionSlide: React.FC = () => (
@@ -16,93 +32,107 @@ export const VisionSlide: React.FC = () => (
       THE CTO DIRECTIVE
     </SlideTitle>
 
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, flex: 1, alignItems: 'center' }}>
-      {/* Left: Image */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.97 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.15 }}
-        style={{ display: 'flex', justifyContent: 'center' }}
-      >
-        <img
-          src="/rosie-presentation/vision.png"
-          alt="Radar Strategy"
-          style={{ width: '100%', objectFit: 'contain', borderRadius: 8 }}
-        />
-      </motion.div>
+    {/* Phase banner + Quote row */}
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.15 }}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 24,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ background: '#C9A84C', borderRadius: 6, padding: '6px 16px' }}>
+          <span style={{ fontFamily: 'var(--font-jetbrains-mono)', fontSize: 13, fontWeight: 600, color: '#111111', letterSpacing: 1 }}>
+            PHASE 1: 2026
+          </span>
+        </div>
+        <p style={{ fontFamily: 'var(--font-noto-sans-tc)', fontSize: 15, color: '#B0B0B0', margin: 0 }}>
+          技術架構轉移與重整 — 將工作流全面 AI 化
+        </p>
+      </div>
+      <p style={{ fontFamily: 'var(--font-noto-sans-tc)', fontSize: 15, fontWeight: 700, color: '#D0D0D0', margin: 0 }}>
+        「確保今年的 Studio Doe，是 AI 時代的頂級玩家。」
+      </p>
+    </motion.div>
 
-      {/* Right: Text + Cards */}
-      <motion.div
-        initial={{ opacity: 0, x: 12 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.25 }}
-        style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
-      >
-        {/* Quote */}
-        <p
+    {/* 3 Advantage Pillars — horizontal cards */}
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, flex: 1 }}>
+      {pillars.map(({ Icon, en, label, desc }, i) => (
+        <motion.div
+          key={en}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 + i * 0.1 }}
           style={{
-            fontFamily: 'var(--font-noto-sans-tc)',
-            fontSize: 17,
-            fontWeight: 700,
-            color: '#D0D0D0',
-            lineHeight: 1.5,
-            marginBottom: 4,
+            background: '#1A1A1A',
+            border: '1px solid #2A2A2A',
+            borderRadius: 12,
+            padding: '28px 28px 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative',
+            overflow: 'hidden',
           }}
         >
-          「確保今年的 Studio Doe，是 AI 時代的頂級玩家。」
-        </p>
+          {/* Gold top accent */}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, #C9A84C, transparent)' }} />
 
-        {/* Phase 1 */}
-        <Card>
-          <Mono>PHASE 1: 2026</Mono>
-          <BodyText style={{ marginTop: 8 }}>
-            <strong style={{ color: '#D0D0D0' }}>技術架構轉移與重整。</strong>{' '}
-            不影響業績前提下，將工作流全面 AI 化。讓資訊部不僅是後勤，更是營利單位。
-          </BodyText>
-        </Card>
-
-        {/* Doe Advantage */}
-        <Card>
-          <Mono>THE DOE ADVANTAGE</Mono>
-          <div style={{ marginTop: 10 }}>
-            {advantages.map((item, i) => (
-              <div
-                key={item.key}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  padding: '10px 0',
-                  borderBottom: i < advantages.length - 1 ? '1px solid #2A2A2A' : 'none',
-                  gap: 16,
-                }}
-              >
-                <strong
-                  style={{
-                    fontFamily: 'var(--font-noto-sans-tc)',
-                    fontSize: 13,
-                    color: '#C0C0C0',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0,
-                  }}
-                >
-                  {item.key}
-                </strong>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-noto-sans-tc)',
-                    fontSize: 13,
-                    color: '#909090',
-                    textAlign: 'right',
-                  }}
-                >
-                  {item.val}
-                </span>
-              </div>
-            ))}
+          {/* Header: icon + english label inline */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: '#222',
+                border: '1px solid #333',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <Icon size={18} color="#C9A84C" />
+            </div>
+            <Mono>{en}</Mono>
           </div>
-        </Card>
-      </motion.div>
+
+          {/* Chinese title — large */}
+          <h3
+            style={{
+              fontFamily: 'var(--font-noto-sans-tc)',
+              fontSize: 28,
+              fontWeight: 700,
+              color: '#F0F0F0',
+              margin: 0,
+              marginBottom: 14,
+              lineHeight: 1.2,
+            }}
+          >
+            {label}
+          </h3>
+
+          {/* Divider */}
+          <div style={{ width: 32, height: 2, background: '#C9A84C', marginBottom: 14, opacity: 0.6 }} />
+
+          {/* Description — the key message, prominent */}
+          <p
+            style={{
+              fontFamily: 'var(--font-noto-sans-tc)',
+              fontSize: 16,
+              lineHeight: 1.8,
+              color: '#C0C0C0',
+              margin: 0,
+            }}
+          >
+            {desc}
+          </p>
+        </motion.div>
+      ))}
     </div>
   </SlideContainer>
 );

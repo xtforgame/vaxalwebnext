@@ -7,6 +7,7 @@ import { MetricsSlide } from './slides/MetricsSlide';
 import { IndustrySlide } from './slides/IndustrySlide';
 import { SunomataSlide } from './slides/SunomataSlide';
 import { VisionSlide } from './slides/VisionSlide';
+import { MaturitySlide } from './slides/MaturitySlide';
 import { RosieSlide } from './slides/RosieSlide';
 import { ComparisonSlide } from './slides/ComparisonSlide';
 import { VxlCellSlide } from './slides/VxlCellSlide';
@@ -18,6 +19,7 @@ const slides: RipresSlide[] = [
   { path: '/industry', title: 'Industry', element: <IndustrySlide /> },
   { path: '/sunomata', title: 'Sunomata', element: <SunomataSlide /> },
   { path: '/vision', title: 'Vision', element: <VisionSlide /> },
+  { path: '/maturity', title: 'Maturity', element: <MaturitySlide /> },
   { path: '/rosie', title: 'Rosie', element: <RosieSlide /> },
   { path: '/comparison', title: 'Comparison', element: <ComparisonSlide /> },
   { path: '/vxl-cell', title: 'Vxl Cell', element: <VxlCellSlide /> },

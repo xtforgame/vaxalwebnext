@@ -65,7 +65,7 @@ export const MetricsSlide: React.FC = () => {
             </div>
             <Mono style={{ marginTop: 16 }}>VELOCITY INCREASE</Mono>
             <BodyText style={{ textAlign: 'center', marginTop: 12, maxWidth: 320 }}>
-              任務交付速度提升三倍。過往需耗時一週的功能，現於兩日內完成。
+              開發速度提升三倍。過往需耗時一週的功能，現於兩日內開發完成。
             </BodyText>
           </Card>
         </motion.div>
