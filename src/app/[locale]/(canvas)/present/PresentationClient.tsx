@@ -10,7 +10,6 @@ import { VisionSlide } from './slides/VisionSlide';
 import { MaturitySlide } from './slides/MaturitySlide';
 import { RosieSlide } from './slides/RosieSlide';
 import { ComparisonSlide } from './slides/ComparisonSlide';
-import { VxlCellSlide } from './slides/VxlCellSlide';
 import { ConclusionSlide } from './slides/ConclusionSlide';
 
 const slides: RipresSlide[] = [
@@ -22,7 +21,6 @@ const slides: RipresSlide[] = [
   { path: '/maturity', title: 'Maturity', element: <MaturitySlide /> },
   { path: '/rosie', title: 'Rosie', element: <RosieSlide /> },
   { path: '/comparison', title: 'Comparison', element: <ComparisonSlide /> },
-  { path: '/vxl-cell', title: 'Vxl Cell', element: <VxlCellSlide /> },
   { path: '/conclusion', title: 'Conclusion', element: <ConclusionSlide /> },
 ];
 
