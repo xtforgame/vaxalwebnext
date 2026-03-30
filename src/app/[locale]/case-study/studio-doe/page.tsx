@@ -8,96 +8,146 @@ export default async function StudioDoeCase() {
 
   return (
     <div className={styles.casePage}>
-      {/* Hero Section */}
+      {/* Hero */}
       <section className={styles.hero}>
         <SectionWrapper background="transparent" padding="none">
           <span className={styles.badge}>{t('badge')}</span>
-          <h1 className={styles.title}>
-            {t('title').split('\n')[0]}<br />
-            {t('title').split('\n')[1] || ''}
-          </h1>
+          <h1 className={styles.title}>{t('title')}</h1>
+          <p className={styles.subtitle}>{t('subtitle')}</p>
           <div className={styles.meta}>
             <div className={styles.metaItem}>
-              <label>{t('client')}</label>
-              <span>{t('clientName')}</span>
+              <label>{t('metaClient')}</label>
+              <span>{t('metaClientName')}</span>
             </div>
             <div className={styles.metaItem}>
-              <label>{t('service')}</label>
-              <span>{t('serviceName')}</span>
+              <label>{t('metaService')}</label>
+              <span>{t('metaServiceName')}</span>
             </div>
             <div className={styles.metaItem}>
-              <label>{t('timeline')}</label>
-              <span>{t('timelineValue')}</span>
+              <label>{t('metaTimeline')}</label>
+              <span>{t('metaTimelineValue')}</span>
             </div>
           </div>
         </SectionWrapper>
       </section>
 
-      {/* Challenge & Approach */}
-      <SectionWrapper background="white" className={styles.section}>
-        <div className={styles.contentGrid}>
-          <div className={styles.textBlock}>
-            <h2 className={styles.sectionTitle}>{t('challengeTitle')}</h2>
-            <p>
-              {t('challengeP1')}
-            </p>
-            <p>
-              {t('challengeP2')}
-            </p>
-          </div>
-          <div className={styles.statsGrid}>
-            <div className={styles.statCard}>
-              <span className={styles.statValue}>{t('stat1.value')}</span>
-              <span className={styles.statLabel}>{t('stat1.label')}</span>
-            </div>
-            <div className={styles.statCard}>
-              <span className={styles.statValue}>{t('stat2.value')}</span>
-              <span className={styles.statLabel}>{t('stat2.label')}</span>
-            </div>
-            <div className={styles.statCard}>
-              <span className={styles.statValue}>{t('stat3.value')}</span>
-              <span className={styles.statLabel}>{t('stat3.label')}</span>
-            </div>
-            <div className={styles.statCard}>
-              <span className={styles.statValue}>{t('stat4.value')}</span>
-              <span className={styles.statLabel}>{t('stat4.label')}</span>
-            </div>
-          </div>
-        </div>
-      </SectionWrapper>
+      {/* Article Body */}
+      <article className={styles.article}>
+        <SectionWrapper background="white" padding="none">
+          <div className={styles.prose}>
 
-      {/* Visual / Solution */}
-      <SectionWrapper background="grey" className={`${styles.section} ${styles.solutionSection}`}>
-        <h2 className={styles.sectionTitle} style={{ textAlign: 'center' }}>{t('solutionTitle')}</h2>
-        <p className={styles.solutionIntro}>
-          {t('solutionIntro')}
-        </p>
-        <div className={styles.fullVisual}>
-          {t('solutionVisual')}
-        </div>
-      </SectionWrapper>
-
-      {/* Result Section */}
-      <SectionWrapper background="white" className={`${styles.section} ${styles.impactSection}`}>
-        <div className={styles.contentGrid}>
-          <div className={styles.textBlock}>
-            <h2 className={styles.sectionTitle}>{t('impactTitle')}</h2>
-            <p>
-              {t('impactP1')}
-            </p>
-            <p>
-              {t('impactP2')}
-            </p>
-            <Button size="lg" href="/contact">{t('impactCta')}</Button>
+            {/* Chapter 1: The Beginning */}
+            <p>{t('ch1P1')}</p>
+            <p>{t('ch1P2')}</p>
           </div>
+
+          {/* Visual break: Store screenshot */}
+          <figure className={styles.figure}>
+            <div className={styles.imagePlaceholder}>
+              <span>{t('fig1Alt')}</span>
+            </div>
+            <figcaption className={styles.figcaption}>{t('fig1Caption')}</figcaption>
+          </figure>
+
+          <div className={styles.prose}>
+
+            {/* Chapter 2: The Decision */}
+            <p>{t('ch2P1')}</p>
+            <p>{t('ch2P2')}</p>
+            <p className={styles.emphasis}>{t('ch2P3')}</p>
+          </div>
+
+          {/* Visual break: Architecture diagram */}
+          <figure className={styles.figure}>
+            <div className={styles.imagePlaceholder}>
+              <span>{t('fig2Alt')}</span>
+            </div>
+            <figcaption className={styles.figcaption}>{t('fig2Caption')}</figcaption>
+          </figure>
+
+          <div className={styles.prose}>
+
+            {/* Chapter 3: Evolution */}
+            <p>{t('ch3P1')}</p>
+          </div>
+
+          {/* Visual break: Timeline */}
+          <div className={styles.timeline}>
+            <div className={styles.timelineCard}>
+              <span className={styles.timelineYear}>{t('module1Year')}</span>
+              <h3 className={styles.timelineCardTitle}>{t('module1Title')}</h3>
+              <p>{t('module1Desc')}</p>
+            </div>
+            <div className={styles.timelineCard}>
+              <span className={styles.timelineYear}>{t('module2Year')}</span>
+              <h3 className={styles.timelineCardTitle}>{t('module2Title')}</h3>
+              <p>{t('module2Desc')}</p>
+            </div>
+            <div className={styles.timelineCard}>
+              <span className={styles.timelineYear}>{t('module3Year')}</span>
+              <h3 className={styles.timelineCardTitle}>{t('module3Title')}</h3>
+              <p>{t('module3Desc')}</p>
+            </div>
+            <div className={styles.timelineCard}>
+              <span className={styles.timelineYear}>{t('module4Year')}</span>
+              <h3 className={styles.timelineCardTitle}>{t('module4Title')}</h3>
+              <p>{t('module4Desc')}</p>
+            </div>
+          </div>
+
+          <div className={styles.prose}>
+            <p>{t('ch3P2')}</p>
+          </div>
+        </SectionWrapper>
+      </article>
+
+      {/* The Turning Point — dark break */}
+      <section className={styles.turningSection}>
+        <SectionWrapper background="transparent" padding="none">
+          <div className={styles.turningProse}>
+            <p>{t('ch4P1')}</p>
+            <p>{t('ch4P2')}</p>
+            <p>{t('ch4P3')}</p>
+          </div>
+          <blockquote className={styles.pullQuote}>
+            {t('pullQuote')}
+          </blockquote>
+        </SectionWrapper>
+      </section>
+
+      {/* Continue article — AI compatibility */}
+      <article className={styles.article}>
+        <SectionWrapper background="white" padding="none">
+          <div className={styles.prose}>
+            <p>{t('ch5P1')}</p>
+            <p>{t('ch5P2')}</p>
+          </div>
+
+          {/* Visual break: AI integration */}
+          <figure className={styles.figure}>
+            <div className={styles.imagePlaceholder}>
+              <span>{t('fig3Alt')}</span>
+            </div>
+            <figcaption className={styles.figcaption}>{t('fig3Caption')}</figcaption>
+          </figure>
+        </SectionWrapper>
+      </article>
+
+      {/* Testimonial & CTA */}
+      <section className={styles.closing}>
+        <SectionWrapper background="white" padding="none">
           <div className={styles.testimonialCard}>
             <blockquote className={styles.testimonialQuote}>
               {t('testimonial')}
             </blockquote>
             <p className={styles.testimonialAuthor}>{t('testimonialAuthor')}</p>
           </div>
-        </div>
-      </SectionWrapper>
+          <div className={styles.closingCta}>
+            <h2 className={styles.ctaTitle}>{t('ctaTitle')}</h2>
+            <Button size="lg" href="/contact">{t('ctaButton')}</Button>
+          </div>
+        </SectionWrapper>
+      </section>
     </div>
   );
 }

@@ -202,42 +202,61 @@
     "dnaIntro": "We're a team of alumni from top universities like NTU and NTHU, with members from leading software companies and innovation labs. We blend the rigorous quality control of large corporations with the rapid agility of small teams."
   },
   "caseStudyPage": {
-    "badge": "E-commerce Infrastructure",
-    "title": "Powering Studio Doe's Digital Transformation.",
-    "client": "Client",
-    "clientName": "Studio Doe",
-    "service": "Service",
-    "serviceName": "Infrastructure & AI Roadmap",
-    "timeline": "Timeline",
-    "timelineValue": "Long-term Partner",
-    "challengeTitle": "The Challenge",
-    "challengeP1": "As Taiwan's leading fashion brand, Studio Doe faced extreme traffic spikes during major sales. The traditional monolithic architecture could no longer support the brand's rapid growth, urgently requiring a highly available, scalable infrastructure that could deeply integrate future AI capabilities.",
-    "challengeP2": "'Stability' is just the baseline—'flexibility' and 'forward-thinking' are what determine long-term brand competitiveness.",
-    "stat1": {
-      "value": "100%",
-      "label": "Peak Uptime during Flash Sales"
-    },
-    "stat2": {
-      "value": "100M+",
-      "label": "Annual Revenue Supported"
-    },
-    "stat3": {
-      "value": "90%",
-      "label": "Reduction in Deployment Time"
-    },
-    "stat4": {
-      "value": "Sub-2s",
-      "label": "Page Load Time Worldwide"
-    },
-    "solutionTitle": "The Solution: Modular Architecture",
-    "solutionIntro": "Vaxal helped Studio Doe rebuild from the architecture foundation, establishing complete CI/CD pipelines, microserviced components, and introducing a Ryko-based AI lab environment.",
-    "solutionVisual": "High-Resolution Visual: Infrastructure Map with Real-time Traffic Visualization",
-    "impactTitle": "The Impact",
-    "impactP1": "Now, Studio Doe no longer needs to worry about system crashes during promotions. The brand team can focus on creativity and marketing, while Vaxal provides the most solid technical backing.",
-    "impactP2": "This system has also laid the perfect data and interface foundation for future AI-powered size recommendations and intelligent restocking systems.",
-    "impactCta": "Start Your Journey",
-    "testimonial": "\"Vaxal isn't just a developer—they're our technology strategy partner. They solved our most feared stability issues and continue exploring future possibilities with us.\"",
-    "testimonialAuthor": "— An Chih, Founder of Studio Doe"
+    "badge": "Case Study",
+    "title": "From E-commerce Rebuild to Enterprise Data Center: A Four-Year Journey",
+    "subtitle": "Studio Doe initially just needed a new e-commerce system. Four years later, that system has evolved into the data center powering their entire operation — and took flight when the AI wave arrived.",
+    "metaClient": "Client",
+    "metaClientName": "Studio Doe",
+    "metaService": "Service",
+    "metaServiceName": "Consultative Dev · Modular Infra · AI Integration",
+    "metaTimeline": "Timeline",
+    "metaTimelineValue": "2022 – Present (Strategic Partner)",
+
+    "ch1P1": "In 2022, Studio Doe came to Vaxal with a clear ask: rebuild their e-commerce system. The brand was on the cusp of rapid growth, and their existing platform was already struggling to keep up. They needed a more reliable technical foundation.",
+    "ch1P2": "Most development shops, given this kind of project, would take the safest route — deploy a proven e-commerce framework, deliver fast, close the contract. We didn't do that.",
+
+    "fig1Alt": "Studio Doe online store screenshot",
+    "fig1Caption": "Seamless integration across Studio Doe's online and offline experiences",
+
+    "ch2P1": "As entrepreneurs, consultants, and developers all at once, we saw something bigger in Studio Doe's trajectory — not just an e-commerce rewrite, but a brand about to grow tenfold. On that trajectory, technology shouldn't be a bottleneck. It should be an accelerator.",
+    "ch2P2": "So without pushing the timeline or inflating the budget, we built a highly modular foundation with data at its core from day one. The e-commerce platform itself was just one combination of modules within this larger system. This was a deliberate choice — we don't do one-time deliveries. Every engagement plants the seeds for long-term growth.",
+    "ch2P3": "That's how Vaxal works: grow with the client, and within the constraints of today's goals, make the best possible bet on tomorrow.",
+
+    "fig2Alt": "Modular architecture diagram",
+    "fig2Caption": "Modular foundation: e-commerce is just one possible assembly",
+
+    "ch3P1": "The next four years proved this decision right. As Studio Doe's team grew tenfold, the system was never replaced or rebuilt from scratch. Instead, it kept expanding — steadily, reliably. Each new requirement was like constructing a new building in a well-planned city, not tearing the whole city down to start over.",
+
+    "module1Year": "2022",
+    "module1Title": "E-commerce Core",
+    "module1Desc": "Product management, order processing, payment & logistics — the cornerstone of rapid brand growth.",
+    "module2Year": "2023",
+    "module2Title": "Analytics + Offline Integration",
+    "module2Desc": "Data-driven decisions, with seamless online-offline sync of inventory, membership, and orders.",
+    "module3Year": "2024",
+    "module3Title": "Affiliate Commission",
+    "module3Desc": "Multi-channel revenue splitting added effortlessly — no redesign required.",
+    "module4Year": "2025",
+    "module4Title": "Enterprise Private LLM AI",
+    "module4Desc": "AI capabilities natively integrated into existing operations, opening a new chapter.",
+
+    "ch3P2": "From an e-commerce system to the data center powering an entire enterprise. Tenfold team growth. Zero rebuilds.",
+
+    "ch4P1": "Then AI arrived.",
+    "ch4P2": "Four years ago, no one could have predicted that LLM AI would emerge and rewrite the rules of every industry. Vaxal is no prophet — but we knew one thing: only a solid foundation can prepare a business for whatever wave comes next. And when this particular wave hit, Studio Doe was one of the few brands in Taiwan with all three ingredients — a self-built e-commerce system, complete ownership of first-party marketing data, and a robust extensible architecture. This allowed AI to generate operational analyses and reports almost immediately, putting them far ahead of the pack.",
+    "ch4P3": "While other brands remain constrained by third-party platforms, unable to freely build new capabilities, Studio Doe has already pulled far ahead through Vibe Coding — and that advantage will only widen.",
+    "pullQuote": "\"No one knew AI would rewrite human history like this. But some were ready before it happened.\"",
+
+    "ch5P1": "Looking back, the system's deep compatibility with the AI ecosystem was no accident. Thanks to the architectural foresight from day one, every module can easily expose corresponding MCP services, providing native support for AI-human collaboration. The enterprise stays seamlessly connected to cutting-edge AI — without requiring massive system overhauls.",
+    "ch5P2": "While others are still waiting for their platform to open an API, Studio Doe is already running AI-generated reports. That's the decisive advantage of self-built systems and data ownership in the AI era.",
+
+    "fig3Alt": "MCP service architecture and AI integration diagram",
+    "fig3Caption": "Every module natively exposes MCP services for AI collaboration",
+
+    "testimonial": "\"We initially just wanted an e-commerce site, but Vaxal built us a system that could grow with us. Four years later, our team has grown tenfold, and we've never had to start over — this year we even plugged in AI directly. That was something we never imagined.\"",
+    "testimonialAuthor": "— An Chih, Founder of Studio Doe",
+    "ctaTitle": "Let Us Be Your Steadfast Partner",
+    "ctaButton": "Start Your Journey"
   },
   "rykoPage": {
     "tag": "Core Infrastructure",

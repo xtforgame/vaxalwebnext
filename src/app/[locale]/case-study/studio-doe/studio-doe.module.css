@@ -1,5 +1,6 @@
 /* ============================================
-   Case Study: Studio Doe - Soft UI Evolution
+   Case Study: Studio Doe — Editorial / Long-form
+   A flowing article with visual rhythm breakers.
    ============================================ */
 
 .casePage {
@@ -28,12 +29,21 @@
 
 .title {
   font-family: var(--font-heading);
-  font-size: clamp(2.75rem, 6vw, 4.5rem);
+  font-size: clamp(2.25rem, 5vw, 3.5rem);
   font-weight: 800;
-  line-height: 1.08;
+  line-height: 1.15;
   color: var(--deep-section-text);
+  margin-bottom: var(--space-6);
+  letter-spacing: -0.03em;
+  max-width: 720px;
+}
+
+.subtitle {
+  font-size: 1.125rem;
+  line-height: 1.7;
+  color: var(--deep-section-muted);
+  max-width: 620px;
   margin-bottom: var(--space-10);
-  letter-spacing: -0.04em;
 }
 
 .meta {
@@ -53,123 +63,165 @@
 }
 
 .metaItem span {
-  font-size: 1.125rem;
+  font-size: 1.0625rem;
   font-weight: 600;
   color: var(--deep-section-text);
 }
 
-/* ============ Section ============ */
-.section {
-  padding: var(--section-spacing) 0;
+/* ============ Article Body ============ */
+.article {
+  padding: var(--space-20) 0;
+  background-color: var(--bg-white);
 }
 
-.sectionTitle {
-  font-family: var(--font-heading);
-  font-size: clamp(2rem, 4vw, 2.75rem);
-  font-weight: 700;
+/* Prose: the narrow reading column */
+.prose {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+}
+
+.prose p {
+  font-size: 1.0625rem;
+  line-height: 1.85;
+  color: var(--text-body);
+  margin-bottom: var(--space-8);
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+.emphasis {
+  font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: var(--space-10);
-  letter-spacing: -0.02em;
+  font-size: 1.125rem;
 }
 
-/* ============ Content Grid ============ */
-.contentGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-20);
-  align-items: start;
+/* ============ Figure (visual rhythm breaker) ============ */
+.figure {
+  max-width: 900px;
+  margin: var(--space-12) auto;
+  padding: 0 var(--space-6);
 }
 
-.textBlock p {
-  font-size: 1.0625rem;
-  line-height: 1.8;
-  color: var(--text-body);
-  margin-bottom: var(--space-6);
-}
-
-/* ============ Stats Grid ============ */
-.statsGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-5);
-}
-
-.statCard {
-  padding: var(--space-8);
-  background: var(--bg-white);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
-  transition: all var(--transition-base);
-}
-
-.statCard:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--color-accent-light);
-}
-
-.statValue {
-  display: block;
-  font-family: var(--font-heading);
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: var(--color-accent);
-  margin-bottom: var(--space-2);
-  letter-spacing: -0.02em;
-}
-
-.statLabel {
-  font-size: 0.875rem;
-  color: var(--text-body);
-  line-height: 1.5;
-}
-
-/* ============ Solution Section ============ */
-.solutionSection {
-  background-color: var(--bg-surface);
-}
-
-.solutionIntro {
-  text-align: center;
-  max-width: 760px;
-  margin: 0 auto var(--space-12);
-  font-size: 1.0625rem;
-  color: var(--text-body);
-  line-height: 1.75;
-}
-
-/* ============ Full Visual ============ */
-.fullVisual {
+.imagePlaceholder {
   width: 100%;
-  height: 520px;
-  background: var(--bg-white);
+  aspect-ratio: 16 / 10;
+  background: var(--bg-surface);
   border-radius: var(--radius-2xl);
   border: 1px solid var(--border-light);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
 }
 
-/* ============ Impact Section ============ */
-.impactSection {
+.figcaption {
+  text-align: center;
+  margin-top: var(--space-4);
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+
+/* ============ Timeline (visual breaker within article) ============ */
+.timeline {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-5);
+  max-width: 900px;
+  margin: var(--space-12) auto;
+  padding: 0 var(--space-6);
+}
+
+.timelineCard {
+  padding: var(--space-6) var(--space-5);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  transition: all var(--transition-base);
+}
+
+.timelineCard:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-accent-light);
+}
+
+.timelineYear {
+  display: inline-block;
+  font-family: var(--font-heading);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--space-3);
+  padding: var(--space-1) var(--space-3);
+  background: rgba(61, 181, 230, 0.1);
+  border-radius: var(--radius-full);
+}
+
+.timelineCardTitle {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+  letter-spacing: -0.01em;
+}
+
+.timelineCard p {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-body);
+}
+
+/* ============ Turning Point (dark section) ============ */
+.turningSection {
+  padding: var(--space-20) 0;
+  background-color: var(--deep-section-bg);
+  color: var(--deep-section-text);
+}
+
+.turningProse {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+}
+
+.turningProse p {
+  font-size: 1.0625rem;
+  line-height: 1.85;
+  color: var(--deep-section-muted);
+  margin-bottom: var(--space-8);
+}
+
+.pullQuote {
+  max-width: 620px;
+  margin: var(--space-8) auto 0;
+  padding: 0 var(--space-6);
+  text-align: center;
+  font-family: var(--font-heading);
+  font-size: clamp(1.25rem, 2.5vw, 1.625rem);
+  font-weight: 600;
+  font-style: italic;
+  color: var(--color-accent);
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+}
+
+/* ============ Closing: Testimonial & CTA ============ */
+.closing {
+  padding: var(--space-20) 0 var(--space-24);
   background-color: var(--bg-white);
 }
 
-.impactText {
-  text-align: center;
-  max-width: 760px;
-  margin: 0 auto var(--space-6);
-  font-size: 1.0625rem;
-  color: var(--text-body);
-  line-height: 1.75;
-}
-
-/* ============ Testimonial ============ */
 .testimonialCard {
+  max-width: 640px;
+  margin: 0 auto var(--space-16);
   padding: var(--space-10);
   background: var(--bg-surface);
   border-radius: var(--radius-xl);
@@ -178,12 +230,10 @@
 
 .testimonialQuote {
   font-family: var(--font-heading);
-  font-size: 1.25rem;
+  font-size: 1.1875rem;
   font-style: italic;
   color: var(--text-primary);
-  border-left: 4px solid var(--color-accent);
-  padding-left: var(--space-6);
-  line-height: 1.65;
+  line-height: 1.7;
   margin-bottom: var(--space-6);
 }
 
@@ -191,6 +241,19 @@
   font-weight: 600;
   color: var(--text-secondary);
   font-size: 0.9375rem;
+}
+
+.closingCta {
+  text-align: center;
+}
+
+.ctaTitle {
+  font-family: var(--font-heading);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-8);
+  letter-spacing: -0.02em;
 }
 
 /* ============ Responsive ============ */
@@ -203,35 +266,39 @@
     gap: var(--space-8);
   }
 
-  .section {
-    padding: var(--section-spacing-sm) 0;
+  .article {
+    padding: var(--space-12) 0;
   }
 
-  .contentGrid {
-    grid-template-columns: 1fr;
-    gap: var(--space-10);
+  .turningSection {
+    padding: var(--space-12) 0;
   }
 
-  .fullVisual {
-    height: 360px;
+  .closing {
+    padding: var(--space-12) 0 var(--space-16);
+  }
+
+  .timeline {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
   }
 }
 
 @media (max-width: 640px) {
-  .statsGrid {
+  .timeline {
     grid-template-columns: 1fr;
     gap: var(--space-4);
   }
 
-  .statCard {
-    padding: var(--space-6);
+  .timelineCard {
+    padding: var(--space-5);
   }
 
-  .statValue {
-    font-size: 2rem;
+  .imagePlaceholder {
+    aspect-ratio: 4 / 3;
   }
 
-  .fullVisual {
-    height: 280px;
+  .figure {
+    margin: var(--space-8) auto;
   }
 }
