@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import SectionWrapper from '@/components/ui/SectionWrapper';
+import Button from '@/components/ui/Button';
 import styles from './about.module.css';
 
 export default async function AboutPage() {
@@ -13,48 +14,93 @@ export default async function AboutPage() {
     { name: tFounders('founder4.name'), role: tFounders('founder4.role'), bio: tFounders('founder4.bio') },
   ];
 
+  const MILESTONES = [
+    { year: t('milestone1.year'), label: t('milestone1.label'), detail: t('milestone1.detail') },
+    { year: t('milestone2.year'), label: t('milestone2.label'), detail: t('milestone2.detail') },
+    { year: t('milestone3.year'), label: t('milestone3.label'), detail: t('milestone3.detail') },
+    { year: t('milestone4.year'), label: t('milestone4.label'), detail: t('milestone4.detail') },
+  ];
+
+  const STATS = [
+    { value: t('statsYears'), label: t('statsYearsLabel') },
+    { value: t('statsPartners'), label: t('statsPartnersLabel') },
+    { value: t('statsModules'), label: t('statsModulesLabel') },
+    { value: t('statsDeep'), label: t('statsDeepLabel') },
+  ];
+
   return (
     <div className={styles.container}>
+      {/* Hero */}
       <header className={styles.hero}>
         <SectionWrapper padding="none">
           <span className={styles.badge}>{t('badge')}</span>
-          <h1 className={styles.title}>
-            {t('title').split('\n')[0]}<br />
-            {t('title').split('\n')[1] || ''}
-          </h1>
+          <h1 className={styles.title}>{t('title')}</h1>
           <p className={styles.subtitle}>{t('subtitle')}</p>
         </SectionWrapper>
       </header>
 
-      <SectionWrapper background="grey" className={styles.philosophy}>
-        <div className={styles.contentGrid}>
-          <div>
-            <h2 className={styles.sectionTitle}>{t('visionTitle')}</h2>
-            <p className={styles.leadText}>
-              {t('visionLeadText')}
-            </p>
-            <p className={styles.bodyText}>
-              {t('visionBodyText')}
-            </p>
+      {/* Origin Story */}
+      <section className={styles.origin}>
+        <SectionWrapper background="white" padding="none">
+          <div className={styles.originContent}>
+            <h2 className={styles.sectionTitle}>{t('originTitle')}</h2>
+            <p className={styles.originText}>{t('originText')}</p>
           </div>
-          <div className={styles.valuesCard}>
-            <h3>{t('coreValuesTitle')}</h3>
-            <ul>
-              <li><strong>{t('coreValue1.title')}:</strong> {t('coreValue1.description')}</li>
-              <li><strong>{t('coreValue2.title')}:</strong> {t('coreValue2.description')}</li>
-              <li><strong>{t('coreValue3.title')}:</strong> {t('coreValue3.description')}</li>
-            </ul>
+        </SectionWrapper>
+      </section>
+
+      {/* Milestones + Stats */}
+      <section className={styles.milestones}>
+        <SectionWrapper background="grey" padding="none">
+          <h2 className={styles.sectionTitle}>{t('milestonesTitle')}</h2>
+
+          <div className={styles.timeline}>
+            {MILESTONES.map((m) => (
+              <div key={m.year} className={styles.timelineItem}>
+                <span className={styles.timelineYear}>{m.year}</span>
+                <h3 className={styles.timelineLabel}>{m.label}</h3>
+                <p className={styles.timelineDetail}>{m.detail}</p>
+              </div>
+            ))}
           </div>
-        </div>
-      </SectionWrapper>
 
-      <SectionWrapper background="white" className={styles.team}>
-        <h2 className={styles.sectionTitle}>{t('dnaTitle')}</h2>
-        <div className={styles.teamContent}>
-          <p className={styles.teamIntro}>
-            {t('dnaIntro')}
-          </p>
+          <div className={styles.statsRow}>
+            {STATS.map((s) => (
+              <div key={s.label} className={styles.statItem}>
+                <span className={styles.statValue}>{s.value}</span>
+                <span className={styles.statLabel}>{s.label}</span>
+              </div>
+            ))}
+          </div>
+        </SectionWrapper>
+      </section>
 
+      {/* Core Values */}
+      <section className={styles.values}>
+        <SectionWrapper background="white" padding="none">
+          <h2 className={styles.sectionTitle}>{t('coreValuesTitle')}</h2>
+          <div className={styles.valuesGrid}>
+            <div className={styles.valueCard}>
+              <h3 className={styles.valueTitle}>{t('coreValue1.title')}</h3>
+              <p className={styles.valueDescription}>{t('coreValue1.description')}</p>
+            </div>
+            <div className={styles.valueCard}>
+              <h3 className={styles.valueTitle}>{t('coreValue2.title')}</h3>
+              <p className={styles.valueDescription}>{t('coreValue2.description')}</p>
+            </div>
+            <div className={styles.valueCard}>
+              <h3 className={styles.valueTitle}>{t('coreValue3.title')}</h3>
+              <p className={styles.valueDescription}>{t('coreValue3.description')}</p>
+            </div>
+          </div>
+        </SectionWrapper>
+      </section>
+
+      {/* Team DNA + Founders */}
+      <section className={styles.team}>
+        <SectionWrapper background="white" padding="none">
+          <h2 className={styles.sectionTitle}>{t('dnaTitle')}</h2>
+          <p className={styles.teamIntro}>{t('dnaIntro')}</p>
           <div className={styles.foundersGrid}>
             {FOUNDERS.map((founder) => (
               <div key={founder.name} className={styles.founderCard}>
@@ -65,8 +111,17 @@ export default async function AboutPage() {
               </div>
             ))}
           </div>
-        </div>
-      </SectionWrapper>
+        </SectionWrapper>
+      </section>
+
+      {/* Bridge CTA to Vaxal Base */}
+      <section className={styles.bridge}>
+        <SectionWrapper background="transparent" padding="none">
+          <h2 className={styles.bridgeTitle}>{t('bridgeTitle')}</h2>
+          <p className={styles.bridgeText}>{t('bridgeText')}</p>
+          <Button size="lg" href="/vaxal-base">{t('bridgeCta')}</Button>
+        </SectionWrapper>
+      </section>
     </div>
   );
 }

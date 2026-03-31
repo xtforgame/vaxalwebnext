@@ -1,5 +1,5 @@
 /* ============================================
-   About Page - Soft UI Evolution
+   About Page — Company Story
    ============================================ */
 
 .container {
@@ -36,142 +36,170 @@
 }
 
 .subtitle {
-  font-size: 1.375rem;
+  font-size: 1.25rem;
   color: var(--text-body);
+  max-width: 640px;
+  line-height: 1.7;
+}
+
+/* ============ Origin ============ */
+.origin {
+  padding: var(--space-20) 0;
+  background-color: var(--bg-white);
+}
+
+.originContent {
   max-width: 680px;
-  line-height: 1.6;
-}
-
-/* ============ Philosophy Section ============ */
-.philosophy {
-  padding: var(--section-spacing) 0;
-  background-color: var(--bg-surface);
-}
-
-.contentGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-20);
-  align-items: start;
+  margin: 0 auto;
 }
 
 .sectionTitle {
   font-family: var(--font-heading);
-  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: var(--space-8);
   letter-spacing: -0.02em;
 }
 
-.leadText {
-  font-family: var(--font-heading);
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: var(--space-6);
-  line-height: 1.4;
-}
-
-.bodyText {
+.originText {
   font-size: 1.0625rem;
   color: var(--text-body);
-  line-height: 1.75;
+  line-height: 1.85;
 }
 
-/* ============ Values Card ============ */
-.valuesCard {
-  padding: var(--space-10);
+/* ============ Milestones + Stats ============ */
+.milestones {
+  padding: var(--space-20) 0;
+  background-color: var(--bg-surface);
+}
+
+.timeline {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-5);
+  margin-bottom: var(--space-16);
+}
+
+.timelineItem {
+  padding: var(--space-6) var(--space-5);
   background: var(--bg-white);
-  border-radius: var(--radius-xl);
   border: 1px solid var(--border-light);
-  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-xl);
+  transition: all var(--transition-base);
 }
 
-.valuesCard h3 {
+.timelineItem:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-accent-light);
+}
+
+.timelineYear {
+  display: inline-block;
   font-family: var(--font-heading);
-  font-size: 1.25rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--space-3);
+  padding: var(--space-1) var(--space-3);
+  background: rgba(61, 181, 230, 0.1);
+  border-radius: var(--radius-full);
+}
+
+.timelineLabel {
+  font-family: var(--font-heading);
+  font-size: 1rem;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-2);
   letter-spacing: -0.01em;
 }
 
-.valuesCard ul {
-  list-style: none;
-}
-
-.valuesCard li {
-  margin-bottom: var(--space-4);
-  line-height: 1.65;
-  font-size: 0.9375rem;
+.timelineDetail {
+  font-size: 0.875rem;
+  line-height: 1.6;
   color: var(--text-body);
-  padding-left: var(--space-5);
-  position: relative;
 }
 
-.valuesCard li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 10px;
-  width: 6px;
-  height: 6px;
-  border-radius: var(--radius-full);
-  background: var(--color-accent);
+/* Stats Row */
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-5);
 }
 
-.valuesCard li strong {
-  color: var(--text-primary);
-  font-weight: 600;
+.statItem {
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  background: var(--bg-white);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-light);
 }
 
-/* ============ Value Items ============ */
-.valueItem {
-  margin-bottom: var(--space-6);
-  padding-bottom: var(--space-6);
-  border-bottom: 1px solid var(--border-light);
+.statValue {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  color: var(--color-accent);
+  letter-spacing: -0.03em;
+  margin-bottom: var(--space-2);
 }
 
-.valueItem:last-child {
-  margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: none;
+.statLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+/* ============ Core Values ============ */
+.values {
+  padding: var(--space-20) 0;
+  background-color: var(--bg-white);
+}
+
+.valuesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+}
+
+.valueCard {
+  padding: var(--space-8);
+  background: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-light);
+  transition: all var(--transition-base);
+}
+
+.valueCard:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-accent-light);
 }
 
 .valueTitle {
   font-family: var(--font-heading);
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 700;
-  color: var(--color-accent);
-  margin-bottom: var(--space-2);
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
   letter-spacing: -0.01em;
 }
 
 .valueDescription {
   font-size: 0.9375rem;
   color: var(--text-body);
-  line-height: 1.65;
+  line-height: 1.7;
 }
 
-.dnaIntro {
-  font-size: 1.0625rem;
-  color: var(--text-body);
-  line-height: 1.75;
-  max-width: 760px;
-  margin: 0 auto;
-}
-
-/* ============ Team Section ============ */
+/* ============ Team ============ */
 .team {
-  padding: var(--section-spacing) 0;
+  padding: 0 0 var(--space-20);
   text-align: center;
   background-color: var(--bg-white);
-}
-
-.teamContent {
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
 .teamIntro {
@@ -184,7 +212,6 @@
   margin-right: auto;
 }
 
-/* ============ Founders Grid ============ */
 .foundersGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -201,10 +228,8 @@
 }
 
 .founderCard:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
   border-color: var(--color-accent-light);
-  background: var(--bg-white);
 }
 
 .avatarPlaceholder {
@@ -248,20 +273,57 @@
   line-height: 1.65;
 }
 
+/* ============ Bridge CTA ============ */
+.bridge {
+  padding: var(--space-20) 0 var(--space-24);
+  background-color: var(--deep-section-bg);
+  color: var(--deep-section-text);
+  text-align: center;
+}
+
+.bridgeTitle {
+  font-family: var(--font-heading);
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-weight: 700;
+  color: var(--deep-section-text);
+  margin-bottom: var(--space-4);
+  letter-spacing: -0.02em;
+}
+
+.bridgeText {
+  font-size: 1.0625rem;
+  color: var(--deep-section-muted);
+  line-height: 1.7;
+  max-width: 520px;
+  margin: 0 auto var(--space-10);
+}
+
 /* ============ Responsive ============ */
 @media (max-width: 991px) {
   .hero {
     padding: calc(var(--header-height) + var(--space-10)) 0 var(--space-12);
   }
 
-  .contentGrid {
-    grid-template-columns: 1fr;
-    gap: var(--space-10);
+  .origin,
+  .milestones,
+  .values {
+    padding: var(--space-12) 0;
   }
 
-  .philosophy,
-  .team {
-    padding: var(--section-spacing-sm) 0;
+  .timeline {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+    margin-bottom: var(--space-10);
+  }
+
+  .statsRow {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+  }
+
+  .valuesGrid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
   }
 
   .foundersGrid {
@@ -285,9 +347,21 @@
     flex: 0 0 280px;
     scroll-snap-align: center;
   }
+
+  .bridge {
+    padding: var(--space-12) 0 var(--space-16);
+  }
 }
 
 @media (max-width: 640px) {
+  .timeline {
+    grid-template-columns: 1fr;
+  }
+
+  .statsRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .founderCard {
     flex: 0 0 260px;
     padding: var(--space-6);

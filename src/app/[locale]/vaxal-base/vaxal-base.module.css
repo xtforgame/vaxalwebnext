@@ -1,0 +1,294 @@
+/* ============================================
+   Vaxal Base — Editorial / Ecosystem Story
+   ============================================ */
+
+.page {
+  background-color: var(--bg-base);
+}
+
+/* ============ Hero ============ */
+.hero {
+  padding: calc(var(--header-height) + var(--space-16)) 0 var(--space-20);
+  background-color: var(--deep-section-bg);
+  color: var(--deep-section-text);
+  overflow: hidden;
+}
+
+.badge {
+  display: inline-block;
+  padding: var(--space-2) var(--space-4);
+  background: rgba(61, 181, 230, 0.15);
+  color: var(--color-accent);
+  border-radius: var(--radius-full);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: var(--space-8);
+  letter-spacing: 0.02em;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: clamp(2.25rem, 5vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--deep-section-text);
+  margin-bottom: var(--space-6);
+  letter-spacing: -0.03em;
+  max-width: 720px;
+}
+
+.subtitle {
+  font-size: 1.125rem;
+  line-height: 1.7;
+  color: var(--deep-section-muted);
+  max-width: 620px;
+}
+
+/* ============ Article Body ============ */
+.article {
+  padding: var(--space-16) 0;
+  background-color: var(--bg-white);
+}
+
+.article + .article {
+  padding-top: 0;
+}
+
+/* Prose: narrow reading column */
+.prose {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+}
+
+.chapterTitle {
+  font-family: var(--font-heading);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-6);
+  letter-spacing: -0.02em;
+}
+
+.prose p {
+  font-size: 1.0625rem;
+  line-height: 1.85;
+  color: var(--text-body);
+  margin-bottom: var(--space-8);
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+.emphasis {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 1.125rem;
+}
+
+/* ============ Figure: Industry Grid ============ */
+.figure {
+  max-width: 900px;
+  margin: var(--space-12) auto;
+  padding: 0 var(--space-6);
+}
+
+.industryGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: center;
+  padding: var(--space-10);
+  background: var(--bg-surface);
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--border-light);
+}
+
+.industryTag {
+  padding: var(--space-3) var(--space-6);
+  background: var(--bg-white);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  transition: all var(--transition-base);
+}
+
+.industryTag:hover {
+  border-color: var(--color-accent-light);
+  color: var(--color-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.figcaption {
+  text-align: center;
+  margin-top: var(--space-4);
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+
+/* ============ Loop Section (dark) ============ */
+.loopSection {
+  padding: var(--space-20) 0;
+  background-color: var(--deep-section-bg);
+  color: var(--deep-section-text);
+}
+
+.loopProse {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+}
+
+.loopTitle {
+  font-family: var(--font-heading);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  color: var(--deep-section-text);
+  margin-bottom: var(--space-6);
+  letter-spacing: -0.02em;
+}
+
+.loopProse p {
+  font-size: 1.0625rem;
+  line-height: 1.85;
+  color: var(--deep-section-muted);
+  margin-bottom: var(--space-8);
+}
+
+.pullQuote {
+  max-width: 620px;
+  margin: var(--space-8) auto 0;
+  padding: 0 var(--space-6);
+  text-align: center;
+  font-family: var(--font-heading);
+  font-size: clamp(1.25rem, 2.5vw, 1.625rem);
+  font-weight: 600;
+  font-style: italic;
+  color: var(--color-accent);
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+}
+
+/* ============ Stats ============ */
+.stats {
+  padding: var(--space-20) 0;
+  background-color: var(--bg-surface);
+}
+
+.statsTitle {
+  font-family: var(--font-heading);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: var(--space-12);
+  letter-spacing: -0.02em;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-5);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.statItem {
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  background: var(--bg-white);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-light);
+}
+
+.statValue {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  font-weight: 800;
+  color: var(--color-accent);
+  letter-spacing: -0.03em;
+  margin-bottom: var(--space-2);
+}
+
+.statLabel {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+/* ============ CTA ============ */
+.cta {
+  padding: var(--space-20) 0 var(--space-24);
+  background-color: var(--bg-white);
+}
+
+.ctaContent {
+  text-align: center;
+}
+
+.ctaTitle {
+  font-family: var(--font-heading);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-8);
+  letter-spacing: -0.02em;
+}
+
+/* ============ Responsive ============ */
+@media (max-width: 991px) {
+  .hero {
+    padding: calc(var(--header-height) + var(--space-8)) 0 var(--space-12);
+  }
+
+  .article {
+    padding: var(--space-10) 0;
+  }
+
+  .article + .article {
+    padding-top: 0;
+  }
+
+  .loopSection {
+    padding: var(--space-12) 0;
+  }
+
+  .stats {
+    padding: var(--space-12) 0;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-4);
+  }
+
+  .cta {
+    padding: var(--space-12) 0 var(--space-16);
+  }
+}
+
+@media (max-width: 640px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .industryGrid {
+    padding: var(--space-6);
+    gap: var(--space-2);
+  }
+
+  .industryTag {
+    padding: var(--space-2) var(--space-4);
+    font-size: 0.8125rem;
+  }
+
+  .figure {
+    margin: var(--space-8) auto;
+  }
+}

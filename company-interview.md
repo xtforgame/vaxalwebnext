@@ -18,9 +18,9 @@
 *   **FormalDoc (The Output Engine)**
     *   **定位**：文件標準化與生成系統。
     *   **功能**：將企業標準 docx 轉為樣板，並生成對應的 MCP Server，讓 AI 能產出符合正規格式的最終文件。
-*   **VXL EC (The Enterprise Case)**
-    *   **定位**：模組化、高客製電商架構。
-    *   **案例**：Studio Doe。
+*   **Vaxal Base (The Foundation)**
+    *   **定位**：思序自研的模組化基底系統，服務自身業務與合作夥伴。
+    *   **案例**：Studio Doe（電商為其中一種模組組合）。
     *   **策略**：作為展示技術實力的 "Hero Case"，但不作為行銷主推 (因為受眾太窄)。
 
 ---
