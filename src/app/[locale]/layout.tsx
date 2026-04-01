@@ -6,9 +6,6 @@ import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import "../globals.css";
 
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-
 const outfit = Outfit({
   variable: "--font-outfit",
   subsets: ["latin"],
@@ -69,16 +66,12 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   return (
     <html lang={locale}>
+      <head>
+        <link rel="stylesheet" href="https://use.typekit.net/why1lhi.css" />
+      </head>
       <body className={`${outfit.variable} ${workSans.variable} ${notoSansTC.variable} ${jetbrainsMono.variable}`}>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <a href="#main-content" className="skip-link">
-            {locale === 'zh' ? '跳至主要內容' : 'Skip to main content'}
-          </a>
-          <Navbar />
-          <main id="main-content" style={{ minHeight: 'calc(100vh - 400px)' }}>
-            {children}
-          </main>
-          <Footer />
+          {children}
         </NextIntlClientProvider>
       </body>
     </html>
