@@ -1,5 +1,11 @@
 /* ============================================
    Vaxal Base — Editorial / Ecosystem Story
+
+   Width hierarchy (self-centering, no SectionWrapper nesting):
+   - Prose:       740px  (readable column)
+   - Figure:      1080px (wide visual break)
+   - Highlights:  1080px (wide visual break)
+   - CTA:         centered
    ============================================ */
 
 .page {
@@ -44,6 +50,49 @@
   max-width: 620px;
 }
 
+/* ============ Intro ============ */
+.intro {
+  padding: var(--space-16) 0 var(--space-8);
+  background-color: var(--bg-white);
+}
+
+/* ============ Highlights ============ */
+.highlights {
+  padding: 0 0 var(--space-16);
+  background-color: var(--bg-white);
+}
+
+.highlightsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-5);
+  max-width: 740px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+}
+
+.highlightCard {
+  padding: var(--space-6) var(--space-5);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+}
+
+.highlightTitle {
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  margin-bottom: var(--space-2);
+  letter-spacing: -0.01em;
+}
+
+.highlightDesc {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-body);
+}
+
 /* ============ Article Body ============ */
 .article {
   padding: var(--space-16) 0;
@@ -54,9 +103,9 @@
   padding-top: 0;
 }
 
-/* Prose: narrow reading column */
+/* Prose: readable column, self-centered */
 .prose {
-  max-width: 680px;
+  max-width: 740px;
   margin: 0 auto;
   padding: 0 var(--space-6);
 }
@@ -87,9 +136,9 @@
   font-size: 1.125rem;
 }
 
-/* ============ Figure: Industry Grid ============ */
+/* ============ Figure: Industry Grid (wider) ============ */
 .figure {
-  max-width: 900px;
+  max-width: 1080px;
   margin: var(--space-12) auto;
   padding: 0 var(--space-6);
 }
@@ -120,6 +169,7 @@
   border-color: var(--color-accent-light);
   color: var(--color-accent);
   box-shadow: var(--shadow-sm);
+  cursor: pointer;
 }
 
 .figcaption {
@@ -130,121 +180,46 @@
   letter-spacing: 0.01em;
 }
 
-/* ============ Loop Section (dark) ============ */
-.loopSection {
-  padding: var(--space-20) 0;
-  background-color: var(--deep-section-bg);
-  color: var(--deep-section-text);
-}
-
-.loopProse {
-  max-width: 680px;
-  margin: 0 auto;
-  padding: 0 var(--space-6);
-}
-
-.loopTitle {
-  font-family: var(--font-heading);
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 700;
-  color: var(--deep-section-text);
-  margin-bottom: var(--space-6);
-  letter-spacing: -0.02em;
-}
-
-.loopProse p {
-  font-size: 1.0625rem;
-  line-height: 1.85;
-  color: var(--deep-section-muted);
-  margin-bottom: var(--space-8);
-}
-
-.pullQuote {
-  max-width: 620px;
-  margin: var(--space-8) auto 0;
-  padding: 0 var(--space-6);
-  text-align: center;
-  font-family: var(--font-heading);
-  font-size: clamp(1.25rem, 2.5vw, 1.625rem);
-  font-weight: 600;
-  font-style: italic;
-  color: var(--color-accent);
-  line-height: 1.55;
-  letter-spacing: -0.01em;
-}
-
-/* ============ Stats ============ */
-.stats {
-  padding: var(--space-20) 0;
-  background-color: var(--bg-surface);
-}
-
-.statsTitle {
-  font-family: var(--font-heading);
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 700;
-  color: var(--text-primary);
-  text-align: center;
-  margin-bottom: var(--space-12);
-  letter-spacing: -0.02em;
-}
-
-.statsGrid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: var(--space-5);
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.statItem {
-  text-align: center;
-  padding: var(--space-8) var(--space-4);
-  background: var(--bg-white);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--border-light);
-}
-
-.statValue {
-  display: block;
-  font-family: var(--font-heading);
-  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
-  font-weight: 800;
-  color: var(--color-accent);
-  letter-spacing: -0.03em;
-  margin-bottom: var(--space-2);
-}
-
-.statLabel {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
-}
-
 /* ============ CTA ============ */
 .cta {
-  padding: var(--space-20) 0 var(--space-24);
-  background-color: var(--bg-white);
+  padding: var(--space-16) 0 var(--space-24);
+  background-color: var(--deep-section-bg);
 }
 
 .ctaContent {
   text-align: center;
+  max-width: 740px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
 }
 
 .ctaTitle {
   font-family: var(--font-heading);
-  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-size: clamp(1.25rem, 2.5vw, 1.625rem);
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--deep-section-text);
   margin-bottom: var(--space-8);
   letter-spacing: -0.02em;
+  line-height: 1.5;
 }
 
 /* ============ Responsive ============ */
 @media (max-width: 991px) {
   .hero {
     padding: calc(var(--header-height) + var(--space-8)) 0 var(--space-12);
+  }
+
+  .intro {
+    padding: var(--space-10) 0 var(--space-4);
+  }
+
+  .highlights {
+    padding: 0 0 var(--space-10);
+  }
+
+  .highlightsGrid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
   }
 
   .article {
@@ -255,29 +230,18 @@
     padding-top: 0;
   }
 
-  .loopSection {
-    padding: var(--space-12) 0;
-  }
-
-  .stats {
-    padding: var(--space-12) 0;
-  }
-
-  .statsGrid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-4);
-  }
-
   .cta {
-    padding: var(--space-12) 0 var(--space-16);
+    padding: var(--space-10) 0 var(--space-16);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .industryTag {
+    transition: none;
   }
 }
 
 @media (max-width: 640px) {
-  .statsGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .industryGrid {
     padding: var(--space-6);
     gap: var(--space-2);

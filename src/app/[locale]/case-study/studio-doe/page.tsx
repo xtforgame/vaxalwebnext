@@ -6,6 +6,13 @@ import styles from './studio-doe.module.css';
 export default async function StudioDoeCase() {
   const t = await getTranslations('caseStudyPage');
 
+  const HIGHLIGHTS = [
+    { title: t('highlight1'), desc: t('highlight1Desc') },
+    { title: t('highlight2'), desc: t('highlight2Desc') },
+    { title: t('highlight3'), desc: t('highlight3Desc') },
+    { title: t('highlight4'), desc: t('highlight4Desc') },
+  ];
+
   return (
     <div className={styles.casePage}>
       {/* Hero */}
@@ -31,122 +38,129 @@ export default async function StudioDoeCase() {
         </SectionWrapper>
       </section>
 
-      {/* Article Body */}
-      <article className={styles.article}>
-        <SectionWrapper background="white" padding="none">
-          <div className={styles.prose}>
-
-            {/* Chapter 1: The Beginning */}
-            <p>{t('ch1P1')}</p>
-            <p>{t('ch1P2')}</p>
-          </div>
-
-          {/* Visual break: Store screenshot */}
-          <figure className={styles.figure}>
-            <div className={styles.imagePlaceholder}>
-              <span>{t('fig1Alt')}</span>
-            </div>
-            <figcaption className={styles.figcaption}>{t('fig1Caption')}</figcaption>
-          </figure>
-
-          <div className={styles.prose}>
-
-            {/* Chapter 2: The Decision */}
-            <p>{t('ch2P1')}</p>
-            <p>{t('ch2P2')}</p>
-            <p className={styles.emphasis}>{t('ch2P3')}</p>
-          </div>
-
-          {/* Visual break: Architecture diagram */}
-          <figure className={styles.figure}>
-            <div className={styles.imagePlaceholder}>
-              <span>{t('fig2Alt')}</span>
-            </div>
-            <figcaption className={styles.figcaption}>{t('fig2Caption')}</figcaption>
-          </figure>
-
-          <div className={styles.prose}>
-
-            {/* Chapter 3: Evolution */}
-            <p>{t('ch3P1')}</p>
-          </div>
-
-          {/* Visual break: Timeline */}
-          <div className={styles.timeline}>
-            <div className={styles.timelineCard}>
-              <span className={styles.timelineYear}>{t('module1Year')}</span>
-              <h3 className={styles.timelineCardTitle}>{t('module1Title')}</h3>
-              <p>{t('module1Desc')}</p>
-            </div>
-            <div className={styles.timelineCard}>
-              <span className={styles.timelineYear}>{t('module2Year')}</span>
-              <h3 className={styles.timelineCardTitle}>{t('module2Title')}</h3>
-              <p>{t('module2Desc')}</p>
-            </div>
-            <div className={styles.timelineCard}>
-              <span className={styles.timelineYear}>{t('module3Year')}</span>
-              <h3 className={styles.timelineCardTitle}>{t('module3Title')}</h3>
-              <p>{t('module3Desc')}</p>
-            </div>
-            <div className={styles.timelineCard}>
-              <span className={styles.timelineYear}>{t('module4Year')}</span>
-              <h3 className={styles.timelineCardTitle}>{t('module4Title')}</h3>
-              <p>{t('module4Desc')}</p>
-            </div>
-          </div>
-
-          <div className={styles.prose}>
-            <p>{t('ch3P2')}</p>
-          </div>
-        </SectionWrapper>
-      </article>
-
-      {/* The Turning Point — dark break */}
-      <section className={styles.turningSection}>
-        <SectionWrapper background="transparent" padding="none">
-          <div className={styles.turningProse}>
-            <p>{t('ch4P1')}</p>
-            <p>{t('ch4P2')}</p>
-            <p>{t('ch4P3')}</p>
-          </div>
-          <blockquote className={styles.pullQuote}>
-            {t('pullQuote')}
-          </blockquote>
-        </SectionWrapper>
+      {/* Intro */}
+      <section className={styles.intro}>
+        <div className={styles.prose}>
+          <p>{t('introP1')}</p>
+          <p>{t('introP2')}</p>
+        </div>
       </section>
 
-      {/* Continue article — AI compatibility */}
-      <article className={styles.article}>
-        <SectionWrapper background="white" padding="none">
-          <div className={styles.prose}>
-            <p>{t('ch5P1')}</p>
-            <p>{t('ch5P2')}</p>
-          </div>
-
-          {/* Visual break: AI integration */}
-          <figure className={styles.figure}>
-            <div className={styles.imagePlaceholder}>
-              <span>{t('fig3Alt')}</span>
+      {/* Highlights */}
+      <section className={styles.highlights}>
+        <div className={styles.highlightsGrid}>
+          {HIGHLIGHTS.map((h) => (
+            <div key={h.title} className={styles.highlightCard}>
+              <h3 className={styles.highlightTitle}>{h.title}</h3>
+              <p className={styles.highlightDesc}>{h.desc}</p>
             </div>
-            <figcaption className={styles.figcaption}>{t('fig3Caption')}</figcaption>
-          </figure>
-        </SectionWrapper>
+          ))}
+        </div>
+      </section>
+
+      {/* Section 1 */}
+      <article className={styles.article}>
+        <div className={styles.prose}>
+          <h2 className={styles.chapterTitle}>{t('ch1Title')}</h2>
+          <p>{t('ch1P1')}</p>
+          <p>{t('ch1P2')}</p>
+        </div>
       </article>
 
-      {/* Testimonial & CTA */}
+      {/* Section 2 */}
+      <article className={styles.article}>
+        <div className={styles.prose}>
+          <h2 className={styles.chapterTitle}>{t('ch2Title')}</h2>
+          <p>{t('ch2P1')}</p>
+          <p>{t('ch2P2')}</p>
+        </div>
+
+        <figure className={styles.figure}>
+          <div className={styles.imagePlaceholder}>
+            <span>{t('fig2Alt')}</span>
+          </div>
+          <figcaption className={styles.figcaption}>{t('fig2Caption')}</figcaption>
+        </figure>
+      </article>
+
+      {/* Section 3 */}
+      <article className={styles.article}>
+        <div className={styles.prose}>
+          <h2 className={styles.chapterTitle}>{t('ch3Title')}</h2>
+          <p>{t('ch3P1')}</p>
+          <p>{t('ch3P2')}</p>
+        </div>
+
+        <div className={styles.timeline}>
+          <div className={styles.timelineCard}>
+            <span className={styles.timelineYear}>{t('module1Year')}</span>
+            <h3 className={styles.timelineCardTitle}>{t('module1Title')}</h3>
+            <p>{t('module1Desc')}</p>
+          </div>
+          <div className={styles.timelineCard}>
+            <span className={styles.timelineYear}>{t('module2Year')}</span>
+            <h3 className={styles.timelineCardTitle}>{t('module2Title')}</h3>
+            <p>{t('module2Desc')}</p>
+          </div>
+          <div className={styles.timelineCard}>
+            <span className={styles.timelineYear}>{t('module3Year')}</span>
+            <h3 className={styles.timelineCardTitle}>{t('module3Title')}</h3>
+            <p>{t('module3Desc')}</p>
+          </div>
+          <div className={styles.timelineCard}>
+            <span className={styles.timelineYear}>{t('module4Year')}</span>
+            <h3 className={styles.timelineCardTitle}>{t('module4Title')}</h3>
+            <p>{t('module4Desc')}</p>
+          </div>
+        </div>
+
+        <figure className={styles.figure}>
+          <div className={styles.imagePlaceholder}>
+            <span>{t('fig1Alt')}</span>
+          </div>
+          <figcaption className={styles.figcaption}>{t('fig1Caption')}</figcaption>
+        </figure>
+      </article>
+
+      {/* Section 4 — with pull quote */}
+      <article className={styles.article}>
+        <div className={styles.prose}>
+          <h2 className={styles.chapterTitle}>{t('ch4Title')}</h2>
+          <p>{t('ch4P1')}</p>
+        </div>
+
+        <blockquote className={styles.pullQuote}>
+          {t('pullQuote')}
+        </blockquote>
+
+        <div className={styles.prose}>
+          <p>{t('ch4P2')}</p>
+          <p>{t('ch4P3')}</p>
+        </div>
+
+        <figure className={styles.figure}>
+          <div className={styles.imagePlaceholder}>
+            <span>{t('fig3Alt')}</span>
+          </div>
+          <figcaption className={styles.figcaption}>{t('fig3Caption')}</figcaption>
+        </figure>
+      </article>
+
+      {/* Section 5 */}
+      <article className={styles.article}>
+        <div className={styles.prose}>
+          <h2 className={styles.chapterTitle}>{t('ch5Title')}</h2>
+          <p>{t('ch5P1')}</p>
+          <p className={styles.emphasis}>{t('ch5P2')}</p>
+        </div>
+      </article>
+
+      {/* CTA */}
       <section className={styles.closing}>
-        <SectionWrapper background="white" padding="none">
-          <div className={styles.testimonialCard}>
-            <blockquote className={styles.testimonialQuote}>
-              {t('testimonial')}
-            </blockquote>
-            <p className={styles.testimonialAuthor}>{t('testimonialAuthor')}</p>
-          </div>
-          <div className={styles.closingCta}>
-            <h2 className={styles.ctaTitle}>{t('ctaTitle')}</h2>
-            <Button size="lg" href="/contact">{t('ctaButton')}</Button>
-          </div>
-        </SectionWrapper>
+        <div className={styles.closingCta}>
+          <h2 className={styles.ctaTitle}>{t('ctaTitle')}</h2>
+          <Button size="lg" href="/contact">{t('ctaButton')}</Button>
+        </div>
       </section>
     </div>
   );

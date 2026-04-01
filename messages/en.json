@@ -83,9 +83,9 @@
     }
   },
   "caseTeaser": {
-    "badge": "Hero Case Study",
-    "title": "Decoding the Infrastructure behind a Leading Fashion Brand.",
-    "description": "Built on Vaxal Base, we delivered Studio Doe a system with high concurrency, extreme stability, and deep modularity. Even facing billion-dollar revenue traffic peaks and complex marketing scenarios, it maintains flawless, efficient operations.",
+    "badge": "Case Study",
+    "title": "Not just rewriting e-commerce — paving the road for four years of brand growth.",
+    "description": "Studio Doe originally just needed a new e-commerce system. Vaxal chose to look one step further, building a modular foundation through Vaxal Base. Four years later, it supports online-offline integration and has naturally absorbed AI workflows.",
     "cta": "Read Full Case Study",
     "stat1": {
       "value": "100%",
@@ -240,18 +240,33 @@
   },
   "vaxalBasePage": {
     "badge": "Vaxal Base",
-    "title": "A Self-Evolving\nEcosystem.",
-    "subtitle": "This isn't a product page. This is the story of why we chose to solve problems this way.",
+    "title": "Through Dogfooding & Co-Creation,\nBuilding Partnerships That Keep Evolving",
+    "subtitle": "Vaxal doesn't treat system delivery as the finish line. Through daily use, continuous refinement, and shared outcomes, our technical capabilities evolve in real business contexts and flow steadily back to every partner.",
 
-    "ch1Title": "The Starting Point",
-    "ch1P1": "In 2017, we kept running into the same simple but recurring problem: every time a project was delivered, the system died. The moment the contract ended was the moment the system stopped evolving — no maintenance, no scalability, no hope of keeping up with new technology.",
-    "ch1P2": "We didn't want to repeat that cycle. So we made an uncommon decision: build our own modular foundation from scratch. Not for one client or one project, but for every possibility that lay ahead.",
-    "ch1P3": "That was the starting point of Vaxal Base.",
+    "introP1": "Vaxal Base isn't just a foundation we provide to clients — it's also the core system Vaxal itself uses and upgrades every day. This means partners aren't adopting a project that stagnates after delivery, but a living system that keeps evolving.",
+    "introP2": "For Vaxal, what truly matters isn't selling a product — it's building a foundation together with clients that grows more valuable over time.",
 
-    "ch2Title": "Symbiosis",
-    "ch2P1": "From day one, Vaxal Base wasn't just for clients — it's also our own primary system. Our daily operations, internal tools, product development — everything runs on it.",
-    "ch2P2": "What does that mean? It means we have the strongest possible incentive to keep it healthy. Every new module we build for our own needs, every upgrade driven by our own growth, naturally becomes available to all our partners — and most of the time, these improvements are free.",
-    "ch2P3": "Clients don't need to worry about the system being abandoned after delivery, or new development drying up. Because we use it every day, and we make it better every day.",
+    "highlight1": "2017",
+    "highlight1Desc": "Core system completed and deployed in production",
+    "highlight2": "32 Companies",
+    "highlight2Desc": "Total partner companies served",
+    "highlight3": "6 Deep Partnerships",
+    "highlight3Desc": "Long-term mutually beneficial collaborations",
+    "highlight4": "153 Modules",
+    "highlight4Desc": "Continuously expanding foundational capabilities",
+
+    "ch1Title": "Delivery isn't the finish line — evolution is the daily routine",
+    "ch1P1": "Vaxal's core approach has always been to continuously advance system capabilities through Dogfooding and a spirit of co-creation. Many module upgrades and new features aren't just responses to individual client needs — they also come from Vaxal's own real-world usage scenarios.",
+    "ch1P2": "As a result, this system doesn't stop after delivery. It keeps maturing through continuous, active use.",
+
+    "ch2Title": "What clients adopt is a living, evolving system",
+    "ch2P1": "Because Vaxal Base is also Vaxal's own primary system, what partners work with isn't a one-time project — it's a foundation that's continuously maintained and validated.",
+    "ch2P2": "This also means many upgrades and new modules naturally flow back to partners once they've matured. For clients, this doesn't just reduce maintenance risk — it means future requirements don't have to start from scratch every time.",
+
+    "ch3Title": "One methodology, validated across industries",
+    "ch3P1": "Since completing its core system in 2017, Vaxal has partnered with 32 companies, 6 of which have developed into long-term, deeply collaborative relationships — including 3 enterprises with annual revenue or capitalization in the hundreds of millions.",
+    "ch3P2": "To date, Vaxal Base has accumulated 153 modules across dental systems, e-commerce, education platforms, cryptocurrency exchanges, automated monitoring, customer service, and AI SaaS — among other domains.",
+    "ch3P3": "What these numbers truly prove isn't just breadth of features — it's that the same foundational methodology holds steady across different industries.",
 
     "figIndustryAlt": "Vaxal Base across industries",
     "figIndustryCaption": "One foundation, 153 modules, assembled across 7+ industries",
@@ -263,36 +278,21 @@
     "industry6": "Customer Service",
     "industry7": "AI SaaS",
 
-    "ch3Title": "Derivation",
-    "ch3P1": "When a system has been validated across enough industries and accumulated enough modules, some of those modules start showing independent value. They're not just part of Vaxal Base anymore — they're capable of standing on their own.",
-    "ch3P2": "Ryko, BrevFlow, SoloistBoard — these three products grew naturally from Vaxal Base's internal modules. They can serve any company as standalone offerings; for partners already on Vaxal Base, they integrate natively and seamlessly.",
+    "ch4Title": "Product extensions grow naturally from the ecosystem",
+    "ch4P1": "Products like Ryko and SoloistBoard follow the same philosophy. They aren't disconnected point tools — they're capabilities distilled from Vaxal's own real-world usage, then refined into offerings for clients.",
+    "ch4P2": "Each product has a clear purpose, but they all point to the same thing: giving businesses not just tools, but a way of working that keeps evolving.",
 
-    "ch4Title": "The Loop",
-    "ch4P1": "The story doesn't end there. These three products — Ryko, BrevFlow, SoloistBoard — have become the very tools we use to keep developing Vaxal Base.",
-    "ch4P2": "Ryko lets AI directly understand and operate on Vaxal Base's data; BrevFlow automates workflow connections between modules; SoloistBoard governs the development progress and quality of the entire ecosystem.",
-    "ch4P3": "The ecosystem evolves itself. And every evolution is shared with our partners.",
+    "ch5Title": "What Vaxal believes in isn't one-time delivery",
+    "ch5P1": "For Vaxal, technology has never been a one-time deliverable — it's a foundational capability that grows with clients and accumulates value over time.",
+    "ch5P2": "Not selling a product, but building together a foundation that grows more valuable with time.",
 
-    "pullQuote": "We don't sell systems. We invite you to join an ecosystem that never stops evolving.",
-
-    "statsTitle": "By the Numbers",
-    "stat1Value": "2017",
-    "stat1Label": "Year Started",
-    "stat2Value": "32",
-    "stat2Label": "Partners",
-    "stat3Value": "153",
-    "stat3Label": "Modules",
-    "stat4Value": "6",
-    "stat4Label": "Deep Partnerships",
-    "stat5Value": "3",
-    "stat5Label": "Enterprises at Scale",
-
-    "ctaTitle": "Let Us Be Your Steadfast Partner",
-    "ctaButton": "Start a Conversation"
+    "ctaTitle": "When a system keeps evolving through use, the partnership becomes more than a purchase — it becomes long-term co-creation.",
+    "ctaButton": "Explore Vaxal's Products & Partnership"
   },
   "caseStudyPage": {
     "badge": "Case Study",
-    "title": "From E-commerce Rebuild to Enterprise Data Center: A Four-Year Journey",
-    "subtitle": "Studio Doe initially just needed a new e-commerce system. Four years later, that system has evolved into the data center powering their entire operation — and took flight when the AI wave arrived.",
+    "title": "Studio Doe",
+    "subtitle": "Not just rewriting an e-commerce system, but paving the road for four years of brand growth",
     "metaClient": "Client",
     "metaClientName": "Studio Doe",
     "metaService": "Service",
@@ -300,20 +300,35 @@
     "metaTimeline": "Timeline",
     "metaTimelineValue": "2022 – Present (Strategic Partner)",
 
-    "ch1P1": "In 2022, Studio Doe came to Vaxal with a clear ask: rebuild their e-commerce system. The brand was on the cusp of rapid growth, and their existing platform was already struggling to keep up. They needed a more reliable technical foundation.",
-    "ch1P2": "Most development shops, given this kind of project, would take the safest route — deploy a proven e-commerce framework, deliver fast, close the contract. We didn't do that.",
+    "introP1": "During its rebranding phase, Studio Doe originally planned to outsource a new e-commerce system. But Vaxal saw that the real value wasn't just meeting today's needs — it was preserving the possibility for future expansion.",
+    "introP2": "So within the same budget, Vaxal chose a different approach: building a modular foundation through Vaxal Base with data at its core. Four years later, this system not only supports online-offline integration but has naturally absorbed AI workflows, becoming the engine behind the company's continued growth.",
 
-    "fig1Alt": "Studio Doe online store screenshot",
-    "fig1Caption": "Seamless integration across Studio Doe's online and offline experiences",
+    "highlight1": "4 Years of Evolution",
+    "highlight1Desc": "Steady expansion through growth — no rebuilds needed",
+    "highlight2": "Online-Offline Integration",
+    "highlight2Desc": "From pure e-commerce to full operational coverage",
+    "highlight3": "AI-Native Ready",
+    "highlight3Desc": "Seamless adoption of enterprise private AI and MCP workflows",
+    "highlight4": "Modular Foundation",
+    "highlight4Desc": "From a single project to an enterprise data center",
 
-    "ch2P1": "As entrepreneurs, consultants, and developers all at once, we saw something bigger in Studio Doe's trajectory — not just an e-commerce rewrite, but a brand about to grow tenfold. On that trajectory, technology shouldn't be a bottleneck. It should be an accelerator.",
-    "ch2P2": "So without pushing the timeline or inflating the budget, we brought in Vaxal Base — our in-house modular foundation — with data at its core from day one. The e-commerce platform itself was just one combination of modules within Vaxal Base. This was a deliberate choice — we don't do one-time deliveries. Every engagement plants the seeds for long-term growth.",
-    "ch2P3": "That's how Vaxal works: grow with the client, and within the constraints of today's goals, make the best possible bet on tomorrow.",
+    "ch1Title": "The ask was e-commerce. The real need was growth infrastructure.",
+    "ch1P1": "At the time, Studio Doe had already accumulated substantial operational data and was at a critical stage of brand transformation and growth. Simply rewriting an e-commerce system might have met the immediate need, but in the long run, data, workflows, and future scalability would remain trapped within a single system.",
+    "ch1P2": "Vaxal chose not to treat this engagement as a one-time delivery, but instead reassessed what this company truly needed for the road ahead.",
 
-    "fig2Alt": "Vaxal Base architecture diagram",
-    "fig2Caption": "Vaxal Base: e-commerce is just one possible assembly",
+    "fig1Alt": "Studio Doe online and offline integration",
+    "fig1Caption": "From pure online e-commerce to full operational integration.",
 
-    "ch3P1": "The next four years proved this decision right. As Studio Doe's team grew tenfold, the system was never replaced or rebuilt from scratch. Instead, it kept expanding — steadily, reliably. Each new requirement was like constructing a new building in a well-planned city, not tearing the whole city down to start over.",
+    "ch2Title": "Same budget, better bet on the future",
+    "ch2P1": "Instead of following the conventional development playbook, Vaxal built a modular foundation through Vaxal Base with data at its core from day one. The e-commerce platform was just one outcome of this system — not its entirety.",
+    "ch2P2": "This choice meant the system serves not only today's orders and operations, but also reserves space for future data integration, channel expansion, affiliate commissions, and AI applications.",
+
+    "fig2Alt": "Vaxal Base modular architecture diagram",
+    "fig2Caption": "E-commerce is just one possible assembly. The real value is in the evolvable foundation.",
+
+    "ch3Title": "Four years later, this system proved it wasn't a short-term solution",
+    "ch3P1": "As Studio Doe continued to grow, Vaxal Base wasn't replaced — it steadily absorbed more new requirements. The system progressively expanded to include data analytics, offline store integration, affiliate commissions, and enterprise private LLM AI modules, evolving from an e-commerce project into the company's data center and operational core.",
+    "ch3P2": "Because the foundational logic was well-planned from the start, Studio Doe was able to extend into offline channels while preserving existing data and workflows — achieving seamless online-offline integration.",
 
     "module1Year": "2022",
     "module1Title": "E-commerce Core",
@@ -328,23 +343,21 @@
     "module4Title": "Enterprise Private LLM AI",
     "module4Desc": "AI capabilities natively integrated into existing operations, opening a new chapter.",
 
-    "ch3P2": "From an e-commerce system to the data center powering an entire enterprise. Tenfold team growth. Zero rebuilds.",
+    "ch4Title": "When a solid foundation meets AI, real collaboration lands",
+    "ch4P1": "Studio Doe's ability to naturally adopt AI workflows wasn't because anyone predicted every technology trend from the start. It was because Vaxal had already laid the truly important groundwork — data integration, module boundaries, and system architecture — long before AI arrived.",
+    "pullQuote": "True advantage rarely comes from predicting the future. It comes from doing the most important things right, even when you can't yet see all the opportunities ahead.",
+    "ch4P2": "Rosie, a customized version of Ryko built for Studio Doe, lets employees use natural language to access precise operational data. Through MCP architecture, AI can only access internal data within user permissions and security boundaries — enabling report queries, schedule summaries, email forwarding, and even checking whether products flow smoothly from listing to purchase.",
+    "ch4P3": "Similarly, SoloistBoard has been integrated into actual workflows, where AI Agents with different roles — similar to PM, engineer, and QA — collaborate on planning and implementing major features.",
 
-    "ch4P1": "Then AI arrived.",
-    "ch4P2": "Four years ago, no one could have predicted that LLM AI would emerge and rewrite the rules of every industry. Vaxal is no prophet — but we knew one thing: only a solid foundation can prepare a business for whatever wave comes next. And when this particular wave hit, Studio Doe was one of the few brands in Taiwan with all three ingredients — a self-built e-commerce system, complete ownership of first-party marketing data, and a robust extensible architecture. This allowed AI to generate operational analyses and reports almost immediately, putting them far ahead of the pack.",
-    "ch4P3": "While other brands remain constrained by third-party platforms, unable to freely build new capabilities, Studio Doe has already pulled far ahead through Vibe Coding — and that advantage will only widen.",
-    "pullQuote": "\"No one knew AI would rewrite human history like this. But some were ready before it happened.\"",
+    "fig3Alt": "Rosie or AI collaboration interface",
+    "fig3Caption": "Within permission controls and security boundaries, AI truly participates in daily enterprise workflows.",
 
-    "ch5P1": "Looking back, the system's deep compatibility with the AI ecosystem was no accident. Thanks to the architectural foresight from day one, every module can easily expose corresponding MCP services, providing native support for AI-human collaboration. The enterprise stays seamlessly connected to cutting-edge AI — without requiring massive system overhauls.",
-    "ch5P2": "While others are still waiting for their platform to open an API, Studio Doe is already running AI-generated reports. That's the decisive advantage of self-built systems and data ownership in the AI era.",
+    "ch5Title": "Vaxal's role goes beyond just delivering requirements",
+    "ch5P1": "What the Studio Doe case truly demonstrates isn't just a successful system — it's how Vaxal works with clients: not just responding to immediate needs, but starting from the client's real growth trajectory, and laying the groundwork for the future without compromising today's goals.",
+    "ch5P2": "When a system can grow alongside a business, it stops being just a tool — it becomes part of the long-term strategy.",
 
-    "fig3Alt": "MCP service architecture and AI integration diagram",
-    "fig3Caption": "Every module natively exposes MCP services for AI collaboration",
-
-    "testimonial": "\"We initially just wanted an e-commerce site, but Vaxal built us a system that could grow with us. Four years later, our team has grown tenfold, and we've never had to start over — this year we even plugged in AI directly. That was something we never imagined.\"",
-    "testimonialAuthor": "— An Chih, Founder of Studio Doe",
-    "ctaTitle": "Let Us Be Your Steadfast Partner",
-    "ctaButton": "Start Your Journey"
+    "ctaTitle": "A good system shouldn't become obsolete as a business grows. It should become the core through which the business integrates ever more resources.",
+    "ctaButton": "Learn how Vaxal plans growth-ready systems"
   },
   "rykoPage": {
     "tag": "Core Infrastructure",

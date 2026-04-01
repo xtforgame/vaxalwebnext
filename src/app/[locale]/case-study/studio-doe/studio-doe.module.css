@@ -1,6 +1,13 @@
 /* ============================================
    Case Study: Studio Doe — Editorial / Long-form
-   A flowing article with visual rhythm breakers.
+
+   Width hierarchy (self-centering, no SectionWrapper nesting):
+   - Prose:       740px  (readable column)
+   - Pull quote:  740px  (same as prose)
+   - Figure:      1080px (wide visual break)
+   - Timeline:    1080px (wide visual break)
+   - Highlights:  1080px (wide visual break)
+   - CTA:         centered
    ============================================ */
 
 .casePage {
@@ -68,17 +75,73 @@
   color: var(--deep-section-text);
 }
 
-/* ============ Article Body ============ */
-.article {
-  padding: var(--space-20) 0;
+/* ============ Intro ============ */
+.intro {
+  padding: var(--space-16) 0 var(--space-8);
   background-color: var(--bg-white);
 }
 
-/* Prose: the narrow reading column */
-.prose {
-  max-width: 680px;
+/* ============ Highlights ============ */
+.highlights {
+  padding: 0 0 var(--space-16);
+  background-color: var(--bg-white);
+}
+
+.highlightsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-5);
+  max-width: 740px;
   margin: 0 auto;
   padding: 0 var(--space-6);
+}
+
+.highlightCard {
+  padding: var(--space-6) var(--space-5);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+}
+
+.highlightTitle {
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  margin-bottom: var(--space-2);
+  letter-spacing: -0.01em;
+}
+
+.highlightDesc {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-body);
+}
+
+/* ============ Article Body ============ */
+.article {
+  padding: var(--space-16) 0;
+  background-color: var(--bg-white);
+}
+
+.article + .article {
+  padding-top: 0;
+}
+
+/* Prose: readable column, self-centered */
+.prose {
+  max-width: 740px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+}
+
+.chapterTitle {
+  font-family: var(--font-heading);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-6);
+  letter-spacing: -0.02em;
 }
 
 .prose p {
@@ -98,9 +161,24 @@
   font-size: 1.125rem;
 }
 
-/* ============ Figure (visual rhythm breaker) ============ */
+/* ============ Pull Quote (within article) ============ */
+.pullQuote {
+  max-width: 740px;
+  margin: var(--space-8) auto;
+  padding: 0 var(--space-6);
+  text-align: center;
+  font-family: var(--font-heading);
+  font-size: clamp(1.25rem, 2.5vw, 1.625rem);
+  font-weight: 600;
+  font-style: italic;
+  color: var(--color-accent);
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+}
+
+/* ============ Figure (visual rhythm breaker — wider) ============ */
 .figure {
-  max-width: 900px;
+  max-width: 1080px;
   margin: var(--space-12) auto;
   padding: 0 var(--space-6);
 }
@@ -127,12 +205,12 @@
   letter-spacing: 0.01em;
 }
 
-/* ============ Timeline (visual breaker within article) ============ */
+/* ============ Timeline (visual breaker — wider) ============ */
 .timeline {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: var(--space-5);
-  max-width: 900px;
+  max-width: 1080px;
   margin: var(--space-12) auto;
   padding: 0 var(--space-6);
 }
@@ -143,6 +221,7 @@
   border: 1px solid var(--border-light);
   border-radius: var(--radius-xl);
   transition: all var(--transition-base);
+  cursor: pointer;
 }
 
 .timelineCard:hover {
@@ -179,81 +258,27 @@
   color: var(--text-body);
 }
 
-/* ============ Turning Point (dark section) ============ */
-.turningSection {
-  padding: var(--space-20) 0;
-  background-color: var(--deep-section-bg);
-  color: var(--deep-section-text);
-}
-
-.turningProse {
-  max-width: 680px;
-  margin: 0 auto;
-  padding: 0 var(--space-6);
-}
-
-.turningProse p {
-  font-size: 1.0625rem;
-  line-height: 1.85;
-  color: var(--deep-section-muted);
-  margin-bottom: var(--space-8);
-}
-
-.pullQuote {
-  max-width: 620px;
-  margin: var(--space-8) auto 0;
-  padding: 0 var(--space-6);
-  text-align: center;
-  font-family: var(--font-heading);
-  font-size: clamp(1.25rem, 2.5vw, 1.625rem);
-  font-weight: 600;
-  font-style: italic;
-  color: var(--color-accent);
-  line-height: 1.55;
-  letter-spacing: -0.01em;
-}
-
-/* ============ Closing: Testimonial & CTA ============ */
+/* ============ Closing CTA ============ */
 .closing {
-  padding: var(--space-20) 0 var(--space-24);
-  background-color: var(--bg-white);
-}
-
-.testimonialCard {
-  max-width: 640px;
-  margin: 0 auto var(--space-16);
-  padding: var(--space-10);
-  background: var(--bg-surface);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--border-light);
-}
-
-.testimonialQuote {
-  font-family: var(--font-heading);
-  font-size: 1.1875rem;
-  font-style: italic;
-  color: var(--text-primary);
-  line-height: 1.7;
-  margin-bottom: var(--space-6);
-}
-
-.testimonialAuthor {
-  font-weight: 600;
-  color: var(--text-secondary);
-  font-size: 0.9375rem;
+  padding: var(--space-16) 0 var(--space-24);
+  background-color: var(--deep-section-bg);
 }
 
 .closingCta {
   text-align: center;
+  max-width: 740px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
 }
 
 .ctaTitle {
   font-family: var(--font-heading);
-  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-size: clamp(1.25rem, 2.5vw, 1.625rem);
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--deep-section-text);
   margin-bottom: var(--space-8);
   letter-spacing: -0.02em;
+  line-height: 1.5;
 }
 
 /* ============ Responsive ============ */
@@ -266,21 +291,40 @@
     gap: var(--space-8);
   }
 
-  .article {
-    padding: var(--space-12) 0;
+  .intro {
+    padding: var(--space-10) 0 var(--space-4);
   }
 
-  .turningSection {
-    padding: var(--space-12) 0;
+  .highlights {
+    padding: 0 0 var(--space-10);
+  }
+
+  .highlightsGrid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .article {
+    padding: var(--space-10) 0;
+  }
+
+  .article + .article {
+    padding-top: 0;
   }
 
   .closing {
-    padding: var(--space-12) 0 var(--space-16);
+    padding: var(--space-10) 0 var(--space-16);
   }
 
   .timeline {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--space-4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timelineCard {
+    transition: none;
   }
 }
 

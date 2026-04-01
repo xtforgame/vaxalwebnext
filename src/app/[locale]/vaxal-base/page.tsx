@@ -11,12 +11,11 @@ export default async function VaxalBasePage() {
     t('industry5'), t('industry6'), t('industry7'),
   ];
 
-  const STATS = [
-    { value: t('stat1Value'), label: t('stat1Label') },
-    { value: t('stat2Value'), label: t('stat2Label') },
-    { value: t('stat3Value'), label: t('stat3Label') },
-    { value: t('stat4Value'), label: t('stat4Label') },
-    { value: t('stat5Value'), label: t('stat5Label') },
+  const HIGHLIGHTS = [
+    { title: t('highlight1'), desc: t('highlight1Desc') },
+    { title: t('highlight2'), desc: t('highlight2Desc') },
+    { title: t('highlight3'), desc: t('highlight3Desc') },
+    { title: t('highlight4'), desc: t('highlight4Desc') },
   ];
 
   return (
@@ -33,91 +32,89 @@ export default async function VaxalBasePage() {
         </SectionWrapper>
       </section>
 
-      {/* Ch1: The Starting Point */}
-      <article className={styles.article}>
-        <SectionWrapper background="white" padding="none">
-          <div className={styles.prose}>
-            <h2 className={styles.chapterTitle}>{t('ch1Title')}</h2>
-            <p>{t('ch1P1')}</p>
-            <p>{t('ch1P2')}</p>
-            <p className={styles.emphasis}>{t('ch1P3')}</p>
-          </div>
-        </SectionWrapper>
-      </article>
-
-      {/* Ch2: Symbiosis */}
-      <article className={styles.article}>
-        <SectionWrapper background="white" padding="none">
-          <div className={styles.prose}>
-            <h2 className={styles.chapterTitle}>{t('ch2Title')}</h2>
-            <p>{t('ch2P1')}</p>
-            <p>{t('ch2P2')}</p>
-            <p>{t('ch2P3')}</p>
-          </div>
-
-          {/* Industry spread visual */}
-          <figure className={styles.figure}>
-            <div className={styles.industryGrid}>
-              {INDUSTRIES.map((name) => (
-                <div key={name} className={styles.industryTag}>
-                  {name}
-                </div>
-              ))}
-            </div>
-            <figcaption className={styles.figcaption}>{t('figIndustryCaption')}</figcaption>
-          </figure>
-        </SectionWrapper>
-      </article>
-
-      {/* Ch3: Derivation */}
-      <article className={styles.article}>
-        <SectionWrapper background="white" padding="none">
-          <div className={styles.prose}>
-            <h2 className={styles.chapterTitle}>{t('ch3Title')}</h2>
-            <p>{t('ch3P1')}</p>
-            <p>{t('ch3P2')}</p>
-          </div>
-        </SectionWrapper>
-      </article>
-
-      {/* Ch4: The Loop — dark section */}
-      <section className={styles.loopSection}>
-        <SectionWrapper background="transparent" padding="none">
-          <div className={styles.loopProse}>
-            <h2 className={styles.loopTitle}>{t('ch4Title')}</h2>
-            <p>{t('ch4P1')}</p>
-            <p>{t('ch4P2')}</p>
-            <p>{t('ch4P3')}</p>
-          </div>
-          <blockquote className={styles.pullQuote}>
-            {t('pullQuote')}
-          </blockquote>
-        </SectionWrapper>
+      {/* Intro */}
+      <section className={styles.intro}>
+        <div className={styles.prose}>
+          <p>{t('introP1')}</p>
+          <p>{t('introP2')}</p>
+        </div>
       </section>
 
-      {/* Stats */}
-      <section className={styles.stats}>
-        <SectionWrapper background="grey" padding="none">
-          <h2 className={styles.statsTitle}>{t('statsTitle')}</h2>
-          <div className={styles.statsGrid}>
-            {STATS.map((s) => (
-              <div key={s.label} className={styles.statItem}>
-                <span className={styles.statValue}>{s.value}</span>
-                <span className={styles.statLabel}>{s.label}</span>
+      {/* Highlights */}
+      <section className={styles.highlights}>
+        <div className={styles.highlightsGrid}>
+          {HIGHLIGHTS.map((h) => (
+            <div key={h.title} className={styles.highlightCard}>
+              <h3 className={styles.highlightTitle}>{h.title}</h3>
+              <p className={styles.highlightDesc}>{h.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Section 1 */}
+      <article className={styles.article}>
+        <div className={styles.prose}>
+          <h2 className={styles.chapterTitle}>{t('ch1Title')}</h2>
+          <p>{t('ch1P1')}</p>
+          <p>{t('ch1P2')}</p>
+        </div>
+      </article>
+
+      {/* Section 2 */}
+      <article className={styles.article}>
+        <div className={styles.prose}>
+          <h2 className={styles.chapterTitle}>{t('ch2Title')}</h2>
+          <p>{t('ch2P1')}</p>
+          <p>{t('ch2P2')}</p>
+        </div>
+      </article>
+
+      {/* Section 3 — with industry grid */}
+      <article className={styles.article}>
+        <div className={styles.prose}>
+          <h2 className={styles.chapterTitle}>{t('ch3Title')}</h2>
+          <p>{t('ch3P1')}</p>
+          <p>{t('ch3P2')}</p>
+          <p>{t('ch3P3')}</p>
+        </div>
+
+        <figure className={styles.figure}>
+          <div className={styles.industryGrid}>
+            {INDUSTRIES.map((name) => (
+              <div key={name} className={styles.industryTag}>
+                {name}
               </div>
             ))}
           </div>
-        </SectionWrapper>
-      </section>
+          <figcaption className={styles.figcaption}>{t('figIndustryCaption')}</figcaption>
+        </figure>
+      </article>
+
+      {/* Section 4 */}
+      <article className={styles.article}>
+        <div className={styles.prose}>
+          <h2 className={styles.chapterTitle}>{t('ch4Title')}</h2>
+          <p>{t('ch4P1')}</p>
+          <p>{t('ch4P2')}</p>
+        </div>
+      </article>
+
+      {/* Section 5 */}
+      <article className={styles.article}>
+        <div className={styles.prose}>
+          <h2 className={styles.chapterTitle}>{t('ch5Title')}</h2>
+          <p>{t('ch5P1')}</p>
+          <p className={styles.emphasis}>{t('ch5P2')}</p>
+        </div>
+      </article>
 
       {/* CTA */}
       <section className={styles.cta}>
-        <SectionWrapper background="white" padding="none">
-          <div className={styles.ctaContent}>
-            <h2 className={styles.ctaTitle}>{t('ctaTitle')}</h2>
-            <Button size="lg" href="/contact">{t('ctaButton')}</Button>
-          </div>
-        </SectionWrapper>
+        <div className={styles.ctaContent}>
+          <h2 className={styles.ctaTitle}>{t('ctaTitle')}</h2>
+          <Button size="lg" href="/contact">{t('ctaButton')}</Button>
+        </div>
       </section>
     </div>
   );

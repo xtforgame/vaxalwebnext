@@ -1,5 +1,4 @@
 import { getTranslations } from 'next-intl/server';
-import SectionWrapper from '@/components/ui/SectionWrapper';
 import Button from '@/components/ui/Button';
 import styles from './about.module.css';
 
@@ -29,29 +28,27 @@ export default async function AboutPage() {
   ];
 
   return (
-    <div className={styles.container}>
+    <div className={styles.page}>
       {/* Hero */}
       <header className={styles.hero}>
-        <SectionWrapper padding="none">
+        <div className={styles.inner}>
           <span className={styles.badge}>{t('badge')}</span>
           <h1 className={styles.title}>{t('title')}</h1>
           <p className={styles.subtitle}>{t('subtitle')}</p>
-        </SectionWrapper>
+        </div>
       </header>
 
       {/* Origin Story */}
       <section className={styles.origin}>
-        <SectionWrapper background="white" padding="none">
-          <div className={styles.originContent}>
-            <h2 className={styles.sectionTitle}>{t('originTitle')}</h2>
-            <p className={styles.originText}>{t('originText')}</p>
-          </div>
-        </SectionWrapper>
+        <div className={styles.inner}>
+          <h2 className={styles.sectionTitle}>{t('originTitle')}</h2>
+          <p className={styles.originText}>{t('originText')}</p>
+        </div>
       </section>
 
       {/* Milestones + Stats */}
       <section className={styles.milestones}>
-        <SectionWrapper background="grey" padding="none">
+        <div className={styles.inner}>
           <h2 className={styles.sectionTitle}>{t('milestonesTitle')}</h2>
 
           <div className={styles.timeline}>
@@ -72,12 +69,12 @@ export default async function AboutPage() {
               </div>
             ))}
           </div>
-        </SectionWrapper>
+        </div>
       </section>
 
       {/* Core Values */}
       <section className={styles.values}>
-        <SectionWrapper background="white" padding="none">
+        <div className={styles.inner}>
           <h2 className={styles.sectionTitle}>{t('coreValuesTitle')}</h2>
           <div className={styles.valuesGrid}>
             <div className={styles.valueCard}>
@@ -93,12 +90,12 @@ export default async function AboutPage() {
               <p className={styles.valueDescription}>{t('coreValue3.description')}</p>
             </div>
           </div>
-        </SectionWrapper>
+        </div>
       </section>
 
       {/* Team DNA + Founders */}
       <section className={styles.team}>
-        <SectionWrapper background="white" padding="none">
+        <div className={styles.inner}>
           <h2 className={styles.sectionTitle}>{t('dnaTitle')}</h2>
           <p className={styles.teamIntro}>{t('dnaIntro')}</p>
           <div className={styles.foundersGrid}>
@@ -111,16 +108,16 @@ export default async function AboutPage() {
               </div>
             ))}
           </div>
-        </SectionWrapper>
+        </div>
       </section>
 
-      {/* Bridge CTA to Vaxal Base */}
+      {/* Bridge CTA */}
       <section className={styles.bridge}>
-        <SectionWrapper background="transparent" padding="none">
+        <div className={styles.inner}>
           <h2 className={styles.bridgeTitle}>{t('bridgeTitle')}</h2>
           <p className={styles.bridgeText}>{t('bridgeText')}</p>
           <Button size="lg" href="/vaxal-base">{t('bridgeCta')}</Button>
-        </SectionWrapper>
+        </div>
       </section>
     </div>
   );
