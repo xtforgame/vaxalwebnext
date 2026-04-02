@@ -31,6 +31,7 @@ uniform sampler2D uEndpoints;
 #define BASE_DIM     0.15
 #define GLOW_W       0.0025
 #define PAUSE        2.0
+#define DRAIN_FRAC   0.65
 #define PRE_CHARGE   1.5
 #define EP_GLOW_W    0.003
 #define EP_CHARGE_END 0.012
@@ -83,8 +84,11 @@ void main() {
     float trailBehind = exp(-max(arcDist, 0.0) * TRAIL_DECAY) * step(0.0, arcDist);
     trail = max(trail, trailBehind) * step(ct, PRE_CHARGE + drawTime + 0.01);
 
-    // dim base, fade during pause (never below MIN_DIM)
-    float fade = 1.0 - smoothstep(PRE_CHARGE + drawTime, cycleTime, ct);
+    // drain: energy sweeps start→end during pause instead of uniform fade
+    float afterDraw = max(ct - (PRE_CHARGE + drawTime), 0.0);
+    float drainSpeed = totalArc / (PAUSE * DRAIN_FRAC);
+    float drainPos = afterDraw * drainSpeed;
+    float fade = 1.0 - smoothstep(-0.04, 0.04, drainPos - arcAt);
     float base = max(reached * BASE_DIM * fade, MIN_DIM);
 
     float g = GLOW_W / max(d, 0.0004);
@@ -127,10 +131,11 @@ void main() {
     // dim base after trail passes
     float dimAfter = step(0.0, distToHead) * BASE_DIM * charge;
 
-    // fade during pause
-    float fade = 1.0 - smoothstep(PRE_CHARGE + drawTime, cycleTime, ct);
-
-    float intensity = max(flash, dimAfter) * fade;
+    // drain: positional fade synced with segment drain
+    float afterDraw = max(ct - (PRE_CHARGE + drawTime), 0.0);
+    float drainSpeed = totalArc / (PAUSE * DRAIN_FRAC);
+    float drainPos = afterDraw * drainSpeed;
+    float fade = 1.0 - smoothstep(-0.04, 0.04, drainPos - arcPos);
 
     float g = EP_GLOW_W / max(d, 0.0004);
     epHeadGlow = max(epHeadGlow, g * flash * fade);
