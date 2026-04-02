@@ -26,17 +26,58 @@ uniform sampler2D uEndpoints;
 #define NUM_ENDPOINTS ${numEndpoints}
 
 // ── tuning ──
+
+// 拖尾頭移動速度 (arc-length / 秒)
+// 範圍 0.05–1.0 | 調大：動畫加快 | 調小：動畫放慢
 #define SPEED        0.16
+
+// 拖尾亮頭後方的指數衰減率
+// 範圍 3.0–30.0 | 調大：尾巴更短更銳利 | 調小：尾巴更長更柔
 #define TRAIL_DECAY  10.0
+
+// 線段被點亮後的基礎亮度 (拖尾通過後的持續發光)
+// 範圍 0.05–0.5 | 調大：點亮後更亮 | 調小：點亮後更暗
 #define BASE_DIM     0.15
+
+// 線段活動時的光暈寬度 (1/d 衰減)
+// 範圍 0.001–0.01 | 調大：活動光暈更粗更亮 | 調小：更細更暗
 #define GLOW_W       0.0025
+
+// 拖尾畫完後到下一輪開始的等待時間 (秒)
+// 範圍 0.5–5.0 | 調大：停頓更久 | 調小：循環更快
 #define PAUSE        2.0
+
+// drain 動畫佔 PAUSE 時間的比例
+// 範圍 0.3–0.9 | 調大：drain 更慢（佔更多 PAUSE）| 調小：drain 更快，留更多空白
 #define DRAIN_FRAC   0.65
+
+// 起點端點在拖尾出發前的充能時間 (秒)
+// 範圍 0.5–3.0 | 調大：起點充能更久才出發 | 調小：幾乎立刻出發
 #define PRE_CHARGE   1.5
+
+// 端點圓環活動時的光暈寬度 (1/d 衰減)
+// 範圍 0.001–0.01 | 調大：端點活動光暈更粗更亮 | 調小：更細更暗
 #define EP_GLOW_W    0.003
+
+// 終點端點開始充能的距離 (arc-length)
+// 範圍 0.005–0.05 | 調大：拖尾離更遠就開始亮 | 調小：要非常接近才亮
 #define EP_CHARGE_END 0.012
+
+// 像素距離裁切閾值 (超過此距離直接跳過，優化效能)
+// 範圍 0.05–0.3 | 調大：計算範圍更廣（更精確但更慢）| 調小：更快但光暈可能被截斷
 #define DIST_CUTOFF  0.12
-#define MIN_DIM      0.04
+
+// 線段待機光暈的寬度 (smoothstep 柔邊，與亮度解耦)
+// 範圍 0.001–0.01 | 調大：待機線條更粗 | 調小：更細
+#define IDLE_W       0.004
+
+// 線段和端點待機光暈的亮度
+// 範圍 0.02–0.2 | 調大：待機更亮 | 調小：待機更暗
+#define IDLE_DIM     0.3
+
+// 端點圓環待機光暈的寬度 (smoothstep 柔邊)
+// 範圍 0.002–0.015 | 調大：待機圓環更粗 | 調小：更細
+#define EP_IDLE_W    0.004
 
 vec2 sdSeg(vec2 p, vec2 a, vec2 b) {
   vec2 pa = p - a, ba = b - a;
@@ -93,12 +134,12 @@ void main() {
 
     float trail = max(headGlow, trailBehind);
 
-    // dim base (never below MIN_DIM)
-    float base = max(reached * BASE_DIM * fade, MIN_DIM);
+    float base = reached * BASE_DIM * fade;
 
     float g = GLOW_W / max(d, 0.0004);
+    float gIdle = IDLE_DIM * (1.0 - smoothstep(0.0, IDLE_W, d));
     headTotal = max(headTotal, g * trail);
-    baseTotal = max(baseTotal, g * base);
+    baseTotal = max(baseTotal, max(g * base, gIdle));
   }
 
   // ── endpoints (synced to path timing) ──
@@ -143,8 +184,9 @@ void main() {
     float fade = 1.0 - smoothstep(-0.04, 0.04, drainPos - arcPos);
 
     float g = EP_GLOW_W / max(d, 0.0004);
+    float gIdle = IDLE_DIM * (1.0 - smoothstep(0.0, EP_IDLE_W, d));
     epHeadGlow = max(epHeadGlow, g * flash * fade);
-    epGlow = max(epGlow, g * max(dimAfter * fade, MIN_DIM));
+    epGlow = max(epGlow, max(g * dimAfter * fade, gIdle));
   }
 
   // ── compose ──
@@ -154,10 +196,8 @@ void main() {
   vec3 epCol   = vec3(0.0, 0.85, 0.7);
 
   vec3 col = bg;
-  col += baseCol * baseTotal;
-  col += headCol * headTotal;
-  col += baseCol * epGlow;
-  col += headCol * epHeadGlow;
+  col += baseCol * max(baseTotal, epGlow);
+  col += headCol * max(headTotal, epHeadGlow);
 
   // vignette
   vec2 vc = gl_FragCoord.xy / iResolution - 0.5;
