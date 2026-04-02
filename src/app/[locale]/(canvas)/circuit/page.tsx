@@ -5,8 +5,10 @@ import { Canvas } from '@react-three/fiber';
 import OneLineShader from './OneLineShader';
 import MultiLineShader1 from './MultiLineShader1';
 import MultiLineShader2 from './MultiLineShader2';
+import CircuitShader from './CircuitShader';
 
 const DEMOS = [
+  { id: 'circuit', label: 'Circuit (SVG Data)' },
   { id: 'one-line', label: 'One Line (SDF Glow)' },
   { id: 'multi1', label: 'Multi Line 1 (Curl Noise)' },
   { id: 'multi2', label: 'Multi Line 2 (Cellular)' },
@@ -15,7 +17,7 @@ const DEMOS = [
 type DemoId = (typeof DEMOS)[number]['id'];
 
 export default function CircuitPage() {
-  const [active, setActive] = useState<DemoId>('one-line');
+  const [active, setActive] = useState<DemoId>('circuit');
 
   return (
     <main style={{ width: '100vw', height: '100vh', background: '#000', position: 'relative' }}>
@@ -59,6 +61,7 @@ export default function CircuitPage() {
         style={{ width: '100%', height: '100%' }}
         frameloop="always"
       >
+        {active === 'circuit' && <CircuitShader />}
         {active === 'one-line' && <OneLineShader />}
         {active === 'multi1' && <MultiLineShader1 />}
         {active === 'multi2' && <MultiLineShader2 />}
