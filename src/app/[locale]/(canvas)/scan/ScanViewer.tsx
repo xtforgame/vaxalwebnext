@@ -30,18 +30,26 @@ const scanFragmentShader = /* glsl */ `
     // Scan line position — sweeps bottom-to-top every 4 seconds
     float y = mod(-uTime / 4.0, 1.9) - 0.4;
 
-    // Parabolic distortion strength centred on the scan line
-    float str = -pow((uv.y - y) * 110.0, 2.0) + 0.8;
+    // Parabolic distortion strength — narrower band (200 vs 110)
+    float str = -pow((uv.y - y) * 200.0, 2.0) + 0.8;
 
     // Horizontal refraction shift near the line
     uv.x -= clamp(str * 0.01, 0.0, 1.0);
 
     vec4 col = texture2D(uTexture, uv);
 
-    // Cyan glow along the scan line
-    float colorAdd = pow(1.0 - pow(abs(uv.y - y), 0.3), 3.0);
-    col.g += colorAdd * 0.5;
-    col.b += colorAdd * 1.0;
+    // Tint toward pale blue
+    col.rgb *= vec3(0.82, 0.88, 0.96);
+
+    // Scan line band — smoothstep for a visible, defined stripe
+    float dist = abs(uv.y - y);
+    float band = 1.0 - smoothstep(0.0, 0.02, dist);   // core line
+    float glow = 1.0 - smoothstep(0.0, 0.5, dist);    // spans full panel width
+
+    // Darken then tint cyan
+    col.rgb *= 1.0 - band * 0.4 - glow * 0.12;
+    col.g += band * 0.45 + glow * 0.12;
+    col.b += band * 0.55 + glow * 0.18;
 
     gl_FragColor = col;
   }
@@ -51,12 +59,10 @@ function ScanImagePlane({
   src,
   panelWidth,
   panelHeight,
-  depth,
 }: {
   src: string;
   panelWidth: number;
   panelHeight: number;
-  depth: number;
 }) {
   const texture = useTexture(src);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
@@ -88,7 +94,7 @@ function ScanImagePlane({
   });
 
   return (
-    <mesh position={[0, 0, depth / 2 + 0.01]}>
+    <mesh position={[0, 0, 0]}>
       <planeGeometry args={[w, h]} />
       <shaderMaterial
         ref={materialRef}
@@ -172,7 +178,6 @@ function ScanGlassPanel() {
         src="/favicon.jpg"
         panelWidth={width}
         panelHeight={height}
-        depth={depth}
       />
     </group>
   );
