@@ -78,17 +78,22 @@ void main() {
     float arcDist = headPos - arcAt;
     float reached = smoothstep(-0.02, 0.002, arcDist);
 
-    // bright trail head
-    float trail = exp(-arcDist * arcDist * TRAIL_DECAY * TRAIL_DECAY * 4.0) * reached;
-    trail *= step(ct, PRE_CHARGE + drawTime + 0.01);
-    float trailBehind = exp(-max(arcDist, 0.0) * TRAIL_DECAY) * step(0.0, arcDist);
-    trail = max(trail, trailBehind) * step(ct, PRE_CHARGE + drawTime + 0.01);
-
-    // drain: energy sweeps start→end during pause instead of uniform fade
+    // drain: energy sweeps start→end during pause
     float afterDraw = max(ct - (PRE_CHARGE + drawTime), 0.0);
     float drainSpeed = totalArc / (PAUSE * DRAIN_FRAC);
     float drainPos = afterDraw * drainSpeed;
     float fade = 1.0 - smoothstep(-0.04, 0.04, drainPos - arcAt);
+
+    // bright moving head (only during draw phase)
+    float headGlow = exp(-arcDist * arcDist * TRAIL_DECAY * TRAIL_DECAY * 4.0) * reached;
+    headGlow *= step(ct, PRE_CHARGE + drawTime + 0.01);
+
+    // trailing glow behind head — fades with drain, not hard cutoff
+    float trailBehind = exp(-max(arcDist, 0.0) * TRAIL_DECAY) * step(0.0, arcDist) * fade;
+
+    float trail = max(headGlow, trailBehind);
+
+    // dim base (never below MIN_DIM)
     float base = max(reached * BASE_DIM * fade, MIN_DIM);
 
     float g = GLOW_W / max(d, 0.0004);
