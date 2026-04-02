@@ -1,7 +1,7 @@
 'use client';
 
-import { useRef, useMemo, useEffect } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useRef, useMemo } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import circuitData from './circuitData.json';
 
@@ -35,6 +35,7 @@ uniform sampler2D uEndpoints;
 #define EP_GLOW_W    0.003
 #define EP_CHARGE_END 0.012
 #define DIST_CUTOFF  0.12
+#define MIN_DIM      0.04
 
 vec2 sdSeg(vec2 p, vec2 a, vec2 b) {
   vec2 pa = p - a, ba = b - a;
@@ -82,9 +83,9 @@ void main() {
     float trailBehind = exp(-max(arcDist, 0.0) * TRAIL_DECAY) * step(0.0, arcDist);
     trail = max(trail, trailBehind) * step(ct, PRE_CHARGE + drawTime + 0.01);
 
-    // dim base, fade during pause
+    // dim base, fade during pause (never below MIN_DIM)
     float fade = 1.0 - smoothstep(PRE_CHARGE + drawTime, cycleTime, ct);
-    float base = reached * BASE_DIM * fade;
+    float base = max(reached * BASE_DIM * fade, MIN_DIM);
 
     float g = GLOW_W / max(d, 0.0004);
     headTotal = max(headTotal, g * trail);
@@ -133,7 +134,7 @@ void main() {
 
     float g = EP_GLOW_W / max(d, 0.0004);
     epHeadGlow = max(epHeadGlow, g * flash * fade);
-    epGlow = max(epGlow, g * dimAfter * fade);
+    epGlow = max(epGlow, g * max(dimAfter * fade, MIN_DIM));
   }
 
   // ── compose ──
@@ -168,7 +169,6 @@ function seededRand(seed: number) {
 
 /* ── component ── */
 export default function CircuitShader() {
-  const { size, viewport } = useThree();
   const matRef = useRef<THREE.ShaderMaterial>(null);
 
   const { segTex, epTex, fragmentShader } = useMemo(() => {
@@ -178,8 +178,8 @@ export default function CircuitShader() {
     const nr = (r: number) => r / sc;
 
     const rand = seededRand(42);
-    const GAP = 2.66; // SVG pixels from segment end to circle center
-    const EP_R = 2.8; // SVG circle radius
+    const GAP = circuitData.gap ?? 2.66; // SVG pixels from segment end to circle center
+    const EP_R = circuitData.endpointRadius ?? 2.8; // SVG circle radius
 
     interface Seg {
       x1: number; y1: number; x2: number; y2: number;
@@ -297,20 +297,13 @@ export default function CircuitShader() {
     };
   }, []);
 
-  useEffect(() => {
-    return () => {
-      segTex.dispose();
-      epTex.dispose();
-    };
-  }, [segTex, epTex]);
-
-  useFrame(({ clock }) => {
+  useFrame((state) => {
     const mat = matRef.current;
     if (!mat) return;
-    mat.uniforms.iTime.value = clock.getElapsedTime();
+    mat.uniforms.iTime.value = state.clock.getElapsedTime();
     mat.uniforms.iResolution.value.set(
-      size.width * viewport.dpr,
-      size.height * viewport.dpr,
+      state.size.width * state.viewport.dpr,
+      state.size.height * state.viewport.dpr,
     );
   });
 

@@ -23,6 +23,10 @@ interface CircuitData {
   endpoints: { x: number; y: number; r: number }[];
   /** Flattened line segments [x1, y1, x2, y2] for shader texture */
   segments: [number, number, number, number][];
+  /** Average distance (SVG px) from path start/end to nearest circle center */
+  gap: number;
+  /** Average endpoint circle radius (SVG px) */
+  endpointRadius: number;
   stats: {
     totalPaths: number;
     totalSegments: number;
@@ -91,11 +95,38 @@ function parseSvg(svgContent: string): CircuitData {
     }
   }
 
+  // Compute average gap: distance from each path's start/end point to nearest circle center
+  let gapSum = 0;
+  let gapCount = 0;
+  for (const path of paths) {
+    const pathEnds = [path[0], path[path.length - 1]];
+    for (const [px, py] of pathEnds) {
+      let minDist = Infinity;
+      for (const ep of endpoints) {
+        const dx = px - ep.x, dy = py - ep.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < minDist) minDist = dist;
+      }
+      if (minDist < Infinity) {
+        gapSum += minDist;
+        gapCount++;
+      }
+    }
+  }
+  const gap = gapCount > 0 ? gapSum / gapCount : 0;
+
+  // Average endpoint radius
+  const endpointRadius = endpoints.length > 0
+    ? endpoints.reduce((sum, ep) => sum + ep.r, 0) / endpoints.length
+    : 0;
+
   return {
     viewBox: { width, height },
     paths,
     endpoints,
     segments,
+    gap,
+    endpointRadius,
     stats: {
       totalPaths: paths.length,
       totalSegments: segments.length,
@@ -114,6 +145,8 @@ console.log(`  Paths:     ${data.stats.totalPaths}`);
 console.log(`  Segments:  ${data.stats.totalSegments}`);
 console.log(`  Endpoints: ${data.stats.totalEndpoints}`);
 console.log(`  ViewBox:   ${data.viewBox.width} x ${data.viewBox.height}`);
+console.log(`  Gap:       ${data.gap.toFixed(4)} px`);
+console.log(`  EP Radius: ${data.endpointRadius.toFixed(4)} px`);
 
 const outPath = resolve(process.cwd(), 'src/app/[locale]/(canvas)/circuit/circuitData.json');
 writeFileSync(outPath, JSON.stringify(data, null, 2));

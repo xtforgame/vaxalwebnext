@@ -6525,6 +6525,8 @@
       448.3866993235591
     ]
   ],
+  "gap": 2.6599999999999993,
+  "endpointRadius": 2.7999999999999807,
   "stats": {
     "totalPaths": 186,
     "totalSegments": 354,
