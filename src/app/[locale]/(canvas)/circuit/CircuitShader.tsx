@@ -31,17 +31,17 @@ uniform sampler2D uEndpoints;
 #define BASE_DIM     0.15
 #define GLOW_W       0.0025
 #define PAUSE        2.0
-#define EP_GLOW_W    0.002
+#define PRE_CHARGE   1.5
+#define EP_GLOW_W    0.003
+#define EP_CHARGE_END 0.012
 #define DIST_CUTOFF  0.12
 
-// point-to-segment distance + parameter t ∈ [0,1]
 vec2 sdSeg(vec2 p, vec2 a, vec2 b) {
   vec2 pa = p - a, ba = b - a;
   float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
   return vec2(length(pa - ba * h), h);
 }
 
-// hollow circle (ring) distance
 float sdRing(vec2 p, vec2 c, float r) {
   return abs(length(p - c) - r);
 }
@@ -53,6 +53,7 @@ void main() {
   float headTotal = 0.0;
   float invSeg = 1.0 / float(NUM_SEGMENTS);
 
+  // ── segments ──
   for (int i = 0; i < NUM_SEGMENTS; i++) {
     float tu = (float(i) + 0.5) * invSeg;
 
@@ -68,24 +69,21 @@ void main() {
     float delay    = anim.w;
 
     float drawTime  = totalArc / SPEED;
-    float cycleTime = drawTime + PAUSE;
+    float cycleTime = PRE_CHARGE + drawTime + PAUSE;
     float ct        = mod(iTime + delay, cycleTime);
-    float headPos   = ct * SPEED;
+    float headPos   = (ct - PRE_CHARGE) * SPEED;
 
     float arcDist = headPos - arcAt;
-    // soft edge: let glow bleed slightly ahead of head (matches visible glow radius)
     float reached = smoothstep(-0.02, 0.002, arcDist);
 
-    // bright trail head (exponential falloff, symmetric near head)
+    // bright trail head
     float trail = exp(-arcDist * arcDist * TRAIL_DECAY * TRAIL_DECAY * 4.0) * reached;
-    // only show head during draw phase
-    trail *= step(ct, drawTime + 0.01);
-    // also add directional trail behind head
+    trail *= step(ct, PRE_CHARGE + drawTime + 0.01);
     float trailBehind = exp(-max(arcDist, 0.0) * TRAIL_DECAY) * step(0.0, arcDist);
-    trail = max(trail, trailBehind) * step(ct, drawTime + 0.01);
+    trail = max(trail, trailBehind) * step(ct, PRE_CHARGE + drawTime + 0.01);
 
-    // dim base for already-drawn segments, fade during pause
-    float fade = 1.0 - smoothstep(drawTime, cycleTime, ct);
+    // dim base, fade during pause
+    float fade = 1.0 - smoothstep(PRE_CHARGE + drawTime, cycleTime, ct);
     float base = reached * BASE_DIM * fade;
 
     float g = GLOW_W / max(d, 0.0004);
@@ -93,27 +91,62 @@ void main() {
     baseTotal = max(baseTotal, g * base);
   }
 
-  // ── endpoints ──
+  // ── endpoints (synced to path timing) ──
   float epGlow = 0.0;
+  float epHeadGlow = 0.0;
   float invEp = 1.0 / float(NUM_ENDPOINTS);
+
   for (int i = 0; i < NUM_ENDPOINTS; i++) {
-    vec4 ep = texture2D(uEndpoints, vec2((float(i) + 0.5) * invEp, 0.5));
-    float d = sdRing(uv, ep.xy, ep.z);
+    float tu = (float(i) + 0.5) * invEp;
+    vec4 ep0 = texture2D(uEndpoints, vec2(tu, 0.25)); // cx, cy, r, arcPos
+    vec4 ep1 = texture2D(uEndpoints, vec2(tu, 0.75)); // totalArc, delay, isStart, 0
+
+    float d = sdRing(uv, ep0.xy, ep0.z);
     if (d > 0.06) continue;
-    float pulse = 0.55 + 0.45 * sin(iTime * 2.5 + ep.x * 15.0 + ep.y * 11.0);
-    epGlow = max(epGlow, EP_GLOW_W / max(d, 0.0004) * pulse);
+
+    float arcPos   = ep0.w;
+    float totalArc = ep1.x;
+    float delay    = ep1.y;
+    float isStart  = ep1.z;
+
+    float drawTime  = totalArc / SPEED;
+    float cycleTime = PRE_CHARGE + drawTime + PAUSE;
+    float ct        = mod(iTime + delay, cycleTime);
+    float headPos   = (ct - PRE_CHARGE) * SPEED;
+
+    float distToHead = headPos - arcPos;
+
+    // charge-up range: start endpoints charge during PRE_CHARGE, end endpoints charge as trail approaches
+    float chargeRange = isStart > 0.5 ? PRE_CHARGE * SPEED : EP_CHARGE_END;
+    float charge = smoothstep(-chargeRange, 0.0, distToHead);
+
+    // bright flash when trail arrives/departs
+    float flash = exp(-distToHead * distToHead * 300.0) * charge;
+
+    // dim base after trail passes
+    float dimAfter = step(0.0, distToHead) * BASE_DIM * charge;
+
+    // fade during pause
+    float fade = 1.0 - smoothstep(PRE_CHARGE + drawTime, cycleTime, ct);
+
+    float intensity = max(flash, dimAfter) * fade;
+
+    float g = EP_GLOW_W / max(d, 0.0004);
+    epHeadGlow = max(epHeadGlow, g * flash * fade);
+    epGlow = max(epGlow, g * dimAfter * fade);
   }
 
   // ── compose ──
   vec3 bg   = vec3(0.025, 0.01, 0.12);
-  vec3 base = vec3(0.0, 0.75, 0.6);
-  vec3 head = vec3(0.55, 1.0, 0.9);
-  vec3 epc  = vec3(0.0, 0.85, 0.7);
+  vec3 baseCol = vec3(0.0, 0.75, 0.6);
+  vec3 headCol = vec3(0.55, 1.0, 0.9);
+  vec3 epCol   = vec3(0.0, 0.85, 0.7);
 
   vec3 col = bg;
-  col += base * baseTotal;
-  col += head * headTotal;
-  col += epc  * epGlow * 0.4;
+  col += baseCol * baseTotal;
+  col += headCol * headTotal;
+  col += baseCol * epGlow;
+  col += headCol * epHeadGlow;
 
   // vignette
   vec2 vc = gl_FragCoord.xy / iResolution - 0.5;
@@ -139,15 +172,14 @@ export default function CircuitShader() {
   const matRef = useRef<THREE.ShaderMaterial>(null);
 
   const { segTex, epTex, fragmentShader } = useMemo(() => {
-    // ── coordinate normalization ──
-    // SVG 800×600 → center at (400,300), scale by half-height (300)
     const cx = 400, cy = 300, sc = 300;
     const nx = (x: number) => (x - cx) / sc;
-    const ny = (y: number) => (cy - y) / sc; // flip Y
+    const ny = (y: number) => (cy - y) / sc;
     const nr = (r: number) => r / sc;
 
-    // ── process paths → segments with arc lengths ──
     const rand = seededRand(42);
+    const GAP = 2.66; // SVG pixels from segment end to circle center
+    const EP_R = 2.8; // SVG circle radius
 
     interface Seg {
       x1: number; y1: number; x2: number; y2: number;
@@ -155,7 +187,13 @@ export default function CircuitShader() {
       totalArc: number; delay: number;
     }
 
+    interface Ep {
+      cx: number; cy: number; r: number;
+      arcPos: number; totalArc: number; delay: number; isStart: number;
+    }
+
     const segs: Seg[] = [];
+    const eps: Ep[] = [];
 
     for (const path of circuitData.paths) {
       let cumArc = 0;
@@ -169,47 +207,85 @@ export default function CircuitShader() {
         cumArc += len;
       }
 
-      const delay = rand() * 8; // stagger up to 8 seconds
+      const delay = rand() * 8;
       for (const s of pathSegs) {
         segs.push({ ...s, totalArc: cumArc, delay });
       }
+
+      // ── derive endpoints from path ends ──
+      // Start: extend from path[0] away from path[1]
+      {
+        const [sx, sy] = path[0];
+        const [s1x, s1y] = path[1];
+        const dx = sx - s1x, dy = sy - s1y;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        eps.push({
+          cx: nx(sx + (dx / len) * GAP),
+          cy: ny(sy + (dy / len) * GAP),
+          r: nr(EP_R),
+          arcPos: 0,
+          totalArc: cumArc,
+          delay,
+          isStart: 1,
+        });
+      }
+      // End: extend from path[last] away from path[last-1]
+      {
+        const last = path.length - 1;
+        const [ex, ey] = path[last];
+        const [e1x, e1y] = path[last - 1];
+        const dx = ex - e1x, dy = ey - e1y;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        eps.push({
+          cx: nx(ex + (dx / len) * GAP),
+          cy: ny(ey + (dy / len) * GAP),
+          r: nr(EP_R),
+          arcPos: cumArc,
+          totalArc: cumArc,
+          delay,
+          isStart: 0,
+        });
+      }
     }
 
-    // ── build segment DataTexture (width=N, height=2) ──
+    // ── segment DataTexture (width=N, height=2) ──
     const N = segs.length;
     const segData = new Float32Array(N * 2 * 4);
     for (let i = 0; i < N; i++) {
       const s = segs[i];
-      // row 0 (bottom): geometry
       segData[i * 4 + 0] = s.x1;
       segData[i * 4 + 1] = s.y1;
       segData[i * 4 + 2] = s.x2;
       segData[i * 4 + 3] = s.y2;
-      // row 1 (top): animation
       const r1 = N * 4;
       segData[r1 + i * 4 + 0] = s.arcStart;
       segData[r1 + i * 4 + 1] = s.arcEnd;
       segData[r1 + i * 4 + 2] = s.totalArc;
       segData[r1 + i * 4 + 3] = s.delay;
     }
-
     const sTex = new THREE.DataTexture(segData, N, 2, THREE.RGBAFormat, THREE.FloatType);
     sTex.minFilter = THREE.NearestFilter;
     sTex.magFilter = THREE.NearestFilter;
     sTex.needsUpdate = true;
 
-    // ── build endpoint DataTexture (width=M, height=1) ──
-    const M = circuitData.endpoints.length;
-    const epData = new Float32Array(M * 4);
+    // ── endpoint DataTexture (width=M, height=2) ──
+    const M = eps.length;
+    const epData = new Float32Array(M * 2 * 4);
     for (let i = 0; i < M; i++) {
-      const ep = circuitData.endpoints[i];
-      epData[i * 4 + 0] = nx(ep.x);
-      epData[i * 4 + 1] = ny(ep.y);
-      epData[i * 4 + 2] = nr(ep.r);
-      epData[i * 4 + 3] = 0;
+      const e = eps[i];
+      // row 0: cx, cy, r, arcPos
+      epData[i * 4 + 0] = e.cx;
+      epData[i * 4 + 1] = e.cy;
+      epData[i * 4 + 2] = e.r;
+      epData[i * 4 + 3] = e.arcPos;
+      // row 1: totalArc, delay, isStart, 0
+      const r1 = M * 4;
+      epData[r1 + i * 4 + 0] = e.totalArc;
+      epData[r1 + i * 4 + 1] = e.delay;
+      epData[r1 + i * 4 + 2] = e.isStart;
+      epData[r1 + i * 4 + 3] = 0;
     }
-
-    const eTex = new THREE.DataTexture(epData, M, 1, THREE.RGBAFormat, THREE.FloatType);
+    const eTex = new THREE.DataTexture(epData, M, 2, THREE.RGBAFormat, THREE.FloatType);
     eTex.minFilter = THREE.NearestFilter;
     eTex.magFilter = THREE.NearestFilter;
     eTex.needsUpdate = true;
