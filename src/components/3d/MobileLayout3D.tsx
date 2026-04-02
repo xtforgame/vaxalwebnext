@@ -52,7 +52,7 @@ function createRoundedBoxGeometry(
   };
 
   const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-  geometry.translate(0, 0, -(depth - r * 2) / 2 - r);
+  geometry.translate(0, 0, -(depth - r * 2) / 2);
   geometry.computeVertexNormals();
 
   return geometry;
@@ -73,13 +73,15 @@ interface GlassPanelProps {
   chromaticAberration?: number;
   reflectivity?: number;
   absorption?: number;
+  contentInside?: boolean;
 }
 
-function ImagePlane({ src, panelWidth, panelHeight, depth, scale = 0.8 }: {
+function ImagePlane({ src, panelWidth, panelHeight, depth, contentInside, scale = 0.8 }: {
   src: string;
   panelWidth: number;
   panelHeight: number;
   depth: number;
+  contentInside: boolean;
   scale?: number;
 }) {
   const texture = useTexture(src);
@@ -95,7 +97,7 @@ function ImagePlane({ src, panelWidth, panelHeight, depth, scale = 0.8 }: {
   }
 
   return (
-    <mesh position={[0, 0, depth / 2 + 0.01]}>
+    <mesh position={[0, 0, contentInside ? 0 : depth / 2 + 0.01]}>
       <planeGeometry args={[w, h]} />
       <meshBasicMaterial map={texture} transparent />
     </mesh>
@@ -117,6 +119,7 @@ const GlassPanel = ({
   chromaticAberration = 0.5,
   reflectivity = 1.0,
   absorption = 3.0,
+  contentInside = false,
 }: GlassPanelProps) => {
   const geometry = useMemo(
     () => createRoundedBoxGeometry(width, height, depth, radius, 6),
@@ -139,10 +142,10 @@ const GlassPanel = ({
         />
       </mesh>
       {image ? (
-        <ImagePlane src={image} panelWidth={width} panelHeight={height} depth={depth} scale={imageScale} />
+        <ImagePlane src={image} panelWidth={width} panelHeight={height} depth={depth} contentInside={contentInside} scale={imageScale} />
       ) : label ? (
         <Text
-          position={[0, 0, depth / 2 + 0.01]}
+          position={[0, 0, contentInside ? 0 : depth / 2 + 0.01]}
           fontSize={0.15}
           color="#334155"
           anchorX="center"
