@@ -158,6 +158,12 @@ function ScanGlassPanel() {
 
   return (
     <group>
+      {/* Image with scan-line effect */}
+      <ScanImagePlane
+        src="/favicon.jpg"
+        panelWidth={width}
+        panelHeight={height}
+      />
       {/* Glass body */}
       <mesh geometry={geometry}>
         <GlassMaterial
@@ -172,13 +178,6 @@ function ScanGlassPanel() {
           absorption={2.5}
         />
       </mesh>
-
-      {/* Image with scan-line effect */}
-      <ScanImagePlane
-        src="/favicon.jpg"
-        panelWidth={width}
-        panelHeight={height}
-      />
     </group>
   );
 }
