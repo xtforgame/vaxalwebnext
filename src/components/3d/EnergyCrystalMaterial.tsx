@@ -307,9 +307,26 @@ export function EnergyCrystalMaterial({
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const { scene } = useThree();
 
+  const dummyCubeTexture = useMemo(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, 1, 1);
+    const faces = Array.from({ length: 6 }, () => canvas);
+    const cube = new THREE.CubeTexture(faces);
+    cube.needsUpdate = true;
+    return cube;
+  }, []);
+
   const envMap = useMemo(() => {
-    return scene.environment as THREE.CubeTexture | null;
-  }, [scene.environment]);
+    const env = scene.environment;
+    if (env && (env as THREE.CubeTexture).isCubeTexture) {
+      return env as THREE.CubeTexture;
+    }
+    return dummyCubeTexture;
+  }, [scene.environment, dummyCubeTexture]);
 
   useFrame((state) => {
     if (materialRef.current) {
@@ -332,7 +349,7 @@ export function EnergyCrystalMaterial({
       uReflectivity={reflectivity}
       uChromaticAberration={chromaticAberration}
       uEnvMap={envMap}
-      uHasEnvMap={envMap ? 1 : 0}
+      uHasEnvMap={envMap !== dummyCubeTexture ? 1 : 0}
       uEnvMapIntensity={envMapIntensity}
       uRoughness={roughness}
       uThickness={thickness}
