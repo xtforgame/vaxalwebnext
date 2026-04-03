@@ -10,9 +10,11 @@ const vertexShader = /* glsl */ `
   varying vec3 vWorldNormal;
   varying vec3 vViewDirection;
   varying vec2 vUv;
+  varying vec3 vLocalPosition;
 
   void main() {
     vUv = uv;
+    vLocalPosition = position; // object-space position for volumetric sampling
 
     vec4 worldPosition = modelMatrix * vec4(position, 1.0);
     vWorldPosition = worldPosition.xyz;
@@ -49,6 +51,7 @@ const fragmentShader = /* glsl */ `
   varying vec3 vWorldNormal;
   varying vec3 vViewDirection;
   varying vec2 vUv;
+  varying vec3 vLocalPosition;
 
   #define PI 3.14159265359
   #ifndef saturate
@@ -85,6 +88,63 @@ const fragmentShader = /* glsl */ `
   vec3 sampleCubeMapSafe(vec3 dir) {
     if (uHasEnvMap < 0.5) return vec3(0.05);
     return textureCube(uEnvMap, dir).rgb;
+  }
+
+  // ── Box-folding fractal density (inspired by crystal2's approach) ──
+  // Avoids sphere-inversion singularity at origin; produces vein-like patterns
+  // that spread naturally across any coordinate range
+  float fractalDensity(vec2 p, float time) {
+    vec2 z = p;
+    float density = 0.0;
+    for (int i = 0; i < 4; i++) {
+      // Box fold: reflect into [-1,1] then invert
+      z = abs(mod(z, 4.0) - 2.0);
+      // Scale + rotate to build complexity
+      z = z * 1.8 - vec2(1.2, 0.9);
+      // Slow drift
+      z += vec2(sin(time * 0.12 + float(i)), cos(time * 0.09 + float(i) * 1.3)) * 0.3;
+      density += exp(-1.5 * length(z));
+    }
+    return density / 4.0;
+  }
+
+  // ── Multi-layer parallax sampling for thin slab ──
+  // Instead of ray marching (useless for 0.2-thick panel),
+  // sample fractal at multiple XY layers with view-dependent offset
+  float sampleCrystalEnergy(vec3 localPos, vec3 V, vec3 N, float time, float chargeLevel) {
+    // Normalize position to panel bounds: x ∈ [-2.1, 2.1], y ∈ [-2.8, 2.8]
+    vec2 panelUV = localPos.xy / vec2(2.1, 2.8); // → [-1, 1]
+
+    // View-dependent parallax offset (gives depth illusion when rotating)
+    vec3 viewLocal = normalize(V);
+    vec2 parallax = viewLocal.xy / max(abs(viewLocal.z), 0.3) * 0.15;
+
+    // Box-shaped distance to edge (0 = center, 1 = edge)
+    vec2 edgeDist = abs(panelUV);
+    float boxDist = max(edgeDist.x, edgeDist.y);
+
+    // Energy expansion mask — rectangular, grows from center
+    float energyRadius = chargeLevel * 1.3;
+    float expansionMask = smoothstep(energyRadius, max(energyRadius - 0.4, 0.0), boxDist);
+
+    // Sample 4 layers at different "depths" with parallax shift
+    float accDensity = 0.0;
+    for (int i = 0; i < 4; i++) {
+      float depth = float(i) / 3.0; // 0.0 → 1.0
+      vec2 offset = parallax * depth;
+      vec2 sampleUV = panelUV + offset;
+
+      // Different scale per layer → different vein sizes
+      float scale = 1.5 + float(i) * 0.8;
+      float d = fractalDensity(sampleUV * scale, time + float(i) * 2.0);
+
+      // Deeper layers slightly fainter
+      float layerWeight = 1.0 - depth * 0.3;
+      accDensity += d * layerWeight;
+    }
+    accDensity /= 4.0;
+
+    return accDensity * expansionMask;
   }
 
   vec3 sampleEnvMapChromatic(vec3 direction, float ior, float aberration) {
@@ -149,27 +209,31 @@ const fragmentShader = /* glsl */ `
     glassColor *= uEnvMapIntensity;
 
     // ============================================================
-    // ENERGY CHARGING EFFECT
+    // ENERGY CHARGING EFFECT — Multi-layer Fractal Glow
     // ============================================================
 
-    // A. Internal radial glow — expands from center as charge increases
-    float distFromCenter = length(vUv - 0.5) * 2.0; // 0 = center, 1 = edge
-    float energyRadius = uChargeLevel * 1.4; // overshoots 1.0 so it fills edges
-    float energyMask = smoothstep(energyRadius, max(energyRadius - 0.4, 0.0), distFromCenter);
+    // A. Breathing pulse
+    float pulse = sin(uTime * 3.0) * 0.12 + 0.88;
+    float fastPulse = sin(uTime * 7.0) * 0.04;
 
-    // B. Breathing pulse
-    float pulse = sin(uTime * 3.0) * 0.15 + 0.85;
-    float fastPulse = sin(uTime * 7.0) * 0.05;
+    // B. Multi-layer fractal sampling — veins spread across panel shape
+    float volumetricDensity = sampleCrystalEnergy(
+      vLocalPosition, V, N, uTime, uChargeLevel
+    );
 
-    // C. Emissive from internal glow
-    vec3 emissive = uEnergyColor * energyMask * uChargeLevel * pulse;
+    // C. Emissive from fractal density — structured internal glow
+    vec3 emissive = uEnergyColor * volumetricDensity * uChargeLevel * pulse * 2.0;
 
-    // D. Edge glow intensifies with charge — energy bleeding through edges
-    float chargedEdgeGlow = pow(1.0 - NdotV, 2.5) * uChargeLevel * 0.8;
+    // D. Edge glow — energy bleeding through thin edges
+    float chargedEdgeGlow = pow(1.0 - NdotV, 2.5) * uChargeLevel * 0.6;
     emissive += uEnergyColor * chargedEdgeGlow * (pulse + fastPulse);
 
-    // E. At high charge, the whole body glows subtly
-    float bodyGlow = uChargeLevel * uChargeLevel * 0.3; // quadratic ramp
+    // E. Fake transmission — thin viewing angles glow brighter
+    float transmission = exp(-pathLength * dynamicAbsorption * 0.5);
+    emissive *= mix(0.5, 1.2, transmission);
+
+    // F. Subtle overall body glow at high charge
+    float bodyGlow = uChargeLevel * uChargeLevel * 0.1;
     emissive += uEnergyColor * bodyGlow * pulse;
 
     glassColor += emissive;
@@ -179,7 +243,7 @@ const fragmentShader = /* glsl */ `
     // Alpha — more opaque when charged (energy fills the volume)
     float absorptionAlpha = 1.0 - (absorption.r + absorption.g + absorption.b) / 3.0;
     float baseAlpha = mix(uOpacity, 0.8, absorptionAlpha * 0.5 + fresnelTerm * 0.3);
-    float chargeAlpha = uChargeLevel * 0.3 * energyMask;
+    float chargeAlpha = uChargeLevel * 0.3 * saturate(volumetricDensity);
     float alpha = min(baseAlpha + chargeAlpha, 0.95);
 
     gl_FragColor = vec4(glassColor, alpha);
