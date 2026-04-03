@@ -46,10 +46,15 @@ const scanFragmentShader = /* glsl */ `
     float band = 1.0 - smoothstep(0.0, 0.02, dist);   // core line
     float glow = 1.0 - smoothstep(0.0, 0.5, dist);    // spans full panel width
 
-    // Darken then tint cyan
-    col.rgb *= 1.0 - band * 0.4 - glow * 0.12;
-    col.g += band * 0.45 + glow * 0.12;
-    col.b += band * 0.55 + glow * 0.18;
+    // // V1: Darken then tint cyan
+    // col.rgb *= 1.0 - band * 0.4 - glow * 0.12;
+    // col.g += band * 0.45 + glow * 0.12;
+    // col.b += band * 0.55 + glow * 0.18;
+
+    // V2: Force-replace color at scan line — visible on any background
+    vec3 scanColor = vec3(0.0, 0.85, 1.0);  // bright cyan
+    col.rgb = mix(col.rgb, scanColor, band * 0.9);
+    col.rgb = mix(col.rgb, scanColor * 0.5 + col.rgb * 0.5, glow * 0.3);
 
     gl_FragColor = col;
   }
