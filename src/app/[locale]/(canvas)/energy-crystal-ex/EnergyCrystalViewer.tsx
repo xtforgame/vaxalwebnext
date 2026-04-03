@@ -240,7 +240,7 @@ void main() {
   m *= chargeIntensity * 1.5;
 
   float starAnim = sin(uTime * 8.0) * 0.08 + 1.0;
-  float star = happy_star(uv * 3.5, starAnim);
+  float star = happy_star(uv / avgRadius * 0.6, starAnim);
   star = clamp(star * 0.06 * chargeIntensity, 0.0, 0.4);
 
   vec3 warmColor = mix(
