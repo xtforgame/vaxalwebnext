@@ -5,6 +5,7 @@ import { OrbitControls, useTexture } from '@react-three/drei';
 import { Suspense, useRef, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { GlassMaterial } from '@/components/3d/GlassMaterial';
+import { createRoundedBoxGeometry } from '@/components/3d/utils/rounded-box';
 import { useWebGLRecovery } from '@/hooks/useWebGLRecovery';
 
 // ─── Scan-line image material ────────────────────────────────────────
@@ -110,43 +111,6 @@ function ScanImagePlane({
       />
     </mesh>
   );
-}
-
-// ─── Rounded-box helper (same as MobileLayout3D) ────────────────────
-function createRoundedBoxGeometry(
-  width: number,
-  height: number,
-  depth: number,
-  radius: number,
-  segments = 8
-): THREE.BufferGeometry {
-  const r = Math.min(radius, Math.min(width, height, depth) / 2);
-  const shape = new THREE.Shape();
-  const w = width / 2 - r;
-  const h = height / 2 - r;
-
-  shape.moveTo(-w, -height / 2);
-  shape.lineTo(w, -height / 2);
-  shape.quadraticCurveTo(width / 2, -height / 2, width / 2, -h);
-  shape.lineTo(width / 2, h);
-  shape.quadraticCurveTo(width / 2, height / 2, w, height / 2);
-  shape.lineTo(-w, height / 2);
-  shape.quadraticCurveTo(-width / 2, height / 2, -width / 2, h);
-  shape.lineTo(-width / 2, -h);
-  shape.quadraticCurveTo(-width / 2, -height / 2, -w, -height / 2);
-
-  const geo = new THREE.ExtrudeGeometry(shape, {
-    depth: depth - r * 2,
-    bevelEnabled: true,
-    bevelThickness: r,
-    bevelSize: r,
-    bevelOffset: 0,
-    bevelSegments: segments,
-    curveSegments: segments,
-  });
-  geo.translate(0, 0, -(depth - r * 2) / 2);
-  geo.computeVertexNormals();
-  return geo;
 }
 
 // ─── Glass panel with scan-line image ───────────────────────────────

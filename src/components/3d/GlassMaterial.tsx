@@ -2,7 +2,7 @@
 
 import { shaderMaterial } from '@react-three/drei';
 import { extend, useFrame, useThree } from '@react-three/fiber';
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 
 const vertexShader = /* glsl */ `
@@ -10,9 +10,11 @@ const vertexShader = /* glsl */ `
   varying vec3 vWorldNormal;
   varying vec3 vViewDirection;
   varying vec2 vUv;
+  varying vec3 vLocalPosition;
 
   void main() {
     vUv = uv;
+    vLocalPosition = position;
 
     vec4 worldPosition = modelMatrix * vec4(position, 1.0);
     vWorldPosition = worldPosition.xyz;
@@ -26,6 +28,7 @@ const vertexShader = /* glsl */ `
 `;
 
 const fragmentShader = /* glsl */ `
+  // --- Base glass uniforms ---
   uniform vec3 uColor;
   uniform float uOpacity;
   uniform float uIor;
@@ -39,10 +42,15 @@ const fragmentShader = /* glsl */ `
   uniform float uAbsorption;
   uniform float uTime;
 
+  // --- Energy charging uniforms ---
+  uniform float uChargeLevel;
+  uniform vec3 uEnergyColor;
+
   varying vec3 vWorldPosition;
   varying vec3 vWorldNormal;
   varying vec3 vViewDirection;
   varying vec2 vUv;
+  varying vec3 vLocalPosition;
 
   #define PI 3.14159265359
   #ifndef saturate
@@ -75,50 +83,77 @@ const fragmentShader = /* glsl */ `
   }
 
   // Beer-Lambert absorption
-  // Light traveling through colored glass gets absorbed based on distance
   vec3 beerLambertAbsorption(vec3 baseColor, float distance, float absorption) {
-    // Convert color to absorption coefficient (darker color = more absorption)
     vec3 absorptionCoeff = -log(max(baseColor, 0.001)) * absorption;
-    // Apply Beer-Lambert law: transmitted = exp(-coefficient * distance)
     return exp(-absorptionCoeff * distance);
   }
 
-  // Sample environment with chromatic aberration
+  // Box-folding fractal density for energy veins
+  float fractalDensity(vec2 p, float time) {
+    vec2 z = p;
+    float density = 0.0;
+    for (int i = 0; i < 4; i++) {
+      z = abs(mod(z, 4.0) - 2.0);
+      z = z * 1.8 - vec2(1.2, 0.9);
+      z += vec2(sin(time * 0.12 + float(i)), cos(time * 0.09 + float(i) * 1.3)) * 0.3;
+      density += exp(-1.5 * length(z));
+    }
+    return density / 4.0;
+  }
+
+  // Multi-layer parallax sampling for thin slab
+  float sampleCrystalEnergy(vec3 localPos, vec3 V, vec3 N, float time, float chargeLevel) {
+    vec2 panelUV = localPos.xy / vec2(2.1, 2.8);
+    vec3 viewLocal = normalize(V);
+    vec2 parallax = viewLocal.xy / max(abs(viewLocal.z), 0.3) * 0.15;
+    vec2 edgeDist = abs(panelUV);
+    float boxDist = max(edgeDist.x, edgeDist.y);
+    float energyRadius = chargeLevel * 1.3;
+    float expansionMask = smoothstep(energyRadius, max(energyRadius - 0.4, 0.0), boxDist);
+
+    float accDensity = 0.0;
+    for (int i = 0; i < 4; i++) {
+      float depth = float(i) / 3.0;
+      vec2 offset = parallax * depth;
+      vec2 sampleUV = panelUV + offset;
+      float scale = 1.5 + float(i) * 0.8;
+      float d = fractalDensity(sampleUV * scale, time + float(i) * 2.0);
+      float layerWeight = 1.0 - depth * 0.3;
+      accDensity += d * layerWeight;
+    }
+    accDensity /= 4.0;
+
+    return accDensity * expansionMask;
+  }
+
+  // Sample environment with chromatic aberration — uses direct textureCube
   vec3 sampleEnvMapChromatic(vec3 direction, float ior, float aberration) {
     vec3 color;
-
-    // Red channel - lower IOR
     vec3 refractR = refract(-vViewDirection, vWorldNormal, 1.0 / (ior - aberration * 0.02));
     color.r = textureCube(uEnvMap, refractR).r;
-
-    // Green channel - base IOR
     vec3 refractG = refract(-vViewDirection, vWorldNormal, 1.0 / ior);
     color.g = textureCube(uEnvMap, refractG).g;
-
-    // Blue channel - higher IOR
     vec3 refractB = refract(-vViewDirection, vWorldNormal, 1.0 / (ior + aberration * 0.02));
     color.b = textureCube(uEnvMap, refractB).b;
-
     return color;
   }
 
   void main() {
     vec3 N = normalize(vWorldNormal);
     vec3 V = normalize(vViewDirection);
-
     float NdotV = max(dot(N, V), 0.001);
 
-    // Calculate path length through glass (Beer-Lambert)
-    // At grazing angles, light travels longer path through the material
+    // Beer-Lambert with dynamic absorption (decreases when charging)
+    float dynamicAbsorption = mix(uAbsorption, uAbsorption * 0.15, uChargeLevel);
     float pathLength = uThickness / NdotV;
-    pathLength = min(pathLength, uThickness * 10.0); // Clamp to prevent infinity
+    pathLength = min(pathLength, uThickness * 10.0);
 
     // Fresnel
     float f0 = iorToF0(uIor);
     float fresnelTerm = fresnel(NdotV, f0);
     fresnelTerm = pow(fresnelTerm, uFresnelPower);
 
-    // Reflection
+    // Reflection — direct textureCube
     vec3 reflectDir = reflect(-V, N);
     vec3 reflectedColor = textureCube(uEnvMap, reflectDir).rgb;
 
@@ -131,35 +166,65 @@ const fragmentShader = /* glsl */ `
       refractedColor = textureCube(uEnvMap, refractDir).rgb;
     }
 
-    // Apply Beer-Lambert absorption to refracted light
-    // This creates the colored glass effect where edges are more saturated
-    vec3 absorption = beerLambertAbsorption(uColor, pathLength, uAbsorption);
+    // Apply absorption
+    vec3 absorption = beerLambertAbsorption(uColor, pathLength, dynamicAbsorption);
     refractedColor *= absorption;
 
-    // Also tint reflected light slightly at edges
-    vec3 reflectAbsorption = beerLambertAbsorption(uColor, pathLength * 0.3, uAbsorption);
+    vec3 reflectAbsorption = beerLambertAbsorption(uColor, pathLength * 0.3, dynamicAbsorption);
     reflectedColor *= mix(vec3(1.0), reflectAbsorption, 0.5);
 
-    // Mix refraction and reflection based on Fresnel
+    // Mix refraction and reflection
     vec3 glassColor = mix(refractedColor, reflectedColor, fresnelTerm * uReflectivity);
 
-    // Add specular highlight (GGX)
+    // Specular (GGX)
     vec3 L = reflectDir;
     vec3 H = normalize(V + L);
     float specular = distributionGGX(N, H, max(uRoughness, 0.01)) * fresnelTerm;
     glassColor += vec3(1.0) * specular * 0.5;
 
-    // Subtle edge highlight
+    // Base edge highlight
     float edgeGlow = pow(1.0 - NdotV, 4.0) * 0.15;
     glassColor += uColor * edgeGlow;
 
-    // Apply environment intensity
     glassColor *= uEnvMapIntensity;
 
-    // Final color with opacity for layering
-    // Edges should be more opaque due to absorption
+    // ============================================================
+    // ENERGY CHARGING EFFECT — only active when uChargeLevel > 0
+    // ============================================================
+
+    // A. Breathing pulse
+    float pulse = sin(uTime * 3.0) * 0.12 + 0.88;
+    float fastPulse = sin(uTime * 7.0) * 0.04;
+
+    // B. Multi-layer fractal sampling
+    float volumetricDensity = sampleCrystalEnergy(
+      vLocalPosition, V, N, uTime, uChargeLevel
+    );
+
+    // C. Emissive from fractal density
+    vec3 emissive = uEnergyColor * volumetricDensity * uChargeLevel * pulse * 2.0;
+
+    // D. Edge glow — energy bleeding through thin edges
+    float chargedEdgeGlow = pow(1.0 - NdotV, 2.5) * uChargeLevel * 0.6;
+    emissive += uEnergyColor * chargedEdgeGlow * (pulse + fastPulse);
+
+    // E. Fake transmission
+    float transmission = exp(-pathLength * dynamicAbsorption * 0.5);
+    emissive *= mix(0.5, 1.2, transmission);
+
+    // F. Subtle overall body glow at high charge
+    float bodyGlow = uChargeLevel * uChargeLevel * 0.1;
+    emissive += uEnergyColor * bodyGlow * pulse;
+
+    glassColor += emissive;
+
+    // ============================================================
+
+    // Alpha — more opaque when charged
     float absorptionAlpha = 1.0 - (absorption.r + absorption.g + absorption.b) / 3.0;
-    float alpha = mix(uOpacity, 0.8, absorptionAlpha * 0.5 + fresnelTerm * 0.3);
+    float baseAlpha = mix(uOpacity, 0.8, absorptionAlpha * 0.5 + fresnelTerm * 0.3);
+    float chargeAlpha = uChargeLevel * 0.3 * saturate(volumetricDensity);
+    float alpha = min(baseAlpha + chargeAlpha, 0.95);
 
     gl_FragColor = vec4(glassColor, alpha);
   }
@@ -180,6 +245,9 @@ const CrystalGlassMaterial = shaderMaterial(
     uThickness: 0.1,
     uAbsorption: 2.0,
     uTime: 0,
+    // Energy uniforms (defaults = pure glass mode)
+    uChargeLevel: 0,
+    uEnergyColor: new THREE.Color(1.0, 0.6, 0.1),
   },
   vertexShader,
   fragmentShader
@@ -199,6 +267,9 @@ interface GlassMaterialProps {
   roughness?: number;
   thickness?: number;
   absorption?: number;
+  // Energy effect props (optional — defaults keep pure glass behavior)
+  chargeLevel?: number;
+  energyColor?: string;
 }
 
 export function GlassMaterial({
@@ -212,17 +283,42 @@ export function GlassMaterial({
   roughness = 0.0,
   thickness = 0.1,
   absorption = 2.0,
+  chargeLevel = 0,
+  energyColor = '#ff9a16',
 }: GlassMaterialProps) {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
-  const { scene } = useThree();
+  const { scene, gl } = useThree();
+  const cubeRTRef = useRef<THREE.WebGLCubeRenderTarget | null>(null);
 
+  // Convert equirectangular texture to proper CubeTexture for samplerCube.
+  // Direct cast causes "textures can not be used with multiple targets" when
+  // the same texture is also bound as TEXTURE_2D (e.g. scene.background or
+  // meshStandardMaterial IBL). Use source texture height as cubemap face
+  // resolution to preserve full reflection clarity.
   const envMap = useMemo(() => {
-    return scene.environment as THREE.CubeTexture | null;
-  }, [scene.environment]);
+    const env = scene.environment;
+    if (!env) return null;
+    if ((env as THREE.CubeTexture).isCubeTexture) {
+      return env as THREE.CubeTexture;
+    }
+    // Equirectangular → CubeTexture via WebGLCubeRenderTarget
+    // Use source height (equirect is 2:1, height = angular resolution)
+    cubeRTRef.current?.dispose();
+    const size = Math.min((env.image as HTMLImageElement)?.height || 1024, 2048);
+    const rt = new THREE.WebGLCubeRenderTarget(size);
+    rt.fromEquirectangularTexture(gl, env);
+    cubeRTRef.current = rt;
+    return rt.texture;
+  }, [scene.environment, gl]);
+
+  useEffect(() => {
+    return () => { cubeRTRef.current?.dispose(); };
+  }, []);
 
   useFrame((state) => {
     if (materialRef.current) {
       materialRef.current.uniforms.uTime.value = state.clock.elapsedTime;
+      materialRef.current.uniforms.uChargeLevel.value = chargeLevel;
     }
   });
 
@@ -244,6 +340,8 @@ export function GlassMaterial({
       uRoughness={roughness}
       uThickness={thickness}
       uAbsorption={absorption}
+      uChargeLevel={chargeLevel}
+      uEnergyColor={new THREE.Color(energyColor)}
       transparent={true}
       depthWrite={false}
       side={THREE.DoubleSide}

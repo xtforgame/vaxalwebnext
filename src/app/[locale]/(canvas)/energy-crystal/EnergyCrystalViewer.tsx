@@ -2,52 +2,15 @@
 
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, useTexture } from '@react-three/drei';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { Suspense, useRef, useMemo, useState, useCallback } from 'react';
 import * as THREE from 'three';
-import { EnergyCrystalMaterial } from '@/components/3d/EnergyCrystalMaterial';
+import { GlassMaterial } from '@/components/3d/GlassMaterial';
+import { createRoundedBoxGeometry } from '@/components/3d/utils/rounded-box';
 import { useWebGLRecovery } from '@/hooks/useWebGLRecovery';
 
 // ─── Easing ─────────────────────────────────────────────────────────
 function easeOutCubic(t: number): number {
   return 1 - Math.pow(1 - t, 3);
-}
-
-// ─── Rounded-box geometry ───────────────────────────────────────────
-function createRoundedBoxGeometry(
-  width: number,
-  height: number,
-  depth: number,
-  radius: number,
-  segments = 8
-): THREE.BufferGeometry {
-  const r = Math.min(radius, Math.min(width, height, depth) / 2);
-  const shape = new THREE.Shape();
-  const w = width / 2 - r;
-  const h = height / 2 - r;
-
-  shape.moveTo(-w, -height / 2);
-  shape.lineTo(w, -height / 2);
-  shape.quadraticCurveTo(width / 2, -height / 2, width / 2, -h);
-  shape.lineTo(width / 2, h);
-  shape.quadraticCurveTo(width / 2, height / 2, w, height / 2);
-  shape.lineTo(-w, height / 2);
-  shape.quadraticCurveTo(-width / 2, height / 2, -width / 2, h);
-  shape.lineTo(-width / 2, -h);
-  shape.quadraticCurveTo(-width / 2, -height / 2, -w, -height / 2);
-
-  const geo = new THREE.ExtrudeGeometry(shape, {
-    depth: depth - r * 2,
-    bevelEnabled: true,
-    bevelThickness: r,
-    bevelSize: r,
-    bevelOffset: 0,
-    bevelSegments: segments,
-    curveSegments: segments,
-  });
-  geo.translate(0, 0, -(depth - r * 2) / 2);
-  geo.computeVertexNormals();
-  return geo;
 }
 
 // ─── Energy Crystal Panel ───────────────────────────────────────────
@@ -92,7 +55,7 @@ function EnergyCrystalPanel({ chargeLevel }: { chargeLevel: number }) {
 
       {/* Crystal body */}
       <mesh geometry={geometry}>
-        <EnergyCrystalMaterial
+        <GlassMaterial
           color="#fde8cd"
           opacity={0.12}
           ior={1.5}
@@ -294,17 +257,6 @@ export default function EnergyCrystalViewer() {
           />
 
           <PanoramaEnvironment />
-
-          {/* Bloom — disabled for now, re-enable after base rendering is verified
-          <EffectComposer>
-            <Bloom
-              intensity={1.5}
-              luminanceThreshold={0.6}
-              luminanceSmoothing={0.3}
-              mipmapBlur
-            />
-          </EffectComposer>
-          */}
         </Canvas>
       </Suspense>
     </div>
