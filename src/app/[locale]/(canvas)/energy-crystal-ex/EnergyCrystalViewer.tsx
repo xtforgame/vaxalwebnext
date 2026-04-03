@@ -49,10 +49,84 @@ function createRoundedBoxGeometry(
   return geo;
 }
 
-// ─── WebGL Shine Overlay ────────────────────────────────────────────
-// Independent WebGL2 canvas overlay with simplex noise-based shine
-// Based on Shadertoy WtG3RD (Type 1-1) technique
+// ─── Outline sampling ───────────────────────────────────────────────
+// Sample N points along the rounded-rect perimeter at equal arc-length
+const OUTLINE_N = 48;
 
+function generateOutlinePoints(
+  width: number, height: number, radius: number
+): THREE.Vector3[] {
+  const hw = width / 2;
+  const hh = height / 2;
+  const r = Math.min(radius, Math.min(width, height) / 2);
+  const wr = hw - r; // inner half-width
+  const hr = hh - r; // inner half-height
+
+  const arcLen = r * Math.PI / 2;
+
+  // Define perimeter segments in order (CCW starting bottom-left)
+  const segments: { length: number; sample: (t: number) => [number, number] }[] = [
+    // Bottom edge: (-wr, -hh) → (wr, -hh)
+    { length: 2 * wr, sample: (t) => [-wr + t * 2 * wr, -hh] },
+    // Bottom-right corner arc: center (wr, -hr)
+    { length: arcLen, sample: (t) => [
+      wr + r * Math.cos(-Math.PI / 2 + t * Math.PI / 2),
+      -hr + r * Math.sin(-Math.PI / 2 + t * Math.PI / 2),
+    ]},
+    // Right edge: (hw, -hr) → (hw, hr)
+    { length: 2 * hr, sample: (t) => [hw, -hr + t * 2 * hr] },
+    // Top-right corner arc: center (wr, hr)
+    { length: arcLen, sample: (t) => [
+      wr + r * Math.cos(t * Math.PI / 2),
+      hr + r * Math.sin(t * Math.PI / 2),
+    ]},
+    // Top edge: (wr, hh) → (-wr, hh)
+    { length: 2 * wr, sample: (t) => [wr - t * 2 * wr, hh] },
+    // Top-left corner arc: center (-wr, hr)
+    { length: arcLen, sample: (t) => [
+      -wr + r * Math.cos(Math.PI / 2 + t * Math.PI / 2),
+      hr + r * Math.sin(Math.PI / 2 + t * Math.PI / 2),
+    ]},
+    // Left edge: (-hw, hr) → (-hw, -hr)
+    { length: 2 * hr, sample: (t) => [-hw, hr - t * 2 * hr] },
+    // Bottom-left corner arc: center (-wr, -hr)
+    { length: arcLen, sample: (t) => [
+      -wr + r * Math.cos(Math.PI + t * Math.PI / 2),
+      -hr + r * Math.sin(Math.PI + t * Math.PI / 2),
+    ]},
+  ];
+
+  const totalLength = segments.reduce((s, seg) => s + seg.length, 0);
+  const points: THREE.Vector3[] = [];
+
+  for (let i = 0; i < OUTLINE_N; i++) {
+    const targetDist = (i / OUTLINE_N) * totalLength;
+    let accumulated = 0;
+    for (const seg of segments) {
+      if (accumulated + seg.length > targetDist) {
+        const localT = (targetDist - accumulated) / seg.length;
+        const [x, y] = seg.sample(localT);
+        points.push(new THREE.Vector3(x, y, 0));
+        break;
+      }
+      accumulated += seg.length;
+    }
+  }
+
+  return points;
+}
+
+// ─── Screen-space crystal tracking data ─────────────────────────────
+interface CrystalScreenData {
+  // Center in aspect-corrected space (centered at screen 0.5)
+  centerX: number;
+  centerY: number;
+  avgRadius: number;
+  // Outline points in aspect-corrected space, flat [x0,y0,x1,y1,...]
+  outline: Float32Array;
+}
+
+// ─── WebGL Shine Overlay ────────────────────────────────────────────
 const SHINE_VERTEX = `#version 300 es
 in vec2 aPosition;
 out vec2 vUv;
@@ -67,13 +141,15 @@ precision highp float;
 uniform float uTime;
 uniform float uChargeLevel;
 uniform vec2 uResolution;
-// Panel aspect ratio: 4.2 wide × 5.6 tall → 0.75:1
-uniform vec2 uPanelAspect; // (0.75, 1.0) normalized
+uniform vec2 uCenter;       // crystal center in aspect-corrected space
+uniform float uAvgRadius;   // average projected radius for scaling
+#define OUTLINE_N ${OUTLINE_N}
+uniform vec2 uOutline[OUTLINE_N];
 
 in vec2 vUv;
 out vec4 fragColor;
 
-// ─── Simplex Noise (from Type 1-1) ─────────────────────────────────
+// ─── Simplex Noise ──────────────────────────────────────────────────
 #define MOD3 vec3(.1031,.11369,.13787)
 
 vec3 hash33(vec3 p3) {
@@ -112,7 +188,7 @@ float simplex_noise(vec3 p) {
   return dot(vec4(31.316), n);
 }
 
-// ─── Happy Star (from Type 2-2) ────────────────────────────────────
+// ─── Happy Star ─────────────────────────────────────────────────────
 float happy_star(vec2 uv, float anim) {
   uv = abs(uv);
   vec2 pos = min(uv.xy / uv.yx, anim);
@@ -120,65 +196,84 @@ float happy_star(vec2 uv, float anim) {
   return (2.0 + p * (p * p - 1.5)) / (uv.x + uv.y);
 }
 
+// ─── Polygon signed distance field ──────────────────────────────────
+// Returns negative inside, positive outside
+float polygonSDF(vec2 p) {
+  float d = 1e10;
+  float s = 1.0;
+  int j = OUTLINE_N - 1;
+  for (int i = 0; i < OUTLINE_N; i++) {
+    vec2 vi = uOutline[i];
+    vec2 vj = uOutline[j];
+    vec2 e = vj - vi;
+    vec2 w = p - vi;
+    vec2 b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
+    d = min(d, dot(b, b));
+    bvec3 cond = bvec3(p.y >= vi.y, p.y < vj.y, e.x * w.y > e.y * w.x);
+    if (all(cond) || all(not(cond))) s *= -1.0;
+    j = i;
+  }
+  return s * sqrt(d);
+}
+
 void main() {
-  // Center-origin UV, Y-normalized
-  vec2 uv = (vUv - 0.5) * vec2(uResolution.x / uResolution.y, 1.0);
+  // Aspect-corrected space centered at screen center
+  float aspect = uResolution.x / uResolution.y;
+  vec2 pos = (vUv - 0.5) * vec2(aspect, 1.0);
 
-  // Elliptical distance matching panel aspect (taller than wide)
-  vec2 scaled = uv / (uPanelAspect * 0.18); // scale to approximate panel screen size
-  float l = length(scaled);
+  // Relative to crystal center (for angular coordinate / noise)
+  vec2 uv = pos - uCenter;
 
-  // Angular coordinate
+  // Signed distance to the crystal's projected outline
+  float sdf = polygonSDF(pos);
+
+  // Map SDF → normalized distance l
+  // sdf=0 at crystal edge → l≈0.3 (where the original ring starts)
+  // Scale by avgRadius so glow extent is proportional to crystal size
+  float l = sdf / (uAvgRadius * 2.5) + 0.3;
+  l = max(l, 0.0);
+
+  // Angular coordinate (relative to crystal center)
   float a = sin(atan(uv.y, uv.x));
   float am = abs(a - 0.5) / 4.0;
 
   // ─── Dual distance masks (Type 1-1) ──────────────────────────────
-  // m1: outer falloff — bright near center, fades outward
   float m1 = clamp(0.1 / smoothstep(0.0, 1.75, l), 0.0, 1.0);
-  // m2: inner cutout — suppresses the very center to avoid overexposure
   float m2 = clamp(0.1 / smoothstep(0.42, 0.0, l), 0.0, 1.0);
 
   // ─── Three-layer simplex noise ────────────────────────────────────
-  // s1: large-scale cloud modulation (screen space)
   float s1 = simplex_noise(vec3(uv * 2.0, 1.0 + uTime * 0.525))
              * max(1.0 - l * 1.75, 0.0) + 0.9;
-  // s2: edge detail (screen space, grows with distance)
   float s2 = simplex_noise(vec3(uv * 1.0, 15.0 + uTime * 0.525))
              * max(l * 1.0, 0.025) + 1.25;
-  // s3: angular streaks — the core "light rays" effect
   float s3 = simplex_noise(vec3(vec2(am, am * 100.0 + uTime * 3.0) * 0.15, 30.0 + uTime * 0.525))
              * max(l * 1.0, 0.25) + 1.5;
-  s3 *= smoothstep(0.0, 0.3345, l); // suppress angular noise at center
+  s3 *= smoothstep(0.0, 0.3345, l);
 
-  // Inner ring cutoff
+  // Inner ring cutoff / outer ring fade
   float sh = smoothstep(0.15, 0.35, l);
-  // Outer ring fade (from Type 1-2 — constrains the shine to a ring)
   float sh2 = smoothstep(1.2, 0.35, l);
 
   // ─── Combine ─────────────────────────────────────────────────────
   float m = m1 * m1 * m2 * (s1 * s2 * s3) * (1.0 - l) * sh * sh2;
   m = max(m, 0.0);
 
-  // chargeLevel drives overall intensity + threshold
-  // Below 30% charge: no shine. Ramps up from there.
   float chargeIntensity = smoothstep(0.3, 0.8, uChargeLevel);
   m *= chargeIntensity * 1.5;
 
-  // ─── Happy Star cross-flare (subtle) ─────────────────────────────
+  // ─── Happy Star cross-flare ───────────────────────────────────────
   float starAnim = sin(uTime * 8.0) * 0.08 + 1.0;
   float star = happy_star(uv * 3.5, starAnim);
   star = clamp(star * 0.06 * chargeIntensity, 0.0, 0.4);
 
   // ─── Warm amber coloring ─────────────────────────────────────────
-  // Core: bright amber, outer: deeper orange
   vec3 warmColor = mix(
-    vec3(1.0, 0.65, 0.15),  // deep amber
-    vec3(1.0, 0.85, 0.45),  // light gold
+    vec3(1.0, 0.65, 0.15),
+    vec3(1.0, 0.85, 0.45),
     clamp(m * 2.0, 0.0, 1.0)
   );
 
   vec3 starColor = vec3(1.0, 0.8, 0.5);
-
   vec3 col = warmColor * m + starColor * star;
 
   // Soft vignette fade at screen edges
@@ -188,7 +283,15 @@ void main() {
   fragColor = vec4(col, 1.0);
 }`;
 
-function ShineOverlay({ chargeLevel, active }: { chargeLevel: number; active: boolean }) {
+function ShineOverlay({
+  chargeLevel,
+  active,
+  screenDataRef,
+}: {
+  chargeLevel: number;
+  active: boolean;
+  screenDataRef: React.RefObject<CrystalScreenData>;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGL2RenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
@@ -255,12 +358,12 @@ function ShineOverlay({ chargeLevel, active }: { chargeLevel: number; active: bo
       uTime: gl.getUniformLocation(program, 'uTime'),
       uChargeLevel: gl.getUniformLocation(program, 'uChargeLevel'),
       uResolution: gl.getUniformLocation(program, 'uResolution'),
-      uPanelAspect: gl.getUniformLocation(program, 'uPanelAspect'),
+      uCenter: gl.getUniformLocation(program, 'uCenter'),
+      uAvgRadius: gl.getUniformLocation(program, 'uAvgRadius'),
+      uOutline: gl.getUniformLocation(program, 'uOutline'),
     };
 
     gl.useProgram(program);
-    // Panel aspect: 4.2:5.6 = 0.75:1
-    gl.uniform2f(uniformsRef.current.uPanelAspect!, 0.75, 1.0);
 
     // Enable blending for transparent overlay
     gl.enable(gl.BLEND);
@@ -285,6 +388,12 @@ function ShineOverlay({ chargeLevel, active }: { chargeLevel: number; active: bo
       gl.uniform1f(uniformsRef.current.uTime!, time);
       gl.uniform1f(uniformsRef.current.uChargeLevel!, effectiveCharge);
       gl.uniform2f(uniformsRef.current.uResolution!, w, h);
+
+      // Pass crystal's screen-space projection
+      const sd = screenDataRef.current;
+      gl.uniform2f(uniformsRef.current.uCenter!, sd.centerX, sd.centerY);
+      gl.uniform1f(uniformsRef.current.uAvgRadius!, sd.avgRadius);
+      gl.uniform2fv(uniformsRef.current.uOutline!, sd.outline);
 
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
@@ -331,7 +440,13 @@ function ShineOverlay({ chargeLevel, active }: { chargeLevel: number; active: bo
 }
 
 // ─── Energy Crystal Panel ───────────────────────────────────────────
-function EnergyCrystalPanel({ chargeLevel }: { chargeLevel: number }) {
+function EnergyCrystalPanel({
+  chargeLevel,
+  screenDataRef,
+}: {
+  chargeLevel: number;
+  screenDataRef: React.MutableRefObject<CrystalScreenData>;
+}) {
   const width = 4.2;
   const height = 5.6;
   const depth = 0.2;
@@ -344,6 +459,15 @@ function EnergyCrystalPanel({ chargeLevel }: { chargeLevel: number }) {
     []
   );
 
+  // Sample outline points along the rounded-rect perimeter (local XY, Z=0)
+  const outlineLocal = useMemo(
+    () => generateOutlinePoints(width, height, radius),
+    []
+  );
+
+  // Reusable projection buffer
+  const projBuf = useMemo(() => new Float32Array(OUTLINE_N * 2), []);
+
   useFrame((state) => {
     if (!groupRef.current) return;
     const t = state.clock.elapsedTime;
@@ -355,6 +479,47 @@ function EnergyCrystalPanel({ chargeLevel }: { chargeLevel: number }) {
       const pulse = Math.sin(t * 3) * 0.15 + 0.85;
       lightRef.current.intensity = chargeLevel * 3.0 * pulse;
     }
+
+    // Project outline points to aspect-corrected screen space
+    const camera = state.camera;
+    const aspect = state.size.width / state.size.height;
+    groupRef.current.updateMatrixWorld();
+
+    const v = new THREE.Vector3();
+    let sumX = 0, sumY = 0;
+
+    for (let i = 0; i < outlineLocal.length; i++) {
+      v.copy(outlineLocal[i])
+        .applyMatrix4(groupRef.current.matrixWorld)
+        .project(camera);
+      // NDC → UV → aspect-corrected centered space
+      const uvX = (v.x + 1) / 2;
+      const uvY = (v.y + 1) / 2;
+      const acX = (uvX - 0.5) * aspect;
+      const acY = uvY - 0.5;
+      projBuf[i * 2] = acX;
+      projBuf[i * 2 + 1] = acY;
+      sumX += acX;
+      sumY += acY;
+    }
+
+    const cx = sumX / OUTLINE_N;
+    const cy = sumY / OUTLINE_N;
+
+    // Average radius = mean distance from center to outline
+    let sumDist = 0;
+    for (let i = 0; i < OUTLINE_N; i++) {
+      const dx = projBuf[i * 2] - cx;
+      const dy = projBuf[i * 2 + 1] - cy;
+      sumDist += Math.sqrt(dx * dx + dy * dy);
+    }
+
+    screenDataRef.current = {
+      centerX: cx,
+      centerY: cy,
+      avgRadius: sumDist / OUTLINE_N,
+      outline: projBuf,
+    };
   });
 
   return (
@@ -482,12 +647,18 @@ function ToggleButton({
   );
 }
 
-// ─── Main Viewer ────────────────────────────────────────────────────
+// ─── Main Viewer ─────��──────────────────────────────────────────────
 export default function EnergyCrystalViewer() {
   const { contextLost, canvasKey, handleCreated } = useWebGLRecovery('EnergyCrystal');
   const { chargeLevel, startCharging, reset, ChargeAnimator } = useChargeAnimation();
 
   const [showShine, setShowShine] = useState(true);
+  const crystalScreenRef = useRef<CrystalScreenData>({
+    centerX: 0,
+    centerY: 0,
+    avgRadius: 0.15,
+    outline: new Float32Array(OUTLINE_N * 2),
+  });
 
   if (contextLost) {
     return (
@@ -589,7 +760,7 @@ export default function EnergyCrystalViewer() {
       </div>
 
       {/* WebGL Shine overlay */}
-      <ShineOverlay chargeLevel={chargeLevel} active={showShine} />
+      <ShineOverlay chargeLevel={chargeLevel} active={showShine} screenDataRef={crystalScreenRef} />
 
       <Suspense
         fallback={
@@ -618,7 +789,7 @@ export default function EnergyCrystalViewer() {
           <pointLight position={[-8, -5, -5]} intensity={0.6} color="#3DB5E6" />
 
           <ChargeAnimator />
-          <EnergyCrystalPanel chargeLevel={chargeLevel} />
+          <EnergyCrystalPanel chargeLevel={chargeLevel} screenDataRef={crystalScreenRef} />
 
           {/* Test cube */}
           <mesh position={[4, 0, 0]}>
