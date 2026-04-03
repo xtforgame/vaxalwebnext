@@ -3,6 +3,7 @@
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { CRYSTAL_THEME_MAP, type GlowColors } from './crystal-themes';
 
 const OUTLINE_N = 48;
 
@@ -21,6 +22,9 @@ uniform mat4 uCrystalMatrix;   // crystal's matrixWorld
 uniform mat4 uProjMatrix;      // camera.projectionMatrix (stable between frames)
 // viewMatrix — built-in, set by Three.js at gl.render() time
 uniform vec3 uOutlineLocal[${OUTLINE_N}]; // constant local-space outline points
+uniform vec3 uGlowColor;
+uniform vec3 uHighlightColor;
+uniform vec3 uStarColor;
 
 varying vec2 vUv;
 
@@ -104,7 +108,7 @@ void main() {
   }
   float sdf = sdfSign * sqrt(sdfDist);
 
-  // ── Effect logic (unchanged) ─────────────────────────────────────
+  // ── Effect logic ─────────────────────────────────────────────────
   vec2 uv = pos - center;
 
   float l = sdf / (avgRadius * 2.5) + 0.3;
@@ -137,14 +141,9 @@ void main() {
   float star = happy_star(uv / avgRadius * 0.6, starAnim);
   star = clamp(star * 0.06 * chargeIntensity, 0.0, 0.4);
 
-  vec3 warmColor = mix(
-    vec3(1.0, 0.65, 0.15),
-    vec3(1.0, 0.85, 0.45),
-    clamp(m * 2.0, 0.0, 1.0)
-  );
+  vec3 warmColor = mix(uGlowColor, uHighlightColor, clamp(m * 2.0, 0.0, 1.0));
 
-  vec3 starColor = vec3(1.0, 0.8, 0.5);
-  vec3 col = warmColor * m + starColor * star;
+  vec3 col = warmColor * m + uStarColor * star;
 
   float vignette = 1.0 - smoothstep(0.4, 0.85, length(vUv - 0.5) * 1.5);
   col *= vignette;
@@ -157,6 +156,7 @@ interface ScreenGlowProps {
   outlinePoints: THREE.Vector3[];
   chargeLevelRef: React.RefObject<number>;
   enabled: boolean;
+  colors?: GlowColors;
 }
 
 export function ScreenGlow({
@@ -164,9 +164,11 @@ export function ScreenGlow({
   outlinePoints,
   chargeLevelRef,
   enabled,
+  colors = CRYSTAL_THEME_MAP.amber.glowColors,
 }: ScreenGlowProps) {
   const glowMatRef = useRef<THREE.ShaderMaterial>(null);
 
+  // Stable uniforms — colors updated in useFrame, not as useMemo deps
   const glowUniforms = useMemo(() => ({
     uTime: { value: 0 },
     uChargeLevel: { value: 0 },
@@ -174,6 +176,9 @@ export function ScreenGlow({
     uCrystalMatrix: { value: new THREE.Matrix4() },
     uProjMatrix: { value: new THREE.Matrix4() },
     uOutlineLocal: { value: outlinePoints },
+    uGlowColor: { value: new THREE.Vector3(...CRYSTAL_THEME_MAP.amber.glowColors.glow) },
+    uHighlightColor: { value: new THREE.Vector3(...CRYSTAL_THEME_MAP.amber.glowColors.highlight) },
+    uStarColor: { value: new THREE.Vector3(...CRYSTAL_THEME_MAP.amber.glowColors.star) },
   }), [outlinePoints]);
 
   useFrame((state) => {
@@ -184,6 +189,11 @@ export function ScreenGlow({
     mat.uniforms.uChargeLevel.value = enabled ? chargeLevelRef.current : 0;
     mat.uniforms.uAspect.value = state.size.width / state.size.height;
     mat.uniforms.uProjMatrix.value.copy(state.camera.projectionMatrix);
+
+    // Update colors every frame (allows smooth theme switching)
+    mat.uniforms.uGlowColor.value.set(...colors.glow);
+    mat.uniforms.uHighlightColor.value.set(...colors.highlight);
+    mat.uniforms.uStarColor.value.set(...colors.star);
 
     if (targetRef.current) {
       mat.uniforms.uCrystalMatrix.value.copy(targetRef.current.matrixWorld);

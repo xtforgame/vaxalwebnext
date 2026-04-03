@@ -6,10 +6,12 @@ import { Suspense, useRef, useMemo, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { GlassMaterial } from '@/components/3d/GlassMaterial';
 import { ScreenGlow } from '@/components/3d/ScreenGlow';
+import { CRYSTAL_THEMES, CRYSTAL_THEME_MAP, DEFAULT_THEME_KEY } from '@/components/3d/crystal-themes';
+import type { CrystalTheme } from '@/components/3d/crystal-themes';
 import { createRoundedBoxGeometry, generateOutlinePoints } from '@/components/3d/utils/rounded-box';
 import { useWebGLRecovery } from '@/hooks/useWebGLRecovery';
 
-// ─── Easing ─────────────────────────────────────────────────────────
+// ─── Easing ──────────────────────────────────────��──────────────────
 function easeOutCubic(t: number): number {
   return 1 - Math.pow(1 - t, 3);
 }
@@ -22,6 +24,7 @@ function CrystalWithGlow({
   chargeLevelRef,
   chargeDuration,
   setChargeLevel,
+  theme,
 }: {
   showShine: boolean;
   chargingRef: React.RefObject<boolean>;
@@ -29,6 +32,7 @@ function CrystalWithGlow({
   chargeLevelRef: React.RefObject<number>;
   chargeDuration: number;
   setChargeLevel: (v: number) => void;
+  theme: CrystalTheme;
 }) {
   const WIDTH = 4.2;
   const HEIGHT = 5.6;
@@ -84,24 +88,24 @@ function CrystalWithGlow({
       <group ref={groupRef}>
         <pointLight
           ref={lightRef}
-          color="#ff9a16"
+          color={theme.lightColor}
           intensity={0}
           distance={15}
           decay={2}
         />
         <mesh geometry={geometry}>
           <GlassMaterial
-            color="#fde8cd"
-            opacity={0.12}
-            ior={1.5}
-            chromaticAberration={0.6}
+            color={theme.glassColor}
+            opacity={theme.opacity}
+            ior={theme.ior}
+            chromaticAberration={theme.chromaticAberration}
             reflectivity={1.0}
-            envMapIntensity={1.0}
-            fresnelPower={1.2}
+            envMapIntensity={theme.envMapIntensity}
+            fresnelPower={theme.fresnelPower}
             thickness={DEPTH}
-            absorption={2.5}
+            absorption={theme.absorption}
             chargeLevel={chargeLevelRef.current}
-            energyColor="#ff9a16"
+            energyColor={theme.energyColor}
           />
         </mesh>
       </group>
@@ -112,6 +116,7 @@ function CrystalWithGlow({
         outlinePoints={outlineLocal}
         chargeLevelRef={chargeLevelRef}
         enabled={showShine}
+        colors={theme.glowColors}
       />
     </>
   );
@@ -135,11 +140,17 @@ function ToggleButton({
   label,
   active,
   onClick,
+  accentColor,
+  accentBorder,
 }: {
   label: string;
   active: boolean;
   onClick: () => void;
+  accentColor?: string;
+  accentBorder?: string;
 }) {
+  const ac = accentColor || '#ffb347';
+  const ab = accentBorder || 'rgba(255,154,22,0.5)';
   return (
     <button
       onClick={onClick}
@@ -149,9 +160,9 @@ function ToggleButton({
         gap: 6,
         padding: '4px 10px',
         borderRadius: 6,
-        border: `1px solid ${active ? 'rgba(255,154,22,0.5)' : 'rgba(255,255,255,0.15)'}`,
-        background: active ? 'rgba(255,154,22,0.15)' : 'rgba(255,255,255,0.05)',
-        color: active ? '#ffb347' : 'rgba(255,255,255,0.5)',
+        border: `1px solid ${active ? ab : 'rgba(255,255,255,0.15)'}`,
+        background: active ? `${ac}22` : 'rgba(255,255,255,0.05)',
+        color: active ? ac : 'rgba(255,255,255,0.5)',
         fontSize: 12,
         cursor: 'pointer',
         backdropFilter: 'blur(8px)',
@@ -162,12 +173,42 @@ function ToggleButton({
         width: 10,
         height: 10,
         borderRadius: 2,
-        border: `1px solid ${active ? '#ffb347' : 'rgba(255,255,255,0.3)'}`,
-        background: active ? '#ff9a16' : 'transparent',
+        border: `1px solid ${active ? ac : 'rgba(255,255,255,0.3)'}`,
+        background: active ? ac : 'transparent',
         display: 'inline-block',
       }} />
       {label}
     </button>
+  );
+}
+
+// ─── Color Swatch Button ────────────────────────────────────────────
+function SwatchButton({
+  color,
+  active,
+  onClick,
+  label,
+}: {
+  color: string;
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      style={{
+        width: 22,
+        height: 22,
+        borderRadius: 4,
+        border: `2px solid ${active ? '#fff' : 'rgba(255,255,255,0.2)'}`,
+        background: color,
+        cursor: 'pointer',
+        transition: 'all 0.2s',
+        boxShadow: active ? `0 0 8px ${color}88` : 'none',
+      }}
+    />
   );
 }
 
@@ -181,6 +222,8 @@ export default function EnergyCrystalViewer() {
   const chargeLevelRef = useRef(0);
 
   const [showShine, setShowShine] = useState(true);
+  const [themeKey, setThemeKey] = useState(DEFAULT_THEME_KEY);
+  const theme = CRYSTAL_THEME_MAP[themeKey];
 
   const startCharging = useCallback(() => {
     chargingRef.current = true;
@@ -213,13 +256,13 @@ export default function EnergyCrystalViewer() {
           style={{
             padding: '8px 20px',
             borderRadius: 8,
-            border: '1px solid rgba(255,154,22,0.4)',
-            background: 'rgba(255,154,22,0.15)',
-            color: '#ffb347',
+            border: `1px solid ${theme.accentBorder}`,
+            background: theme.accentBg,
+            color: theme.accent,
             fontSize: 14,
             cursor: 'pointer',
             backdropFilter: 'blur(8px)',
-            transition: 'background 0.2s',
+            transition: 'all 0.3s',
           }}
         >
           Charge
@@ -250,7 +293,7 @@ export default function EnergyCrystalViewer() {
         zIndex: 10,
         display: 'flex',
         flexDirection: 'column',
-        gap: 4,
+        gap: 6,
         padding: '8px 10px',
         borderRadius: 8,
         border: '1px solid rgba(255,255,255,0.1)',
@@ -258,7 +301,26 @@ export default function EnergyCrystalViewer() {
         backdropFilter: 'blur(12px)',
       }}>
         <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 2 }}>Effects</span>
-        <ToggleButton label="Shine" active={showShine} onClick={() => setShowShine(v => !v)} />
+        <ToggleButton
+          label="Shine"
+          active={showShine}
+          onClick={() => setShowShine(v => !v)}
+          accentColor={theme.accent}
+          accentBorder={theme.accentBorder}
+        />
+
+        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 4, marginBottom: 2 }}>Theme</span>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {CRYSTAL_THEMES.map((t) => (
+            <SwatchButton
+              key={t.key}
+              color={t.swatch}
+              active={themeKey === t.key}
+              onClick={() => setThemeKey(t.key)}
+              label={t.label}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Charge level indicator */}
@@ -279,7 +341,7 @@ export default function EnergyCrystalViewer() {
           <div style={{
             height: '100%',
             width: `${chargeLevel * 100}%`,
-            background: 'linear-gradient(90deg, #ff9a16, #ffcc00)',
+            background: `linear-gradient(90deg, ${theme.gradientFrom}, ${theme.gradientTo})`,
             borderRadius: 2,
             transition: 'width 0.1s',
           }} />
@@ -334,6 +396,7 @@ export default function EnergyCrystalViewer() {
             chargeLevelRef={chargeLevelRef}
             chargeDuration={4}
             setChargeLevel={setChargeLevel}
+            theme={theme}
           />
 
           <mesh position={[4, 0, 0]}>
