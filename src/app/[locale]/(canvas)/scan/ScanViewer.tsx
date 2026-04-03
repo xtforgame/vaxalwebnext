@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, useTexture } from '@react-three/drei';
-import { Suspense, useRef, useMemo } from 'react';
+import { Suspense, useRef, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { GlassMaterial } from '@/components/3d/GlassMaterial';
 import { useWebGLRecovery } from '@/hooks/useWebGLRecovery';
@@ -150,19 +150,29 @@ function createRoundedBoxGeometry(
 }
 
 // ─── Glass panel with scan-line image ───────────────────────────────
-function ScanGlassPanel() {
+function ScanGlassPanel({ autoRotate }: { autoRotate: boolean }) {
   const width = 4.2;
   const height = 5.6;
   const depth = 0.15;
   const radius = 0.1;
+  const groupRef = useRef<THREE.Group>(null);
 
   const geometry = useMemo(
     () => createRoundedBoxGeometry(width, height, depth, radius, 6),
     []
   );
 
+  useFrame((state) => {
+    if (!groupRef.current || !autoRotate) return;
+    const t = state.clock.elapsedTime;
+    groupRef.current.rotation.x = Math.cos(t / 2) / 16;
+    groupRef.current.rotation.y = Math.sin(t / 2) / 8;
+    groupRef.current.rotation.z = Math.sin(t / 2) / 40;
+    groupRef.current.position.y = Math.sin(t / 2) / 20;
+  });
+
   return (
-    <group>
+    <group ref={groupRef}>
       {/* Image with scan-line effect */}
       <ScanImagePlane
         src="/favicon.jpg"
@@ -203,6 +213,7 @@ function PanoramaEnvironment() {
 // ─── Main viewer ────────────────────────────────────────────────────
 export default function ScanViewer() {
   const { contextLost, canvasKey, handleCreated } = useWebGLRecovery('ScanViewer');
+  const [autoRotate, setAutoRotate] = useState(false);
 
   if (contextLost) {
     return (
@@ -214,7 +225,29 @@ export default function ScanViewer() {
   }
 
   return (
-    <div style={{ width: '100vw', height: '100vh', backgroundColor: '#0a0a0f', overflow: 'hidden' }}>
+    <div style={{ width: '100vw', height: '100vh', backgroundColor: '#0a0a0f', overflow: 'hidden', position: 'relative' }}>
+      {/* Auto-rotate toggle */}
+      <button
+        onClick={() => setAutoRotate((v) => !v)}
+        style={{
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          zIndex: 10,
+          padding: '8px 16px',
+          borderRadius: 8,
+          border: '1px solid rgba(255,255,255,0.2)',
+          background: autoRotate ? 'rgba(0,200,255,0.25)' : 'rgba(255,255,255,0.1)',
+          color: '#fff',
+          fontSize: 14,
+          cursor: 'pointer',
+          backdropFilter: 'blur(8px)',
+          transition: 'background 0.2s',
+        }}
+      >
+        {autoRotate ? 'Auto Rotate: ON' : 'Auto Rotate: OFF'}
+      </button>
+
       <Suspense
         fallback={
           <div className="flex items-center justify-center w-full h-full text-slate-400">
@@ -241,7 +274,7 @@ export default function ScanViewer() {
           <spotLight position={[5, 8, 10]} angle={0.3} penumbra={1} intensity={1.2} castShadow />
           <pointLight position={[-8, -5, -5]} intensity={0.6} color="#3DB5E6" />
 
-          <ScanGlassPanel />
+          <ScanGlassPanel autoRotate={autoRotate} />
 
           <OrbitControls
             makeDefault
