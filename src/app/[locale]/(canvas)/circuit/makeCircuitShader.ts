@@ -32,8 +32,10 @@ export function makeFragmentShader(opts: CircuitShaderOptions): string {
 // ── radial mode ──
 
 // 放射展開速度 (normalized units / 秒)
-// 調大：擴散更快 | 調小：擴散更慢
-#define EXPANSION_SPEED 0.25
+// 調大：擴散更快（內圈線路還沒跑完外圈就開跑）
+// 調小：擴散更慢（每條線路有更多時間跑完再觸發下一圈）
+// 範圍 0.05–0.3
+#define EXPANSION_SPEED 0.12
 
 // 動畫完成後 smoothstep body 的亮度增量 (疊加在 IDLE_DIM 之上)
 // 最終亮度 = IDLE_DIM + POST_DIM
@@ -268,12 +270,12 @@ ${isRadial ? `\
     // bright flash when trail arrives
     float flash = exp(-distToHead * distToHead * 300.0) * charge * fade;
 
-    // dim base after trail passes
-    float dimAfter = step(0.0, distToHead) * BASE_DIM * charge * fade;
 ${isRadial ? `\
-    // radial: drain 完成後永久提升到 POST_DIM
-    float base = mix(dimAfter, POST_DIM, drained) * activated;
+    // radial: 電流抵達後立即升至 POST_DIM，不等待 drain 掃過
+    float base = POST_DIM * step(0.0, distToHead) * activated;
 ` : `\
+    // dim base after trail passes — fades with drain
+    float dimAfter = step(0.0, distToHead) * BASE_DIM * charge * fade;
     float base = dimAfter;
 `}
 
