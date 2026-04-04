@@ -35,9 +35,10 @@ export function makeFragmentShader(opts: CircuitShaderOptions): string {
 // 調大：擴散更快 | 調小：擴散更慢
 #define EXPANSION_SPEED 0.25
 
-// 動畫完成後的持續亮度 (1/d glow 乘數)
-// 範圍 0.1–0.5 | 調大：通電後光暈更亮更寬 | 調小：更暗更窄
-#define POST_DIM       0.3
+// 動畫完成後 smoothstep body 的亮度增量 (疊加在 IDLE_DIM 之上)
+// 最終亮度 = IDLE_DIM + POST_DIM
+// 範圍 0.3–2.0 | 調大：通電後更亮 | 調小：更接近 idle
+#define POST_DIM       0.7
 
 // trail 畫完後 drain 的持續時間 (秒)
 // 範圍 0.5–3.0 | 調大：drain 更慢 | 調小：drain 更快
@@ -195,9 +196,8 @@ ${isRadial ? `\
     float trail = max(headGlow, trailBehind);
 
     // ── base brightness ──
-    // idle 外觀由 gIdle (IDLE_DIM * smoothstep) 統一控制，
-    // base 只在 trail 經過後 (reached>0) 才透過 1/d glow 增亮，
-    // 確保兩種模式 idle 狀態視覺完全一致。
+    // base 控制通電後的亮度提升，使用 smoothstep body 保持與 idle 一致的寬度。
+    // 1/d glow 只用於 trail head（移動亮頭），不用於 base，避免視覺變細。
     float base = reached * BASE_DIM * fade;
 ${isRadial ? `\
     // radial: drain 完成後永久提升到 POST_DIM
@@ -205,9 +205,9 @@ ${isRadial ? `\
 ` : ''}
 
     float g = GLOW_W / max(d, 0.0004);
-    float gIdle = IDLE_DIM * (1.0 - smoothstep(0.0, IDLE_W, d));
+    float gBody = (IDLE_DIM + base) * (1.0 - smoothstep(0.0, IDLE_W, d));
     headTotal = max(headTotal, g * trail);
-    baseTotal = max(baseTotal, max(g * base, gIdle));
+    baseTotal = max(baseTotal, gBody);
   }
 
   // ── endpoints (synced to path timing) ──
@@ -278,9 +278,9 @@ ${isRadial ? `\
 `}
 
     float g = EP_GLOW_W / max(d, 0.0004);
-    float gIdle = IDLE_DIM * (1.0 - smoothstep(0.0, EP_IDLE_W, d));
+    float gBody = (IDLE_DIM + base) * (1.0 - smoothstep(0.0, EP_IDLE_W, d));
     epHeadGlow = max(epHeadGlow, g * flash);
-    epGlow = max(epGlow, max(g * base, gIdle));
+    epGlow = max(epGlow, gBody);
   }
 
 ${isRadial ? `\
