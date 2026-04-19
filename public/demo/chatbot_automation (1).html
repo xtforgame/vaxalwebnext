@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+  body { margin: 0; background: #e8e8e0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+
+  #scanner-root {
+    width: 360px;
+    height: 360px;
+    position: relative;
+    font-family: 'JetBrains Mono', monospace;
+    background:
+      radial-gradient(ellipse at 50% 40%, #ffffff 0%, #f4f6f8 55%, #e4e8ec 100%);
+    overflow: hidden;
+    border: 1px solid rgba(20, 55, 110, 0.18);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,0.8),
+      inset 0 0 80px rgba(40, 85, 255, 0.04),
+      0 4px 24px rgba(0,0,0,0.08);
+  }
+
+  #scanner-root canvas {
+    display: block;
+    position: absolute;
+    inset: 0;
+    will-change: transform;
+  }
+
+  .grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(20, 55, 110, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20, 55, 110, 0.07) 1px, transparent 1px),
+      linear-gradient(rgba(20, 55, 110, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20, 55, 110, 0.035) 1px, transparent 1px);
+    background-size: 60px 60px, 60px 60px, 12px 12px, 12px 12px;
+    mask-image: radial-gradient(ellipse at center, black 20%, rgba(0,0,0,0.4) 70%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 20%, rgba(0,0,0,0.4) 70%, transparent 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .paper-grain {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0.35;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.08  0 0 0 0 0.14  0 0 0 0 0.28  0 0 0 0.08 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  .hud-corner {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    z-index: 5;
+  }
+  .hud-corner::before, .hud-corner::after {
+    content: '';
+    position: absolute;
+    background: #0a2c6e;
+  }
+  .hud-corner::before { width: 14px; height: 1px; }
+  .hud-corner::after { width: 1px; height: 14px; }
+  .hud-corner.tl { top: 14px; left: 14px; }
+  .hud-corner.tl::before { top: 0; left: 0; }
+  .hud-corner.tl::after { top: 0; left: 0; }
+  .hud-corner.tr { top: 14px; right: 14px; }
+  .hud-corner.tr::before { top: 0; right: 0; }
+  .hud-corner.tr::after { top: 0; right: 0; }
+  .hud-corner.bl { bottom: 14px; left: 14px; }
+  .hud-corner.bl::before { bottom: 0; left: 0; }
+  .hud-corner.bl::after { bottom: 0; left: 0; }
+  .hud-corner.br { bottom: 14px; right: 14px; }
+  .hud-corner.br::before { bottom: 0; right: 0; }
+  .hud-corner.br::after { bottom: 0; right: 0; }
+
+  .status-bar {
+    position: absolute;
+    top: 18px;
+    left: 42px;
+    right: 42px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: #0a2c6e;
+    z-index: 5;
+    text-transform: uppercase;
+    font-weight: 600;
+    font-family: 'Rajdhani', sans-serif;
+  }
+  .status-bar .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: #2855ff;
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse 1.4s ease-in-out infinite;
+    vertical-align: middle;
+    box-shadow: 0 0 0 2px rgba(40, 85, 255, 0.18);
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  .bottom-bar {
+    position: absolute;
+    bottom: 18px;
+    left: 42px;
+    right: 42px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: rgba(10, 44, 110, 0.5);
+    z-index: 5;
+    text-transform: uppercase;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 500;
+  }
+  .bottom-bar .label {
+    color: rgba(10, 44, 110, 0.4);
+    font-weight: 400;
+  }
+  .bottom-bar .value {
+    color: #0a2c6e;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+  }
+
+  .scan-readout {
+    position: absolute;
+    top: 38px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    color: #0a2c6e;
+    letter-spacing: 0.35em;
+    z-index: 5;
+    text-align: center;
+    font-weight: 600;
+    font-family: 'Rajdhani', sans-serif;
+  }
+  .scan-readout .progress-track {
+    margin-top: 6px;
+    width: 90px;
+    height: 1px;
+    background: rgba(10, 44, 110, 0.12);
+    position: relative;
+    overflow: hidden;
+  }
+  .scan-readout .progress-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: #2855ff;
+    width: 0%;
+    transition: width 0.1s linear;
+  }
+  .scan-readout .progress-track::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(90deg, rgba(10,44,110,0.2) 1px, transparent 1px);
+    background-size: 9px 1px;
+  }
+
+  .animus-mark {
+    position: absolute;
+    top: 50%;
+    right: 18px;
+    transform: translateY(-50%);
+    font-size: 7px;
+    letter-spacing: 0.4em;
+    color: rgba(10, 44, 110, 0.35);
+    writing-mode: vertical-rl;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    z-index: 5;
+  }
+
+  .vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 8;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(20, 55, 110, 0.10) 100%);
+  }
+</style>
+</head>
+<body>
+
+<div id="scanner-root">
+  <div class="grid-bg"></div>
+
+  <div class="hud-corner tl"></div>
+  <div class="hud-corner tr"></div>
+  <div class="hud-corner bl"></div>
+  <div class="hud-corner br"></div>
+
+  <div class="status-bar">
+    <span><span class="dot"></span><span id="status-left">AGENT_ACTIVE</span></span>
+    <span id="status-right">DISPATCH.01</span>
+  </div>
+
+  <div class="scan-readout">
+    <div id="scan-label">LISTENING</div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+
+  <div class="bottom-bar">
+    <span><span class="label">CMDS</span> <span class="value" id="cmds-value">00</span></span>
+    <span><span class="label">LATENCY</span> <span class="value" id="lat-value">--ms</span></span>
+  </div>
+
+  <div class="animus-mark">ANIMUS</div>
+
+  <div class="vignette"></div>
+  <div class="paper-grain"></div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+  import * as THREE from 'three';
+
+  const root = document.getElementById('scanner-root');
+  const W = 360, H = 360;
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0xf4f6f8, 10, 22);
+
+  const camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 50);
+  camera.position.set(0, 0.2, 8.5);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+  root.appendChild(renderer.domElement);
+
+  // ===== 配色 =====
+  const ANIMUS_BLUE = 0x2855ff;
+  const ANIMUS_DEEP = 0x0a2c6e;
+  const ANIMUS_INK = 0x14233f;
+  const PAPER_WHITE = 0xfafbfd;
+  const BOT_ACCENT = 0x2855ff;
+  const USER_ACCENT = 0x047857;
+
+  // 工具主題色
+  const TOOL_GEAR = 0xb45309;    // 琥珀 - 齒輪(流程工具)
+  const TOOL_NET = 0x7c3aed;     // 紫 - 網路(API/外部服務)
+  const TOOL_DB = 0x047857;      // 翠綠 - 資料庫
+
+  // ===== LIGHTING =====
+  scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+  const keyLight = new THREE.DirectionalLight(0xe8efff, 0.5);
+  keyLight.position.set(2, 4, 3);
+  scene.add(keyLight);
+  const rimLight = new THREE.PointLight(ANIMUS_BLUE, 0.5, 10);
+  rimLight.position.set(-2, 1, 2);
+  scene.add(rimLight);
+
+  // ============================================================
+  //   LAYOUT
+  // ============================================================
+  const CHAT_X = -1.65;
+  const TOOLS_X = 2.15;
+  const TOOL_Y_TOP = 1.55;
+  const TOOL_Y_MID = 0;
+  const TOOL_Y_BOT = -1.55;
+
+  // ============================================================
+  //   CHAT WINDOW (縮小, 放左側)
+  // ============================================================
+  const chatGroup = new THREE.Group();
+  chatGroup.position.set(CHAT_X, 0, 0);
+  scene.add(chatGroup);
+
+  const chatW = 2.1, chatH = 2.7;
+
+  const chatBgGeo = new THREE.PlaneGeometry(chatW, chatH);
+  const chatBgMat = new THREE.MeshStandardMaterial({
+    color: PAPER_WHITE,
+    emissive: 0x000000,
+    emissiveIntensity: 0.05,
+    roughness: 0.95,
+    metalness: 0.0,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 1,
+  });
+  const chatBg = new THREE.Mesh(chatBgGeo, chatBgMat);
+  chatGroup.add(chatBg);
+
+  // 陰影
+  const chatShadowGeo = new THREE.PlaneGeometry(chatW * 1.05, chatH * 1.03);
+  const chatShadowMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0.08,
+    depthWrite: false,
+  });
+  const chatShadow = new THREE.Mesh(chatShadowGeo, chatShadowMat);
+  chatShadow.position.set(0.04, -0.04, -0.01);
+  chatGroup.add(chatShadow);
+
+  // 邊框
+  const chatEdgeGeo = new THREE.EdgesGeometry(chatBgGeo);
+  const chatEdgeMat = new THREE.LineBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0.9,
+  });
+  const chatEdges = new THREE.LineSegments(chatEdgeGeo, chatEdgeMat);
+  chatGroup.add(chatEdges);
+
+  // 標題列
+  const chatHeaderGeo = new THREE.PlaneGeometry(chatW, 0.28);
+  const chatHeaderMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0.92,
+  });
+  const chatHeader = new THREE.Mesh(chatHeaderGeo, chatHeaderMat);
+  chatHeader.position.set(0, chatH / 2 - 0.14, 0.005);
+  chatGroup.add(chatHeader);
+
+  // Avatar
+  const avatarGeo = new THREE.CircleGeometry(0.065, 32);
+  const avatarMat = new THREE.MeshBasicMaterial({ color: ANIMUS_BLUE });
+  const avatar = new THREE.Mesh(avatarGeo, avatarMat);
+  avatar.position.set(-chatW / 2 + 0.18, chatH / 2 - 0.14, 0.015);
+  chatGroup.add(avatar);
+
+  const avatarRingGeo = new THREE.RingGeometry(0.075, 0.085, 32);
+  const avatarRingMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.6,
+  });
+  const avatarRing = new THREE.Mesh(avatarRingGeo, avatarRingMat);
+  avatarRing.position.set(-chatW / 2 + 0.18, chatH / 2 - 0.14, 0.018);
+  chatGroup.add(avatarRing);
+
+  // 標題文字塊
+  const titleTextGeo = new THREE.PlaneGeometry(0.65, 0.04);
+  const titleTextMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.95,
+  });
+  const titleText = new THREE.Mesh(titleTextGeo, titleTextMat);
+  titleText.position.set(-chatW / 2 + 0.62, chatH / 2 - 0.11, 0.015);
+  chatGroup.add(titleText);
+
+  const subtitleGeo = new THREE.PlaneGeometry(0.42, 0.022);
+  const subtitleMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.55,
+  });
+  const subtitle = new THREE.Mesh(subtitleGeo, subtitleMat);
+  subtitle.position.set(-chatW / 2 + 0.505, chatH / 2 - 0.185, 0.015);
+  chatGroup.add(subtitle);
+
+  // Online dot
+  const onlineGeo = new THREE.CircleGeometry(0.03, 16);
+  const onlineMat = new THREE.MeshBasicMaterial({
+    color: 0x10b981,
+    transparent: true,
+    opacity: 1,
+  });
+  onlineMat.userData.baseOpacity = 1;
+  const onlineDot = new THREE.Mesh(onlineGeo, onlineMat);
+  onlineDot.position.set(chatW / 2 - 0.15, chatH / 2 - 0.14, 0.015);
+  chatGroup.add(onlineDot);
+
+  // 底部輸入框
+  const inputBarGeo = new THREE.PlaneGeometry(chatW - 0.18, 0.25);
+  const inputBarMat = new THREE.MeshBasicMaterial({
+    color: 0xeef2f7,
+    transparent: true,
+    opacity: 0.95,
+  });
+  const inputBar = new THREE.Mesh(inputBarGeo, inputBarMat);
+  inputBar.position.set(0, -chatH / 2 + 0.17, 0.005);
+  chatGroup.add(inputBar);
+
+  const inputEdgeGeo = new THREE.EdgesGeometry(inputBarGeo);
+  const inputEdgeMat = new THREE.LineBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0.4,
+  });
+  const inputEdge = new THREE.LineSegments(inputEdgeGeo, inputEdgeMat);
+  inputEdge.position.copy(inputBar.position);
+  chatGroup.add(inputEdge);
+
+  const placeholderGeo = new THREE.PlaneGeometry(0.75, 0.02);
+  const placeholderMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0.3,
+  });
+  const placeholder = new THREE.Mesh(placeholderGeo, placeholderMat);
+  placeholder.position.set(-chatW / 2 + 0.56, -chatH / 2 + 0.17, 0.012);
+  chatGroup.add(placeholder);
+
+  const sendBtnGeo = new THREE.PlaneGeometry(0.18, 0.18);
+  const sendBtnMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_BLUE,
+    transparent: true,
+    opacity: 0.95,
+  });
+  sendBtnMat.userData.baseOpacity = 0.95;
+  const sendBtn = new THREE.Mesh(sendBtnGeo, sendBtnMat);
+  sendBtn.position.set(chatW / 2 - 0.19, -chatH / 2 + 0.17, 0.012);
+  chatGroup.add(sendBtn);
+
+  const arrowShape = new THREE.Shape();
+  arrowShape.moveTo(-0.035, -0.04);
+  arrowShape.lineTo(0.04, 0);
+  arrowShape.lineTo(-0.035, 0.04);
+  arrowShape.lineTo(-0.018, 0);
+  arrowShape.lineTo(-0.035, -0.04);
+  const arrowGeo = new THREE.ShapeGeometry(arrowShape);
+  const arrowMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    side: THREE.DoubleSide,
+  });
+  const arrow = new THREE.Mesh(arrowGeo, arrowMat);
+  arrow.position.set(chatW / 2 - 0.19, -chatH / 2 + 0.17, 0.018);
+  chatGroup.add(arrow);
+
+  // 四角定位十字
+  const chatCornerSize = 0.08;
+  const chatCornerPositions = [
+    [-chatW/2 * 1.04, chatH/2 * 1.03],
+    [ chatW/2 * 1.04, chatH/2 * 1.03],
+    [-chatW/2 * 1.04, -chatH/2 * 1.03],
+    [ chatW/2 * 1.04, -chatH/2 * 1.03],
+  ];
+  chatCornerPositions.forEach(pos => {
+    const points = [
+      new THREE.Vector3(pos[0] - chatCornerSize, pos[1], 0),
+      new THREE.Vector3(pos[0] + chatCornerSize, pos[1], 0),
+      new THREE.Vector3(pos[0], pos[1] - chatCornerSize, 0),
+      new THREE.Vector3(pos[0], pos[1] + chatCornerSize, 0),
+    ];
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    const mat = new THREE.LineBasicMaterial({
+      color: ANIMUS_BLUE,
+      transparent: true,
+      opacity: 0.7,
+    });
+    chatGroup.add(new THREE.LineSegments(geo, mat));
+  });
+
+  // ============================================================
+  //   CHAT MESSAGES (循環顯示)
+  // ============================================================
+  const messageGroup = new THREE.Group();
+  messageGroup.position.z = 0.01;
+  chatGroup.add(messageGroup);
+
+  // 每個訊息附帶 triggerTool (哪一個工具被觸發, -1 表無觸發)
+  const messageSpecs = [
+    { sender: 'user', lines: [0.68, 0.40],       revealAt: 0.00, triggerTool: -1 },
+    { sender: 'bot',  lines: [0.85, 0.55],       revealAt: 0.12, triggerTool: 0 },  // 觸發齒輪
+    { sender: 'user', lines: [0.55],             revealAt: 0.34, triggerTool: -1 },
+    { sender: 'bot',  lines: [0.80, 0.65, 0.45], revealAt: 0.46, triggerTool: 1 },  // 觸發網路
+    { sender: 'user', lines: [0.48, 0.30],       revealAt: 0.70, triggerTool: -1 },
+    { sender: 'bot',  lines: [0.75, 0.50],       revealAt: 0.82, triggerTool: 2 },  // 觸發 DB
+  ];
+
+  const messageAreaTop = chatH / 2 - 0.34;
+  const messageAreaBottom = -chatH / 2 + 0.34;
+  const bubblePadding = 0.05;
+  const lineSpacing = 0.055;
+  const lineH = 0.024;
+  const bubbleSpacing = 0.08;
+
+  let yCursor = messageAreaTop;
+  const messages = [];
+
+  messageSpecs.forEach((spec) => {
+    const msgEls = [];
+    const isBot = spec.sender === 'bot';
+    const accentColor = isBot ? BOT_ACCENT : USER_ACCENT;
+    const bgColor = isBot ? 0xeaf0ff : 0xe8f5ef;
+    const textColor = isBot ? ANIMUS_DEEP : 0x022c22;
+
+    const bubbleW = chatW * 0.62;
+    const linesCount = spec.lines.length;
+    const bubbleH = bubblePadding * 2 + lineH * linesCount + lineSpacing * (linesCount - 1);
+
+    yCursor -= bubbleH / 2;
+
+    const xOffset = isBot ? -chatW / 2 + bubbleW / 2 + 0.12 : chatW / 2 - bubbleW / 2 - 0.12;
+
+    const bubbleGeo = new THREE.PlaneGeometry(bubbleW, bubbleH);
+    const bubbleMat = new THREE.MeshBasicMaterial({
+      color: bgColor,
+      transparent: true,
+      opacity: 0,
+    });
+    bubbleMat.userData.baseOpacity = 1;
+    const bubble = new THREE.Mesh(bubbleGeo, bubbleMat);
+    bubble.position.set(xOffset, yCursor, 0.002);
+    messageGroup.add(bubble);
+    msgEls.push({ mesh: bubble, baseOpacity: 1 });
+
+    const bubbleEdgeGeo = new THREE.EdgesGeometry(bubbleGeo);
+    const bubbleEdgeMat = new THREE.LineBasicMaterial({
+      color: accentColor,
+      transparent: true,
+      opacity: 0,
+    });
+    bubbleEdgeMat.userData.baseOpacity = 0.75;
+    const bubbleEdge = new THREE.LineSegments(bubbleEdgeGeo, bubbleEdgeMat);
+    bubbleEdge.position.copy(bubble.position);
+    bubbleEdge.position.z = 0.004;
+    messageGroup.add(bubbleEdge);
+    msgEls.push({ mesh: bubbleEdge, baseOpacity: 0.75 });
+
+    const tabGeo = new THREE.PlaneGeometry(0.028, bubbleH * 0.85);
+    const tabMat = new THREE.MeshBasicMaterial({
+      color: accentColor,
+      transparent: true,
+      opacity: 0,
+    });
+    tabMat.userData.baseOpacity = 0.9;
+    const tab = new THREE.Mesh(tabGeo, tabMat);
+    const tabX = isBot ? xOffset - bubbleW / 2 + 0.014 : xOffset + bubbleW / 2 - 0.014;
+    tab.position.set(tabX, yCursor, 0.006);
+    messageGroup.add(tab);
+    msgEls.push({ mesh: tab, baseOpacity: 0.9 });
+
+    spec.lines.forEach((wRatio, li) => {
+      const lW = bubbleW * 0.72 * wRatio;
+      const lineGeo = new THREE.PlaneGeometry(lW, lineH * 0.6);
+      const lineMat = new THREE.MeshBasicMaterial({
+        color: textColor,
+        transparent: true,
+        opacity: 0,
+      });
+      lineMat.userData.baseOpacity = 0.6;
+      const line = new THREE.Mesh(lineGeo, lineMat);
+      const lineStartX = isBot
+        ? xOffset - bubbleW / 2 + 0.07 + lW / 2
+        : xOffset + bubbleW / 2 - 0.07 - lW / 2;
+      const lineY = yCursor + bubbleH / 2 - bubblePadding - lineH / 2 - li * (lineH + lineSpacing);
+      line.position.set(lineStartX, lineY, 0.008);
+      messageGroup.add(line);
+      msgEls.push({ mesh: line, baseOpacity: 0.6, delay: li * 0.04 });
+    });
+
+    messages.push({
+      spec,
+      elements: msgEls,
+      bubbleY: yCursor,
+      bubbleH,
+      bubbleRightX: xOffset + bubbleW / 2,
+      bubbleLeftX: xOffset - bubbleW / 2,
+      isBot,
+    });
+
+    yCursor -= bubbleH / 2 + bubbleSpacing;
+  });
+
+  // Typing indicator
+  const typingGroup = new THREE.Group();
+  chatGroup.add(typingGroup);
+  const typingDots = [];
+  for (let i = 0; i < 3; i++) {
+    const dotGeo = new THREE.CircleGeometry(0.02, 16);
+    const dotMat = new THREE.MeshBasicMaterial({
+      color: BOT_ACCENT,
+      transparent: true,
+      opacity: 0,
+    });
+    dotMat.userData.baseOpacity = 0.85;
+    const dot = new THREE.Mesh(dotGeo, dotMat);
+    dot.position.set(-chatW / 2 + 0.22 + i * 0.06, 0, 0.015);
+    typingGroup.add(dot);
+    typingDots.push({ mesh: dot, mat: dotMat });
+  }
+
+  // ============================================================
+  //   TOOLS (右側三個自動化工具)
+  // ============================================================
+  const toolSize = 0.85;
+  const tools = [];
+
+  // === TOOL 1: GEAR (齒輪 - 流程工具) ===
+  function buildGearTool() {
+    const group = new THREE.Group();
+
+    // 背景卡片
+    const cardGeo = new THREE.PlaneGeometry(toolSize * 1.4, toolSize * 1.25);
+    const cardMat = new THREE.MeshStandardMaterial({
+      color: PAPER_WHITE,
+      roughness: 0.95,
+      transparent: true,
+      opacity: 1,
+    });
+    cardMat.userData.baseOpacity = 1;
+    const card = new THREE.Mesh(cardGeo, cardMat);
+    group.add(card);
+
+    // 陰影
+    const cardShadowGeo = new THREE.PlaneGeometry(toolSize * 1.45, toolSize * 1.28);
+    const cardShadowMat = new THREE.MeshBasicMaterial({
+      color: ANIMUS_DEEP,
+      transparent: true,
+      opacity: 0.08,
+      depthWrite: false,
+    });
+    const cardShadow = new THREE.Mesh(cardShadowGeo, cardShadowMat);
+    cardShadow.position.set(0.03, -0.03, -0.01);
+    group.add(cardShadow);
+
+    // 邊框
+    const cardEdgeGeo = new THREE.EdgesGeometry(cardGeo);
+    const cardEdgeMat = new THREE.LineBasicMaterial({
+      color: TOOL_GEAR,
+      transparent: true,
+      opacity: 0.85,
+    });
+    cardEdgeMat.userData.baseOpacity = 0.85;
+    const cardEdge = new THREE.LineSegments(cardEdgeGeo, cardEdgeMat);
+    group.add(cardEdge);
+
+    // 頂部標題條
+    const topBarGeo = new THREE.PlaneGeometry(toolSize * 1.4, 0.12);
+    const topBarMat = new THREE.MeshBasicMaterial({
+      color: TOOL_GEAR,
+      transparent: true,
+      opacity: 0.92,
+    });
+    topBarMat.userData.baseOpacity = 0.92;
+    const topBar = new THREE.Mesh(topBarGeo, topBarMat);
+    topBar.position.set(0, toolSize * 1.25 / 2 - 0.06, 0.005);
+    group.add(topBar);
+
+    // 標題文字色塊 (白色)
+    const titleG = new THREE.PlaneGeometry(0.45, 0.03);
+    const titleM = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.95,
+    });
+    const title = new THREE.Mesh(titleG, titleM);
+    title.position.set(-toolSize * 0.35, toolSize * 1.25 / 2 - 0.06, 0.012);
+    group.add(title);
+
+    // 齒輪 (由兩層組成: 外齒 + 內環)
+    const gear = new THREE.Group();
+    gear.position.set(0, -0.05, 0.01);
+
+    // 外齒 (用多個小方塊圍成)
+    const teeth = 10;
+    const teethGroup = new THREE.Group();
+    for (let i = 0; i < teeth; i++) {
+      const angle = (i / teeth) * Math.PI * 2;
+      const toothGeo = new THREE.PlaneGeometry(0.06, 0.12);
+      const toothMat = new THREE.MeshBasicMaterial({
+        color: TOOL_GEAR,
+        transparent: true,
+        opacity: 0.9,
+      });
+      const tooth = new THREE.Mesh(toothGeo, toothMat);
+      tooth.position.set(Math.cos(angle) * 0.3, Math.sin(angle) * 0.3, 0);
+      tooth.rotation.z = angle + Math.PI / 2;
+      teethGroup.add(tooth);
+    }
+    gear.add(teethGroup);
+
+    // 齒輪主體 (實心圓)
+    const bodyGeo = new THREE.CircleGeometry(0.26, 32);
+    const bodyMat = new THREE.MeshBasicMaterial({
+      color: TOOL_GEAR,
+      transparent: true,
+      opacity: 0.88,
+    });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    gear.add(body);
+
+    // 中心洞 (白色圓)
+    const holeGeo = new THREE.CircleGeometry(0.1, 32);
+    const holeMat = new THREE.MeshBasicMaterial({
+      color: PAPER_WHITE,
+      transparent: true,
+      opacity: 1,
+    });
+    const hole = new THREE.Mesh(holeGeo, holeMat);
+    hole.position.z = 0.001;
+    gear.add(hole);
+
+    // 中心點
+    const centerDotGeo = new THREE.CircleGeometry(0.025, 16);
+    const centerDotMat = new THREE.MeshBasicMaterial({
+      color: TOOL_GEAR,
+    });
+    const centerDot = new THREE.Mesh(centerDotGeo, centerDotMat);
+    centerDot.position.z = 0.002;
+    gear.add(centerDot);
+
+    group.add(gear);
+
+    // 狀態指示點 (右上角)
+    const statusGeo = new THREE.CircleGeometry(0.028, 16);
+    const statusMat = new THREE.MeshBasicMaterial({
+      color: 0x10b981,
+      transparent: true,
+      opacity: 0.9,
+    });
+    statusMat.userData.baseOpacity = 0.9;
+    const status = new THREE.Mesh(statusGeo, statusMat);
+    status.position.set(toolSize * 1.4 / 2 - 0.08, toolSize * 1.25 / 2 - 0.06, 0.015);
+    group.add(status);
+
+    // 底部資料線 (代表輸出)
+    for (let i = 0; i < 2; i++) {
+      const lG = new THREE.PlaneGeometry(toolSize * (0.6 + i * 0.15), 0.02);
+      const lM = new THREE.MeshBasicMaterial({
+        color: ANIMUS_INK,
+        transparent: true,
+        opacity: 0.4,
+      });
+      const l = new THREE.Mesh(lG, lM);
+      l.position.set(-toolSize * 0.15 + i * 0.02, -toolSize * 0.55 + i * 0.05, 0.01);
+      group.add(l);
+    }
+
+    return { group, gear, body, teethGroup, status, statusMat };
+  }
+
+  // === TOOL 2: NETWORK (API / 網路節點) ===
+  function buildNetworkTool() {
+    const group = new THREE.Group();
+
+    const cardGeo = new THREE.PlaneGeometry(toolSize * 1.4, toolSize * 1.25);
+    const cardMat = new THREE.MeshStandardMaterial({
+      color: PAPER_WHITE,
+      roughness: 0.95,
+      transparent: true,
+      opacity: 1,
+    });
+    cardMat.userData.baseOpacity = 1;
+    const card = new THREE.Mesh(cardGeo, cardMat);
+    group.add(card);
+
+    const cardShadowGeo = new THREE.PlaneGeometry(toolSize * 1.45, toolSize * 1.28);
+    const cardShadowMat = new THREE.MeshBasicMaterial({
+      color: ANIMUS_DEEP,
+      transparent: true,
+      opacity: 0.08,
+      depthWrite: false,
+    });
+    const cardShadow = new THREE.Mesh(cardShadowGeo, cardShadowMat);
+    cardShadow.position.set(0.03, -0.03, -0.01);
+    group.add(cardShadow);
+
+    const cardEdgeGeo = new THREE.EdgesGeometry(cardGeo);
+    const cardEdgeMat = new THREE.LineBasicMaterial({
+      color: TOOL_NET,
+      transparent: true,
+      opacity: 0.85,
+    });
+    cardEdgeMat.userData.baseOpacity = 0.85;
+    const cardEdge = new THREE.LineSegments(cardEdgeGeo, cardEdgeMat);
+    group.add(cardEdge);
+
+    const topBarGeo = new THREE.PlaneGeometry(toolSize * 1.4, 0.12);
+    const topBarMat = new THREE.MeshBasicMaterial({
+      color: TOOL_NET,
+      transparent: true,
+      opacity: 0.92,
+    });
+    topBarMat.userData.baseOpacity = 0.92;
+    const topBar = new THREE.Mesh(topBarGeo, topBarMat);
+    topBar.position.set(0, toolSize * 1.25 / 2 - 0.06, 0.005);
+    group.add(topBar);
+
+    const titleG = new THREE.PlaneGeometry(0.35, 0.03);
+    const titleM = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.95,
+    });
+    const title = new THREE.Mesh(titleG, titleM);
+    title.position.set(-toolSize * 0.4, toolSize * 1.25 / 2 - 0.06, 0.012);
+    group.add(title);
+
+    // 網路節點圖 (中心一個 + 周圍多個節點, 以線連接)
+    const netGroup = new THREE.Group();
+    netGroup.position.set(0, -0.05, 0.01);
+
+    // 中心節點
+    const centerNodeGeo = new THREE.CircleGeometry(0.08, 32);
+    const centerNodeMat = new THREE.MeshBasicMaterial({
+      color: TOOL_NET,
+      transparent: true,
+      opacity: 0.95,
+    });
+    const centerNode = new THREE.Mesh(centerNodeGeo, centerNodeMat);
+    centerNode.position.z = 0.005;
+    netGroup.add(centerNode);
+
+    const centerRingGeo = new THREE.RingGeometry(0.11, 0.125, 32);
+    const centerRingMat = new THREE.MeshBasicMaterial({
+      color: TOOL_NET,
+      transparent: true,
+      opacity: 0.6,
+    });
+    const centerRing = new THREE.Mesh(centerRingGeo, centerRingMat);
+    centerRing.position.z = 0.004;
+    netGroup.add(centerRing);
+
+    // 外圍節點 (6個, 圍成六邊形)
+    const outerNodes = [];
+    const nodeCount = 6;
+    const nodeRadius = 0.34;
+    for (let i = 0; i < nodeCount; i++) {
+      const angle = (i / nodeCount) * Math.PI * 2 - Math.PI / 2;
+      const x = Math.cos(angle) * nodeRadius;
+      const y = Math.sin(angle) * nodeRadius;
+
+      // 連接線
+      const linePoints = [
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(x, y, 0),
+      ];
+      const lineGeo = new THREE.BufferGeometry().setFromPoints(linePoints);
+      const lineMat = new THREE.LineBasicMaterial({
+        color: TOOL_NET,
+        transparent: true,
+        opacity: 0.4,
+      });
+      const line = new THREE.Line(lineGeo, lineMat);
+      netGroup.add(line);
+
+      // 節點
+      const nGeo = new THREE.CircleGeometry(0.045, 20);
+      const nMat = new THREE.MeshBasicMaterial({
+        color: TOOL_NET,
+        transparent: true,
+        opacity: 0.85,
+      });
+      const node = new THREE.Mesh(nGeo, nMat);
+      node.position.set(x, y, 0.003);
+      netGroup.add(node);
+
+      // 節點外環
+      const nrGeo = new THREE.RingGeometry(0.055, 0.065, 20);
+      const nrMat = new THREE.MeshBasicMaterial({
+        color: TOOL_NET,
+        transparent: true,
+        opacity: 0.5,
+      });
+      const nodeRing = new THREE.Mesh(nrGeo, nrMat);
+      nodeRing.position.set(x, y, 0.002);
+      netGroup.add(nodeRing);
+
+      outerNodes.push({ node, nodeRing, angle });
+    }
+
+    group.add(netGroup);
+
+    // 狀態點
+    const statusGeo = new THREE.CircleGeometry(0.028, 16);
+    const statusMat = new THREE.MeshBasicMaterial({
+      color: 0x10b981,
+      transparent: true,
+      opacity: 0.9,
+    });
+    statusMat.userData.baseOpacity = 0.9;
+    const status = new THREE.Mesh(statusGeo, statusMat);
+    status.position.set(toolSize * 1.4 / 2 - 0.08, toolSize * 1.25 / 2 - 0.06, 0.015);
+    group.add(status);
+
+    return { group, netGroup, centerNode, centerRing, outerNodes, status, statusMat };
+  }
+
+  // === TOOL 3: DATABASE (資料庫) ===
+  function buildDatabaseTool() {
+    const group = new THREE.Group();
+
+    const cardGeo = new THREE.PlaneGeometry(toolSize * 1.4, toolSize * 1.25);
+    const cardMat = new THREE.MeshStandardMaterial({
+      color: PAPER_WHITE,
+      roughness: 0.95,
+      transparent: true,
+      opacity: 1,
+    });
+    cardMat.userData.baseOpacity = 1;
+    const card = new THREE.Mesh(cardGeo, cardMat);
+    group.add(card);
+
+    const cardShadowGeo = new THREE.PlaneGeometry(toolSize * 1.45, toolSize * 1.28);
+    const cardShadowMat = new THREE.MeshBasicMaterial({
+      color: ANIMUS_DEEP,
+      transparent: true,
+      opacity: 0.08,
+      depthWrite: false,
+    });
+    const cardShadow = new THREE.Mesh(cardShadowGeo, cardShadowMat);
+    cardShadow.position.set(0.03, -0.03, -0.01);
+    group.add(cardShadow);
+
+    const cardEdgeGeo = new THREE.EdgesGeometry(cardGeo);
+    const cardEdgeMat = new THREE.LineBasicMaterial({
+      color: TOOL_DB,
+      transparent: true,
+      opacity: 0.85,
+    });
+    cardEdgeMat.userData.baseOpacity = 0.85;
+    const cardEdge = new THREE.LineSegments(cardEdgeGeo, cardEdgeMat);
+    group.add(cardEdge);
+
+    const topBarGeo = new THREE.PlaneGeometry(toolSize * 1.4, 0.12);
+    const topBarMat = new THREE.MeshBasicMaterial({
+      color: TOOL_DB,
+      transparent: true,
+      opacity: 0.92,
+    });
+    topBarMat.userData.baseOpacity = 0.92;
+    const topBar = new THREE.Mesh(topBarGeo, topBarMat);
+    topBar.position.set(0, toolSize * 1.25 / 2 - 0.06, 0.005);
+    group.add(topBar);
+
+    const titleG = new THREE.PlaneGeometry(0.40, 0.03);
+    const titleM = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.95,
+    });
+    const title = new THREE.Mesh(titleG, titleM);
+    title.position.set(-toolSize * 0.38, toolSize * 1.25 / 2 - 0.06, 0.012);
+    group.add(title);
+
+    // 資料庫: 三層圓柱堆疊 (用橢圓 + 矩形模擬)
+    const dbGroup = new THREE.Group();
+    dbGroup.position.set(0, -0.05, 0.01);
+
+    const cylW = 0.55;
+    const ringH = 0.07;
+    const bodyH = 0.18;
+    const layers = 3;
+    const totalH = bodyH * layers + ringH;
+
+    // 整體陰影背景 (深色柱體)
+    const dbLayers = [];
+    for (let i = 0; i < layers; i++) {
+      const yTop = totalH / 2 - ringH / 2 - i * bodyH;
+      const yBot = yTop - bodyH;
+
+      // 柱身 (矩形)
+      const barGeo = new THREE.PlaneGeometry(cylW, bodyH);
+      const barMat = new THREE.MeshBasicMaterial({
+        color: TOOL_DB,
+        transparent: true,
+        opacity: 0.88 - i * 0.05,
+      });
+      const bar = new THREE.Mesh(barGeo, barMat);
+      bar.position.set(0, (yTop + yBot) / 2, 0);
+      dbGroup.add(bar);
+
+      // 頂部橢圓 (用 RingGeometry 不對, 用 CircleGeometry 再縮扁)
+      const topOvalGeo = new THREE.CircleGeometry(cylW / 2, 32);
+      const topOvalMat = new THREE.MeshBasicMaterial({
+        color: i === 0 ? 0xffffff : TOOL_DB,
+        transparent: true,
+        opacity: i === 0 ? 0.95 : 0.95 - i * 0.05,
+      });
+      const topOval = new THREE.Mesh(topOvalGeo, topOvalMat);
+      topOval.scale.y = 0.25;
+      topOval.position.set(0, yTop, 0.003);
+      dbGroup.add(topOval);
+
+      // 頂部橢圓邊框
+      const topEdgeGeo = new THREE.RingGeometry(cylW / 2 - 0.008, cylW / 2, 32);
+      const topEdgeMat = new THREE.MeshBasicMaterial({
+        color: TOOL_DB,
+        transparent: true,
+        opacity: 0.9,
+      });
+      const topEdge = new THREE.Mesh(topEdgeGeo, topEdgeMat);
+      topEdge.scale.y = 0.25;
+      topEdge.position.set(0, yTop, 0.004);
+      dbGroup.add(topEdge);
+
+      dbLayers.push({ bar, topOval, barMat });
+    }
+
+    // 最底部封口
+    const botOvalGeo = new THREE.CircleGeometry(cylW / 2, 32);
+    const botOvalMat = new THREE.MeshBasicMaterial({
+      color: TOOL_DB,
+      transparent: true,
+      opacity: 0.75,
+    });
+    const botOval = new THREE.Mesh(botOvalGeo, botOvalMat);
+    botOval.scale.y = 0.25;
+    botOval.position.set(0, -totalH / 2 + ringH / 2, -0.001);
+    dbGroup.add(botOval);
+
+    // 外邊框 (矩形)
+    const outerEdgePoints = [
+      new THREE.Vector3(-cylW / 2, totalH / 2 - ringH / 2, 0.005),
+      new THREE.Vector3(-cylW / 2, -totalH / 2 + ringH / 2, 0.005),
+      new THREE.Vector3(cylW / 2, totalH / 2 - ringH / 2, 0.005),
+      new THREE.Vector3(cylW / 2, -totalH / 2 + ringH / 2, 0.005),
+    ];
+    const outerEdgeGeo = new THREE.BufferGeometry().setFromPoints([
+      outerEdgePoints[0], outerEdgePoints[1],
+      outerEdgePoints[2], outerEdgePoints[3],
+    ]);
+    const outerEdgeMat = new THREE.LineBasicMaterial({
+      color: TOOL_DB,
+      transparent: true,
+      opacity: 0.9,
+    });
+    const outerEdge = new THREE.LineSegments(outerEdgeGeo, outerEdgeMat);
+    dbGroup.add(outerEdge);
+
+    group.add(dbGroup);
+
+    const statusGeo = new THREE.CircleGeometry(0.028, 16);
+    const statusMat = new THREE.MeshBasicMaterial({
+      color: 0x10b981,
+      transparent: true,
+      opacity: 0.9,
+    });
+    statusMat.userData.baseOpacity = 0.9;
+    const status = new THREE.Mesh(statusGeo, statusMat);
+    status.position.set(toolSize * 1.4 / 2 - 0.08, toolSize * 1.25 / 2 - 0.06, 0.015);
+    group.add(status);
+
+    return { group, dbGroup, dbLayers, status, statusMat };
+  }
+
+  // 建立三個工具
+  const gearTool = buildGearTool();
+  gearTool.group.position.set(TOOLS_X, TOOL_Y_TOP, 0);
+  scene.add(gearTool.group);
+
+  const netTool = buildNetworkTool();
+  netTool.group.position.set(TOOLS_X, TOOL_Y_MID, 0);
+  scene.add(netTool.group);
+
+  const dbTool = buildDatabaseTool();
+  dbTool.group.position.set(TOOLS_X, TOOL_Y_BOT, 0);
+  scene.add(dbTool.group);
+
+  tools.push(
+    { data: gearTool, color: TOOL_GEAR, y: TOOL_Y_TOP, type: 'gear' },
+    { data: netTool, color: TOOL_NET, y: TOOL_Y_MID, type: 'net' },
+    { data: dbTool, color: TOOL_DB, y: TOOL_Y_BOT, type: 'db' },
+  );
+
+  // 每個工具的"觸發"狀態 (用於動畫: 脈衝, 高亮等)
+  const toolStates = tools.map(() => ({
+    activation: 0,     // 0-1, 接收到封包時為 1, 緩慢衰減
+    lastTriggered: -999,
+    busyLevel: 0,      // 0-1, 整體忙碌度
+  }));
+
+  // ============================================================
+  //   CONNECTOR LINES (聊天 → 工具)
+  //   細線, 作為 guide
+  // ============================================================
+  const connectorLines = [];
+  tools.forEach((tool, idx) => {
+    const startX = CHAT_X + chatW / 2 + 0.05;
+    const endX = TOOLS_X - toolSize * 1.4 / 2 - 0.05;
+    const endY = tool.y;
+
+    const points = [];
+    points.push(new THREE.Vector3(startX, 0, 0));
+    const midX = (startX + endX) * 0.5;
+    points.push(new THREE.Vector3(midX, endY * 0.45, 0));
+    points.push(new THREE.Vector3(endX, endY, 0));
+
+    const curve = new THREE.CatmullRomCurve3(points);
+    const curvePoints = curve.getPoints(40);
+    const lineGeo = new THREE.BufferGeometry().setFromPoints(curvePoints);
+    const lineMat = new THREE.LineBasicMaterial({
+      color: tool.color,
+      transparent: true,
+      opacity: 0.12,
+    });
+    const line = new THREE.Line(lineGeo, lineMat);
+    scene.add(line);
+    connectorLines.push({ line, lineMat, curve, baseOpacity: 0.12, glowOpacity: 0 });
+  });
+
+  // ============================================================
+  //   COMMAND PACKETS (封包 - chatbot → tool 的指令)
+  //   核心視覺: 箭頭 + 封包
+  // ============================================================
+  const packets = [];
+
+  function spawnPacket(toolIndex) {
+    const tool = tools[toolIndex];
+    const connector = connectorLines[toolIndex];
+
+    // 封包視覺: 小矩形 + 箭頭
+    const pGroup = new THREE.Group();
+
+    // 封包主體
+    const boxGeo = new THREE.PlaneGeometry(0.16, 0.09);
+    const boxMat = new THREE.MeshBasicMaterial({
+      color: tool.color,
+      transparent: true,
+      opacity: 1,
+    });
+    const box = new THREE.Mesh(boxGeo, boxMat);
+    pGroup.add(box);
+
+    // 邊框
+    const boxEdgeGeo = new THREE.EdgesGeometry(boxGeo);
+    const boxEdgeMat = new THREE.LineBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.7,
+    });
+    const boxEdge = new THREE.LineSegments(boxEdgeGeo, boxEdgeMat);
+    pGroup.add(boxEdge);
+
+    // 箭頭尖端 (在封包右側)
+    const arrShape = new THREE.Shape();
+    arrShape.moveTo(0, -0.05);
+    arrShape.lineTo(0.055, 0);
+    arrShape.lineTo(0, 0.05);
+    arrShape.lineTo(0, 0.025);
+    arrShape.lineTo(-0.02, 0.025);
+    arrShape.lineTo(-0.02, -0.025);
+    arrShape.lineTo(0, -0.025);
+    arrShape.lineTo(0, -0.05);
+    const arrGeo = new THREE.ShapeGeometry(arrShape);
+    const arrMat = new THREE.MeshBasicMaterial({
+      color: tool.color,
+      transparent: true,
+      opacity: 0.9,
+      side: THREE.DoubleSide,
+    });
+    const arr = new THREE.Mesh(arrGeo, arrMat);
+    arr.position.set(0.11, 0, 0.001);
+    pGroup.add(arr);
+
+    // 內部小條紋 (表示資料包內容)
+    for (let i = 0; i < 2; i++) {
+      const sG = new THREE.PlaneGeometry(0.08, 0.008);
+      const sM = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.75,
+      });
+      const s = new THREE.Mesh(sG, sM);
+      s.position.set(-0.015, -0.015 + i * 0.03, 0.002);
+      pGroup.add(s);
+    }
+
+    // 拖尾 (淡出的殘影)
+    const trailGeo = new THREE.PlaneGeometry(0.3, 0.06);
+    const trailMat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      uniforms: {
+        uColor: { value: new THREE.Color(tool.color) },
+        uOpacity: { value: 1 },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        uniform vec3 uColor;
+        uniform float uOpacity;
+        void main(){
+          float fade = smoothstep(0.0, 1.0, vUv.x);
+          float vert = 1.0 - abs(vUv.y - 0.5) * 2.0;
+          gl_FragColor = vec4(uColor, fade * vert * 0.55 * uOpacity);
+        }
+      `,
+    });
+    const trail = new THREE.Mesh(trailGeo, trailMat);
+    trail.position.set(-0.22, 0, -0.002);
+    pGroup.add(trail);
+
+    scene.add(pGroup);
+
+    return {
+      group: pGroup,
+      mats: [boxMat, boxEdgeMat, arrMat, trailMat],
+      curve: connector.curve,
+      toolIndex,
+      progress: 0,
+      speed: 0.85 + Math.random() * 0.25,
+      age: 0,
+      arrived: false,
+    };
+  }
+
+  // ============================================================
+  //   TOOL RESPONSE PULSE (工具接收封包後的脈衝圈)
+  // ============================================================
+  const pulses = [];
+
+  function spawnPulse(toolIndex) {
+    const tool = tools[toolIndex];
+    const pulseGeo = new THREE.RingGeometry(0.1, 0.12, 32);
+    const pulseMat = new THREE.MeshBasicMaterial({
+      color: tool.color,
+      transparent: true,
+      opacity: 0.8,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    const pulse = new THREE.Mesh(pulseGeo, pulseMat);
+    pulse.position.set(
+      TOOLS_X - toolSize * 1.4 / 2 - 0.02,
+      tool.y,
+      0.02
+    );
+    scene.add(pulse);
+    return {
+      mesh: pulse,
+      mat: pulseMat,
+      progress: 0,
+    };
+  }
+
+  // ============================================================
+  //   AMBIENT PARTICLES
+  // ============================================================
+  const particleCount = 30;
+  const pGeo = new THREE.BufferGeometry();
+  const pPos = new Float32Array(particleCount * 3);
+  const pSeed = new Float32Array(particleCount);
+  for (let i = 0; i < particleCount; i++) {
+    pPos[i*3]   = (Math.random() - 0.5) * 7;
+    pPos[i*3+1] = (Math.random() - 0.5) * 4;
+    pPos[i*3+2] = (Math.random() - 0.5) * 2;
+    pSeed[i] = Math.random() * 10;
+  }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  pGeo.setAttribute('seed', new THREE.BufferAttribute(pSeed, 1));
+  const pMat = new THREE.PointsMaterial({
+    color: ANIMUS_DEEP,
+    size: 0.018,
+    transparent: true,
+    opacity: 0.25,
+    blending: THREE.NormalBlending,
+    depthWrite: false,
+  });
+  const particles = new THREE.Points(pGeo, pMat);
+  scene.add(particles);
+
+  // ============================================================
+  //   ANIMATION LOOP
+  // ============================================================
+  const clock = new THREE.Clock();
+  const CYCLE_DURATION = 9.5;
+
+  const progressEl = document.getElementById('progress-fill');
+  const scanLabelEl = document.getElementById('scan-label');
+  const statusLeftEl = document.getElementById('status-left');
+  const cmdsEl = document.getElementById('cmds-value');
+  const latEl = document.getElementById('lat-value');
+
+  let cmdCounter = 0;
+  let lastCycleIndex = -1;
+  const triggeredThisCycle = new Set();
+
+  // 為每則訊息設定訊息顯現並觸發工具
+  function setMessagesOpacity(cycleP) {
+    messages.forEach(msg => {
+      const revealStart = msg.spec.revealAt;
+      const revealDur = 0.06;
+
+      msg.elements.forEach((el) => {
+        const delay = el.delay ?? 0;
+        const elLocal = (cycleP - revealStart - delay) / revealDur;
+        const elFade = Math.max(0, Math.min(1, elLocal));
+        el.mesh.material.transparent = true;
+        el.mesh.material.opacity = elFade * el.baseOpacity;
+      });
+    });
+  }
+
+  const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+    const cycleT = t % CYCLE_DURATION;
+    const cycleP = cycleT / CYCLE_DURATION;
+    const cycleIdx = Math.floor(t / CYCLE_DURATION);
+
+    if (cycleIdx !== lastCycleIndex) {
+      lastCycleIndex = cycleIdx;
+      triggeredThisCycle.clear();
+    }
+
+    // 訊息顯現
+    setMessagesOpacity(cycleP);
+
+    // 檢查是否有訊息在此 tick 剛出現, 如果是 bot 且有 triggerTool, 噴封包
+    messages.forEach((msg, mi) => {
+      if (triggeredThisCycle.has(mi)) return;
+      const revealAt = msg.spec.revealAt;
+      if (cycleP >= revealAt + 0.02 && cycleP < revealAt + 0.08 && msg.isBot && msg.spec.triggerTool >= 0) {
+        triggeredThisCycle.add(mi);
+        // 從 bot 訊息位置發出 1-2 個封包
+        const toolIdx = msg.spec.triggerTool;
+        packets.push(spawnPacket(toolIdx));
+        // 再追加一個, 強調即時感
+        setTimeout(() => {
+          packets.push(spawnPacket(toolIdx));
+        }, 180);
+      }
+    });
+
+    // Typing indicator
+    let showTyping = false;
+    let typingY = 0;
+    messages.forEach(msg => {
+      if (msg.isBot) {
+        const revealAt = msg.spec.revealAt;
+        const typingStart = revealAt - 0.05;
+        if (cycleP > typingStart && cycleP < revealAt) {
+          showTyping = true;
+          typingY = msg.bubbleY;
+        }
+      }
+    });
+    typingDots.forEach((d, i) => {
+      if (showTyping) {
+        typingGroup.position.y = typingY;
+        const pulse = 0.4 + Math.sin(t * 6 - i * 0.7) * 0.5;
+        d.mat.opacity = pulse * d.mat.userData.baseOpacity;
+      } else {
+        d.mat.opacity = 0;
+      }
+    });
+
+    // 發送按鈕閃一下 (user 訊息出現時)
+    messages.forEach(msg => {
+      if (!msg.isBot) {
+        const revealAt = msg.spec.revealAt;
+        const localP = Math.abs(cycleP - revealAt);
+        if (localP < 0.03) {
+          const flash = 1 - localP / 0.03;
+          sendBtnMat.opacity = sendBtnMat.userData.baseOpacity * (1 + flash * 0.3);
+          sendBtn.scale.setScalar(1 + flash * 0.1);
+        } else {
+          sendBtn.scale.setScalar(1);
+        }
+      }
+    });
+
+    // Online dot 脈衝
+    const onlinePulse = 0.7 + Math.sin(t * 3) * 0.3;
+    onlineMat.opacity = onlineMat.userData.baseOpacity * onlinePulse;
+
+    // === 更新封包 ===
+    let liveLatency = 0;
+    let livePackets = 0;
+    for (let i = packets.length - 1; i >= 0; i--) {
+      const p = packets[i];
+      p.age += 0.016;
+      p.progress += p.speed * 0.016;
+
+      if (p.progress >= 1) {
+        // 到達, 觸發脈衝
+        pulses.push(spawnPulse(p.toolIndex));
+        toolStates[p.toolIndex].activation = 1;
+        toolStates[p.toolIndex].lastTriggered = t;
+        toolStates[p.toolIndex].busyLevel = Math.min(1, toolStates[p.toolIndex].busyLevel + 0.5);
+        cmdCounter++;
+
+        scene.remove(p.group);
+        p.group.traverse(obj => {
+          if (obj.geometry) obj.geometry.dispose();
+          if (obj.material) obj.material.dispose();
+        });
+        packets.splice(i, 1);
+        continue;
+      }
+
+      livePackets++;
+
+      // 沿曲線移動
+      const prog = Math.min(1, p.progress);
+      const pos = p.curve.getPoint(prog);
+      const tangent = p.curve.getTangent(prog);
+
+      p.group.position.set(pos.x, pos.y, pos.z + 0.05);
+      const angle = Math.atan2(tangent.y, tangent.x);
+      p.group.rotation.z = angle;
+
+      // 入場/離場透明度
+      let op = 1;
+      if (prog < 0.08) op = prog / 0.08;
+      else if (prog > 0.92) op = (1 - prog) / 0.08;
+      p.mats.forEach(m => {
+        if (m.uniforms && m.uniforms.uOpacity) {
+          m.uniforms.uOpacity.value = op;
+        } else {
+          m.transparent = true;
+          m.opacity = (m.userData?.baseOpacity ?? 1) * op * (m === p.mats[3] ? 1 : 1);
+        }
+      });
+
+      liveLatency += prog * 80;
+    }
+
+    // === 更新脈衝 ===
+    for (let i = pulses.length - 1; i >= 0; i--) {
+      const pu = pulses[i];
+      pu.progress += 0.035;
+      if (pu.progress >= 1) {
+        scene.remove(pu.mesh);
+        pu.mesh.geometry.dispose();
+        pu.mat.dispose();
+        pulses.splice(i, 1);
+        continue;
+      }
+      const s = 1 + pu.progress * 2.5;
+      pu.mesh.scale.setScalar(s);
+      pu.mat.opacity = (1 - pu.progress) * 0.75;
+    }
+
+    // === 工具狀態動畫 ===
+    tools.forEach((tool, idx) => {
+      const state = toolStates[idx];
+      state.activation *= 0.94;
+      state.busyLevel *= 0.988;
+
+      const activeBoost = state.activation;
+      const isBusy = state.busyLevel > 0.15;
+
+      // 卡片微幅浮動 (被觸發時更強)
+      tool.data.group.position.x = TOOLS_X + Math.sin(t * 0.6 + idx) * 0.02;
+      tool.data.group.position.y = tool.y + Math.sin(t * 0.8 + idx * 1.3) * 0.025 + activeBoost * 0.04;
+      tool.data.group.rotation.y = Math.sin(t * 0.5 + idx * 0.8) * 0.04;
+
+      // 被觸發時輕微放大
+      const scale = 1 + activeBoost * 0.06;
+      tool.data.group.scale.setScalar(scale);
+
+      // 狀態點: 閒置時綠色慢閃, 忙碌時琥珀快閃
+      if (isBusy) {
+        tool.data.statusMat.color.setHex(0xf59e0b);
+        tool.data.statusMat.opacity = 0.7 + Math.sin(t * 8) * 0.3;
+      } else {
+        tool.data.statusMat.color.setHex(0x10b981);
+        tool.data.statusMat.opacity = 0.7 + Math.sin(t * 2) * 0.25;
+      }
+
+      // 齒輪旋轉: 閒置時慢轉, 忙碌時快轉
+      if (tool.type === 'gear') {
+        const speed = 0.3 + state.busyLevel * 2.5;
+        tool.data.gear.rotation.z -= speed * 0.016;
+      }
+
+      // 網路: 節點閃爍 (尤其被觸發時)
+      if (tool.type === 'net') {
+        tool.data.outerNodes.forEach((nodeInfo, ni) => {
+          const twinkle = 0.6 + Math.sin(t * 3 + ni * 1.2) * 0.3;
+          const boost = state.activation * 0.4;
+          nodeInfo.node.material.opacity = Math.min(1, (twinkle + boost) * 0.85);
+          nodeInfo.nodeRing.scale.setScalar(1 + state.activation * 0.4);
+        });
+        tool.data.centerRing.scale.setScalar(1 + state.activation * 0.3 + Math.sin(t * 2) * 0.05);
+      }
+
+      // 資料庫: 各層交替閃爍 (被觸發時)
+      if (tool.type === 'db') {
+        tool.data.dbLayers.forEach((layer, li) => {
+          const base = 0.88 - li * 0.05;
+          const flash = state.activation * Math.sin(t * 10 - li * 1.5) * 0.3;
+          layer.barMat.opacity = Math.min(1, base + Math.abs(flash));
+        });
+      }
+
+      // 連接線高亮
+      const conn = connectorLines[idx];
+      const targetOp = conn.baseOpacity + state.activation * 0.55 + (livePackets > 0 ? 0.08 : 0);
+      conn.lineMat.opacity = conn.lineMat.opacity * 0.85 + targetOp * 0.15;
+    });
+
+    // 聊天視窗微幅浮動
+    chatGroup.position.x = CHAT_X + Math.sin(t * 0.4) * 0.015;
+    chatGroup.position.y = Math.sin(t * 0.6) * 0.02;
+    chatGroup.rotation.y = Math.sin(t * 0.35) * 0.02;
+
+    // 相機
+    camera.position.x = Math.sin(t * 0.25) * 0.05;
+    camera.position.y = 0.2 + Math.sin(t * 0.35) * 0.03;
+    camera.lookAt(0, 0, 0);
+
+    // 環境粒子
+    const posAttr = particles.geometry.attributes.position;
+    for (let i = 0; i < particleCount; i++) {
+      const seed = pSeed[i];
+      posAttr.array[i*3+1] += 0.0018 + Math.sin(t + seed) * 0.0007;
+      posAttr.array[i*3] += Math.cos(t * 0.4 + seed) * 0.001;
+      if (posAttr.array[i*3+1] > 2.2) {
+        posAttr.array[i*3+1] = -2.2;
+      }
+    }
+    posAttr.needsUpdate = true;
+    pMat.opacity = 0.18 + Math.sin(t * 2) * 0.06;
+
+    // UI 更新
+    const anyBusy = toolStates.some(s => s.busyLevel > 0.2);
+    if (anyBusy || livePackets > 0) {
+      scanLabelEl.textContent = 'DISPATCHING';
+      statusLeftEl.textContent = 'TOOL_EXECUTING';
+    } else if (showTyping) {
+      scanLabelEl.textContent = 'THINKING';
+      statusLeftEl.textContent = 'AGENT_ACTIVE';
+    } else {
+      scanLabelEl.textContent = 'LISTENING';
+      statusLeftEl.textContent = 'AGENT_ACTIVE';
+    }
+
+    progressEl.style.width = (cycleP * 100) + '%';
+    cmdsEl.textContent = String(cmdCounter % 100).padStart(2, '0');
+
+    if (livePackets > 0) {
+      const lat = Math.round(60 + Math.sin(t * 8) * 25);
+      latEl.textContent = lat + 'ms';
+    } else if (anyBusy) {
+      latEl.textContent = (Math.round(35 + Math.sin(t * 5) * 10)) + 'ms';
+    } else {
+      latEl.textContent = '--ms';
+    }
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
+</script>
+</body>
+</html>

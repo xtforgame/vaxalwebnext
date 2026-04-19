@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+  body { margin: 0; background: #e8e8e0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+
+  #scanner-root {
+    width: 360px;
+    height: 360px;
+    position: relative;
+    font-family: 'JetBrains Mono', monospace;
+    /* 白底帶微妙冷灰漸層, 模仿 Animus 介面的乾淨感 */
+    background:
+      radial-gradient(ellipse at 50% 40%, #ffffff 0%, #f4f6f8 55%, #e4e8ec 100%);
+    overflow: hidden;
+    border: 1px solid rgba(20, 55, 110, 0.18);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,0.8),
+      inset 0 0 80px rgba(40, 85, 255, 0.04),
+      0 4px 24px rgba(0,0,0,0.08);
+  }
+
+  #scanner-root canvas {
+    display: block;
+    position: absolute;
+    inset: 0;
+    will-change: transform;
+  }
+
+  /* 技術製圖網格 (雙層: 粗線 + 細線, 像藍圖紙) */
+  .grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(20, 55, 110, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20, 55, 110, 0.07) 1px, transparent 1px),
+      linear-gradient(rgba(20, 55, 110, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20, 55, 110, 0.035) 1px, transparent 1px);
+    background-size: 60px 60px, 60px 60px, 12px 12px, 12px 12px;
+    mask-image: radial-gradient(ellipse at center, black 20%, rgba(0,0,0,0.4) 70%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 20%, rgba(0,0,0,0.4) 70%, transparent 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* 細緻紙張紋理 */
+  .paper-grain {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0.35;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.08  0 0 0 0 0.14  0 0 0 0 0.28  0 0 0 0.08 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  /* HUD 角落括號 (Animus 風格十字準星) */
+  .hud-corner {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    z-index: 5;
+  }
+  .hud-corner::before, .hud-corner::after {
+    content: '';
+    position: absolute;
+    background: #0a2c6e;
+  }
+  .hud-corner::before {
+    width: 14px; height: 1px;
+  }
+  .hud-corner::after {
+    width: 1px; height: 14px;
+  }
+  .hud-corner.tl { top: 14px; left: 14px; }
+  .hud-corner.tl::before { top: 0; left: 0; }
+  .hud-corner.tl::after { top: 0; left: 0; }
+  .hud-corner.tr { top: 14px; right: 14px; }
+  .hud-corner.tr::before { top: 0; right: 0; }
+  .hud-corner.tr::after { top: 0; right: 0; }
+  .hud-corner.bl { bottom: 14px; left: 14px; }
+  .hud-corner.bl::before { bottom: 0; left: 0; }
+  .hud-corner.bl::after { bottom: 0; left: 0; }
+  .hud-corner.br { bottom: 14px; right: 14px; }
+  .hud-corner.br::before { bottom: 0; right: 0; }
+  .hud-corner.br::after { bottom: 0; right: 0; }
+
+  /* 中央十字準星 (非常微妙) */
+  .crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 24px;
+    transform: translate(-50%, -50%);
+    z-index: 4;
+    opacity: 0.35;
+    pointer-events: none;
+  }
+  .crosshair::before, .crosshair::after {
+    content: '';
+    position: absolute;
+    background: #0a2c6e;
+  }
+  .crosshair::before {
+    top: 50%; left: 0; right: 0; height: 1px;
+  }
+  .crosshair::after {
+    left: 50%; top: 0; bottom: 0; width: 1px;
+  }
+
+  /* 頂部狀態列 */
+  .status-bar {
+    position: absolute;
+    top: 18px;
+    left: 42px;
+    right: 42px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: #0a2c6e;
+    z-index: 5;
+    text-transform: uppercase;
+    font-weight: 600;
+    font-family: 'Rajdhani', sans-serif;
+  }
+  .status-bar .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: #2855ff;
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse 1.4s ease-in-out infinite;
+    vertical-align: middle;
+    box-shadow: 0 0 0 2px rgba(40, 85, 255, 0.18);
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  /* 底部狀態列 */
+  .bottom-bar {
+    position: absolute;
+    bottom: 18px;
+    left: 42px;
+    right: 42px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: rgba(10, 44, 110, 0.5);
+    z-index: 5;
+    text-transform: uppercase;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 500;
+  }
+  .bottom-bar .label {
+    color: rgba(10, 44, 110, 0.4);
+    font-weight: 400;
+  }
+  .bottom-bar .value {
+    color: #0a2c6e;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+  }
+
+  /* Scan progress readout - center top */
+  .scan-readout {
+    position: absolute;
+    top: 38px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    color: #0a2c6e;
+    letter-spacing: 0.35em;
+    z-index: 5;
+    text-align: center;
+    font-weight: 600;
+    font-family: 'Rajdhani', sans-serif;
+  }
+  .scan-readout .progress-track {
+    margin-top: 6px;
+    width: 90px;
+    height: 1px;
+    background: rgba(10, 44, 110, 0.12);
+    position: relative;
+    overflow: hidden;
+  }
+  .scan-readout .progress-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: #2855ff;
+    width: 0%;
+    transition: width 0.1s linear;
+  }
+  .scan-readout .progress-track::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(90deg, rgba(10,44,110,0.2) 1px, transparent 1px);
+    background-size: 9px 1px;
+  }
+
+  /* Animus 標誌 (右側, 很微妙) */
+  .animus-mark {
+    position: absolute;
+    top: 50%;
+    right: 18px;
+    transform: translateY(-50%);
+    font-size: 7px;
+    letter-spacing: 0.4em;
+    color: rgba(10, 44, 110, 0.35);
+    writing-mode: vertical-rl;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    z-index: 5;
+  }
+
+  /* Vignette */
+  .vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 8;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(20, 55, 110, 0.10) 100%);
+  }
+</style>
+</head>
+<body>
+
+<div id="scanner-root">
+  <div class="grid-bg"></div>
+
+  <div class="hud-corner tl"></div>
+  <div class="hud-corner tr"></div>
+  <div class="hud-corner bl"></div>
+  <div class="hud-corner br"></div>
+
+  <div class="crosshair"></div>
+
+  <div class="status-bar">
+    <span><span class="dot"></span>SCAN_ACTIVE</span>
+    <span id="status-right">DOC.01</span>
+  </div>
+
+  <div class="scan-readout">
+    <div id="scan-label">ANALYZING</div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+
+  <div class="bottom-bar">
+    <span><span class="label">TAGS</span> <span class="value" id="tag-count">00</span></span>
+    <span><span class="label">CONF</span> <span class="value" id="conf-value">98.7%</span></span>
+  </div>
+
+  <div class="animus-mark">ANIMUS</div>
+
+  <div class="vignette"></div>
+  <div class="paper-grain"></div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+  import * as THREE from 'three';
+
+  const root = document.getElementById('scanner-root');
+  const W = 360, H = 360;
+
+  const scene = new THREE.Scene();
+  // 白色霧效, 遠處物件會融入白色背景
+  scene.fog = new THREE.Fog(0xf4f6f8, 6, 14);
+
+  const camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 50);
+  camera.position.set(0, 2.2, 5.2);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+  root.appendChild(renderer.domElement);
+
+  // ===== LIGHTING (在白底環境中用更柔和的光) =====
+  const ambient = new THREE.AmbientLight(0xffffff, 0.85);
+  scene.add(ambient);
+
+  const keyLight = new THREE.DirectionalLight(0xe8efff, 0.5);
+  keyLight.position.set(2, 4, 3);
+  scene.add(keyLight);
+
+  const rimLight = new THREE.PointLight(0x2855ff, 0.6, 8);
+  rimLight.position.set(-2, 1, 2);
+  scene.add(rimLight);
+
+  // ===== 色彩常數 =====
+  const ANIMUS_BLUE = 0x2855ff;
+  const ANIMUS_DEEP = 0x0a2c6e;
+  const ANIMUS_INK = 0x14233f;
+  const PAPER_WHITE = 0xfafbfd;
+  const PAPER_EDGE = 0x0a2c6e;
+
+  // ===== DOCUMENT (with tilt for sci-fi hologram feel) =====
+  const docGroup = new THREE.Group();
+  docGroup.rotation.x = -0.35;
+  docGroup.rotation.y = 0.15;
+  docGroup.position.y = -0.1;
+  scene.add(docGroup);
+
+  // Document paper - 白紙, 不發光
+  const docW = 2.2, docH = 3.0;
+  const paperGeo = new THREE.PlaneGeometry(docW, docH);
+  const paperMat = new THREE.MeshStandardMaterial({
+    color: PAPER_WHITE,
+    emissive: 0x000000,
+    emissiveIntensity: 0.05,
+    roughness: 0.95,
+    metalness: 0.0,
+    side: THREE.DoubleSide,
+  });
+  const paper = new THREE.Mesh(paperGeo, paperMat);
+  docGroup.add(paper);
+
+  // 紙張陰影 (放在後方製造深度)
+  const shadowGeo = new THREE.PlaneGeometry(docW * 1.06, docH * 1.04);
+  const shadowMat = new THREE.MeshBasicMaterial({
+    color: 0x0a2c6e,
+    transparent: true,
+    opacity: 0.08,
+    depthWrite: false,
+  });
+  const docShadow = new THREE.Mesh(shadowGeo, shadowMat);
+  docShadow.position.set(0.05, -0.05, -0.01);
+  docGroup.add(docShadow);
+
+  // Paper border - 深藍細邊框
+  const edgeGeo = new THREE.EdgesGeometry(paperGeo);
+  const edgeMat = new THREE.LineBasicMaterial({ color: PAPER_EDGE, transparent: true, opacity: 0.85 });
+  const edges = new THREE.LineSegments(edgeGeo, edgeMat);
+  docGroup.add(edges);
+
+  // 內框線 (雙線邊框, 像文件裝飾)
+  const innerW = docW - 0.12;
+  const innerH = docH - 0.12;
+  const innerShape = new THREE.BufferGeometry();
+  const innerVerts = new Float32Array([
+    -innerW/2, -innerH/2, 0.001,
+     innerW/2, -innerH/2, 0.001,
+     innerW/2, -innerH/2, 0.001,
+     innerW/2,  innerH/2, 0.001,
+     innerW/2,  innerH/2, 0.001,
+    -innerW/2,  innerH/2, 0.001,
+    -innerW/2,  innerH/2, 0.001,
+    -innerW/2, -innerH/2, 0.001,
+  ]);
+  innerShape.setAttribute('position', new THREE.BufferAttribute(innerVerts, 3));
+  const innerMat = new THREE.LineBasicMaterial({
+    color: PAPER_EDGE,
+    transparent: true,
+    opacity: 0.25,
+  });
+  const innerBorder = new THREE.LineSegments(innerShape, innerMat);
+  docGroup.add(innerBorder);
+
+  // 文件四角小十字 (Animus 風格的定位標記)
+  const cornerSize = 0.1;
+  const cornerPositions = [
+    [-docW/2 * 1.05, docH/2 * 1.03],
+    [ docW/2 * 1.05, docH/2 * 1.03],
+    [-docW/2 * 1.05, -docH/2 * 1.03],
+    [ docW/2 * 1.05, -docH/2 * 1.03],
+  ];
+  cornerPositions.forEach(pos => {
+    const points = [
+      new THREE.Vector3(pos[0] - cornerSize, pos[1], 0),
+      new THREE.Vector3(pos[0] + cornerSize, pos[1], 0),
+      new THREE.Vector3(pos[0], pos[1] - cornerSize, 0),
+      new THREE.Vector3(pos[0], pos[1] + cornerSize, 0),
+    ];
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    const mat = new THREE.LineBasicMaterial({
+      color: ANIMUS_BLUE,
+      transparent: true,
+      opacity: 0.65,
+    });
+    const cross = new THREE.LineSegments(geo, mat);
+    docGroup.add(cross);
+  });
+
+  // Document content - text lines and a "title block"
+  const contentGroup = new THREE.Group();
+  contentGroup.position.z = 0.01;
+  docGroup.add(contentGroup);
+
+  // 標題列 (深色塊, 像印刷文件)
+  const titleBarGeo = new THREE.PlaneGeometry(docW * 0.85, 0.18);
+  const titleBarMat = new THREE.MeshBasicMaterial({ color: ANIMUS_DEEP, transparent: true, opacity: 0.88 });
+  const titleBar = new THREE.Mesh(titleBarGeo, titleBarMat);
+  titleBar.position.set(0, docH / 2 - 0.25, 0.005);
+  contentGroup.add(titleBar);
+
+  // 標題色塊 (白色, 在深色標題列上反白)
+  for (let i = 0; i < 3; i++) {
+    const w = 0.15 + Math.random() * 0.15;
+    const g = new THREE.PlaneGeometry(w, 0.05);
+    const m = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 });
+    const block = new THREE.Mesh(g, m);
+    block.position.set(-docW / 2 + 0.25 + i * 0.35, docH / 2 - 0.25, 0.015);
+    contentGroup.add(block);
+  }
+
+  // Text lines - 深色墨線, 像印刷文字
+  const lineColors = [ANIMUS_INK, ANIMUS_INK, ANIMUS_INK, ANIMUS_INK];
+  const lineWidths = [
+    0.95, 0.85, 0.92, 0.70,
+    0.90, 0.88, 0.60,
+    0.95, 0.82, 0.75, 0.88,
+    0.70, 0.92, 0.80
+  ];
+  let yPos = docH / 2 - 0.55;
+  lineWidths.forEach((wRatio, i) => {
+    const lineW = docW * 0.85 * wRatio;
+    const lineGeo = new THREE.PlaneGeometry(lineW, 0.035);
+    const lineMat = new THREE.MeshBasicMaterial({
+      color: lineColors[0],
+      transparent: true,
+      opacity: 0.55,
+    });
+    const line = new THREE.Mesh(lineGeo, lineMat);
+    line.position.set(
+      -docW / 2 + 0.2 + lineW / 2,
+      yPos,
+      0.005
+    );
+    contentGroup.add(line);
+    yPos -= 0.14;
+    if (i === 3 || i === 6 || i === 10) yPos -= 0.08;
+  });
+
+  // 底部圖表區 (白底藍線)
+  const chartGeo = new THREE.PlaneGeometry(0.6, 0.4);
+  const chartMat = new THREE.MeshBasicMaterial({ color: ANIMUS_BLUE, transparent: true, opacity: 0.12 });
+  const chart = new THREE.Mesh(chartGeo, chartMat);
+  chart.position.set(docW / 2 - 0.45, -docH / 2 + 0.4, 0.005);
+  contentGroup.add(chart);
+  for (let i = 0; i < 4; i++) {
+    const h = 0.08 + Math.random() * 0.22;
+    const bG = new THREE.PlaneGeometry(0.08, h);
+    const bM = new THREE.MeshBasicMaterial({ color: ANIMUS_BLUE, transparent: true, opacity: 0.9 });
+    const bar = new THREE.Mesh(bG, bM);
+    bar.position.set(
+      docW / 2 - 0.65 + i * 0.12,
+      -docH / 2 + 0.3 + h / 2 - 0.15,
+      0.01
+    );
+    contentGroup.add(bar);
+  }
+
+  // ===== ANNOTATIONS (貼在文件上) =====
+  // 沉穩寶石色調, 在白底上更優雅
+  const annotationData = [
+    { docX: -0.25, docY: 0.85,  label: 'TITLE',   width: 0.80, bg: '#d97706', fg: '#ffffff', glow: 0xd97706 },
+    { docX: -0.45, docY: 0.52,  label: 'ENTITY',  width: 0.88, bg: '#2855ff', fg: '#ffffff', glow: 0x2855ff },
+    { docX:  0.35, docY: 0.15,  label: 'DATE',    width: 0.78, bg: '#7c3aed', fg: '#ffffff', glow: 0x7c3aed },
+    { docX: -0.45, docY: -0.25, label: 'AMOUNT',  width: 0.85, bg: '#059669', fg: '#ffffff', glow: 0x059669 },
+    { docX:  0.40, docY: -0.70, label: 'METRIC',  width: 0.85, bg: '#b91c1c', fg: '#ffffff', glow: 0xb91c1c },
+  ];
+
+  // 用 Canvas 產生標籤紋理
+  function makeTagTexture(label, bgColor, fgColor) {
+    const canvas = document.createElement('canvas');
+    const scale = 4;
+    const baseW = 320, baseH = 88;
+    canvas.width = baseW * scale;
+    canvas.height = baseH * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+
+    // 實心背景 (圓角矩形)
+    const radius = 6;
+    ctx.fillStyle = bgColor;
+    ctx.beginPath();
+    ctx.moveTo(radius, 0);
+    ctx.lineTo(baseW - radius, 0);
+    ctx.quadraticCurveTo(baseW, 0, baseW, radius);
+    ctx.lineTo(baseW, baseH - radius);
+    ctx.quadraticCurveTo(baseW, baseH, baseW - radius, baseH);
+    ctx.lineTo(radius, baseH);
+    ctx.quadraticCurveTo(0, baseH, 0, baseH - radius);
+    ctx.lineTo(0, radius);
+    ctx.quadraticCurveTo(0, 0, radius, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // 菱形符號
+    ctx.fillStyle = fgColor;
+    ctx.font = 'bold 40px "JetBrains Mono", monospace';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('◆', 20, baseH / 2);
+
+    // 標籤文字
+    ctx.fillStyle = fgColor;
+    ctx.font = 'bold 40px "JetBrains Mono", monospace';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, 62, baseH / 2 + 1);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.anisotropy = 8;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    return { tex, aspect: baseW / baseH };
+  }
+
+  // 建立標籤邊框幾何 (細邊框讓標籤在白底上更銳利)
+  function makeTagBorderGeometry(w, h) {
+    const verts = new Float32Array([
+      -w/2, -h/2, 0,   w/2, -h/2, 0,
+       w/2, -h/2, 0,   w/2,  h/2, 0,
+       w/2,  h/2, 0,  -w/2,  h/2, 0,
+      -w/2,  h/2, 0,  -w/2, -h/2, 0,
+    ]);
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+    return g;
+  }
+
+  const annotationMeshes = [];
+  annotationData.forEach((ann) => {
+    const { tex, aspect } = makeTagTexture(ann.label, ann.bg, ann.fg);
+    const tagW = ann.width;
+    const tagH = tagW / aspect;
+
+    const mat = new THREE.MeshBasicMaterial({
+      map: tex,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      depthTest: false,
+    });
+    const geo = new THREE.PlaneGeometry(tagW, tagH);
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(
+      ann.docX * (docW / 2),
+      ann.docY * (docH / 2),
+      0.1
+    );
+    mesh.renderOrder = 10;
+
+    // 細邊框 (讓標籤在白底上更銳利)
+    const borderGeo = makeTagBorderGeometry(tagW, tagH);
+    const borderMat = new THREE.LineBasicMaterial({
+      color: ann.glow,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      depthTest: false,
+    });
+    const border = new THREE.LineSegments(borderGeo, borderMat);
+    border.position.copy(mesh.position);
+    border.position.z = 0.105;
+    border.renderOrder = 11;
+    docGroup.add(border);
+
+    // 柔和光暈 (在白底上要更克制)
+    const glowGeo = new THREE.PlaneGeometry(tagW * 1.35, tagH * 2.1);
+    const glowMat = new THREE.ShaderMaterial({
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        uOpacity: { value: 0 },
+        uColor: { value: new THREE.Color(ann.glow) }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        uniform float uOpacity;
+        uniform vec3 uColor;
+        void main(){
+          vec2 p = (vUv - 0.5) * 2.0;
+          float d = length(p * vec2(1.0, 0.55));
+          float a = smoothstep(1.0, 0.25, d) * 0.22 * uOpacity;
+          gl_FragColor = vec4(uColor, a);
+        }
+      `
+    });
+    const glow = new THREE.Mesh(glowGeo, glowMat);
+    glow.position.copy(mesh.position);
+    glow.position.z = 0.09;
+    glow.renderOrder = 9;
+    docGroup.add(glow);
+    docGroup.add(mesh);
+
+    annotationMeshes.push({
+      mesh, mat, glow, glowMat, border, borderMat,
+      data: ann,
+      active: false,
+      activatedAt: 0,
+    });
+  });
+
+  // ===== SCAN PLANE =====
+  const scanGroup = new THREE.Group();
+  docGroup.add(scanGroup);
+
+  // Main scan line - 深藍色細線 (白底上要用深色才明顯)
+  const scanLineGeo = new THREE.PlaneGeometry(docW * 1.15, 0.04);
+  const scanLineMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_BLUE,
+    transparent: true,
+    opacity: 1,
+    blending: THREE.NormalBlending,
+  });
+  const scanLine = new THREE.Mesh(scanLineGeo, scanLineMat);
+  scanLine.position.z = 0.05;
+  scanGroup.add(scanLine);
+
+  // Scan glow - 藍色柔和光帶 (在白底上用 Normal blending 並加深邊緣)
+  const scanGlowGeo = new THREE.PlaneGeometry(docW * 1.15, 0.5);
+  const scanGlowMat = new THREE.ShaderMaterial({
+    transparent: true,
+    blending: THREE.NormalBlending,
+    depthWrite: false,
+    uniforms: { uColor: { value: new THREE.Color(ANIMUS_BLUE) } },
+    vertexShader: `
+      varying vec2 vUv;
+      void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+    `,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform vec3 uColor;
+      void main(){
+        float d = abs(vUv.y - 0.5) * 2.0;
+        float a = pow(1.0 - d, 3.0) * 0.25;
+        gl_FragColor = vec4(uColor, a);
+      }
+    `
+  });
+  const scanGlow = new THREE.Mesh(scanGlowGeo, scanGlowMat);
+  scanGlow.position.z = 0.04;
+  scanGroup.add(scanGlow);
+
+  // "Revealed strip" - 已掃描過的區域 (白底上用非常淡的藍色掃描線紋理)
+  const revealGeo = new THREE.PlaneGeometry(docW * 1.02, docH);
+  const revealMat = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    uniforms: {
+      uProgress: { value: 0.0 },
+      uColor: { value: new THREE.Color(ANIMUS_BLUE) }
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+    `,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform float uProgress;
+      uniform vec3 uColor;
+      void main(){
+        // uProgress is 0..1, top-to-bottom. vUv.y is bottom-to-top.
+        float scanY = 1.0 - uProgress;
+        if (vUv.y < scanY) discard;
+        // 掃描線紋理
+        float stripes = step(0.5, fract(vUv.y * 80.0));
+        float intensity = 0.06 + stripes * 0.04;
+        // 淡出底部 (最早掃描的)
+        float fade = smoothstep(1.0 - uProgress, scanY, vUv.y);
+        gl_FragColor = vec4(uColor, intensity * fade);
+      }
+    `
+  });
+  const revealMesh = new THREE.Mesh(revealGeo, revealMat);
+  revealMesh.position.z = 0.03;
+  docGroup.add(revealMesh);
+
+  // ===== PARTICLES (data motes around doc) =====
+  // 白底上改為深色點, Normal blending
+  const particleCount = 40;
+  const pGeo = new THREE.BufferGeometry();
+  const pPos = new Float32Array(particleCount * 3);
+  const pSeed = new Float32Array(particleCount);
+  for (let i = 0; i < particleCount; i++) {
+    pPos[i*3]   = (Math.random() - 0.5) * 4;
+    pPos[i*3+1] = (Math.random() - 0.5) * 4;
+    pPos[i*3+2] = (Math.random() - 0.5) * 2;
+    pSeed[i] = Math.random() * 10;
+  }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  pGeo.setAttribute('seed', new THREE.BufferAttribute(pSeed, 1));
+  const pMat = new THREE.PointsMaterial({
+    color: ANIMUS_DEEP,
+    size: 0.022,
+    transparent: true,
+    opacity: 0.45,
+    blending: THREE.NormalBlending,
+    depthWrite: false,
+  });
+  const particles = new THREE.Points(pGeo, pMat);
+  scene.add(particles);
+
+  // ===== ANIMATION LOOP =====
+  const clock = new THREE.Clock();
+  let scanProgress = 0;
+  const scanDuration = 3.5;
+  const holdDuration = 1.8;
+  const cycleDuration = scanDuration + holdDuration;
+
+  const progressEl = document.getElementById('progress-fill');
+  const tagCountEl = document.getElementById('tag-count');
+  const scanLabelEl = document.getElementById('scan-label');
+  const confEl = document.getElementById('conf-value');
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+
+    // Cycle time
+    const cycleT = t % cycleDuration;
+    let progress, phase;
+    if (cycleT < scanDuration) {
+      progress = cycleT / scanDuration;
+      phase = 'scan';
+    } else {
+      progress = 1;
+      phase = 'hold';
+    }
+    scanProgress = progress;
+
+    // Update scan line position
+    const scanY = docH / 2 - progress * docH;
+    scanGroup.position.y = scanY;
+
+    // Scan line pulse brightness
+    const pulse = 0.85 + Math.sin(t * 12) * 0.15;
+    scanLineMat.opacity = phase === 'scan' ? pulse : Math.max(0, 1 - (cycleT - scanDuration) * 2);
+    // 保持藍色, 不做色相變化 (白底下色相變化會看起來很雜)
+    scanGroup.visible = phase === 'scan' || cycleT < scanDuration + 0.5;
+
+    // Update reveal strip
+    revealMat.uniforms.uProgress.value = progress;
+
+    // Subtle doc hover
+    docGroup.rotation.y = 0.15 + Math.sin(t * 0.6) * 0.04;
+    docGroup.position.x = Math.sin(t * 0.4) * 0.03;
+
+    // Animate particles
+    const posAttr = particles.geometry.attributes.position;
+    const seedAttr = particles.geometry.attributes.seed;
+    for (let i = 0; i < particleCount; i++) {
+      const seed = seedAttr.array[i];
+      posAttr.array[i*3+1] += 0.003 + Math.sin(t + seed) * 0.001;
+      posAttr.array[i*3] += Math.cos(t * 0.5 + seed) * 0.002;
+      if (posAttr.array[i*3+1] > 2.2) {
+        posAttr.array[i*3+1] = -2.2;
+        posAttr.array[i*3] = (Math.random() - 0.5) * 4;
+      }
+    }
+    posAttr.needsUpdate = true;
+    pMat.opacity = 0.3 + Math.sin(t * 2) * 0.12;
+
+    // Reset annotations at start of each cycle
+    if (cycleT < 0.05) {
+      annotationMeshes.forEach(a => {
+        a.active = false;
+        a.activatedAt = 0;
+      });
+    }
+
+    // Activate annotations as scan passes them
+    let activeCount = 0;
+    annotationMeshes.forEach((a) => {
+      const activationProgress = (1 - a.data.docY) / 2;
+      const shouldBeActive = progress >= activationProgress;
+      if (shouldBeActive && !a.active) {
+        a.active = true;
+        a.activatedAt = t;
+      }
+      if (a.active) {
+        activeCount++;
+        const elapsed = t - a.activatedAt;
+        const fade = Math.min(1, elapsed / 0.35);
+        const breathe = 0.92 + Math.sin((t - a.activatedAt) * 4) * 0.08;
+        a.mat.opacity = fade;
+        a.borderMat.opacity = fade * 0.9;
+        a.glowMat.uniforms.uOpacity.value = fade * breathe;
+        const scale = fade < 1 ? 0.8 + fade * 0.2 : 1;
+        a.mesh.scale.setScalar(scale);
+        a.border.scale.setScalar(scale);
+        a.glow.scale.setScalar(scale);
+      } else {
+        a.mat.opacity = 0;
+        a.borderMat.opacity = 0;
+        a.glowMat.uniforms.uOpacity.value = 0;
+      }
+    });
+
+    // Update HUD
+    progressEl.style.width = (progress * 100) + '%';
+    tagCountEl.textContent = String(activeCount).padStart(2, '0');
+    if (phase === 'scan') {
+      scanLabelEl.textContent = 'ANALYZING';
+    } else {
+      scanLabelEl.textContent = 'COMPLETE';
+    }
+
+    // Confidence ticker
+    if (phase === 'scan' && Math.random() < 0.1) {
+      const c = (97 + Math.random() * 2.5).toFixed(1);
+      confEl.textContent = c + '%';
+    } else if (phase === 'hold') {
+      confEl.textContent = '99.4%';
+    }
+
+    renderer.render(scene, camera);
+  }
+  animate();
+</script>
+</body>
+</html>

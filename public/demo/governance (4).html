@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+  body { margin: 0; background: #e8e8e0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+
+  #scanner-root {
+    width: 360px;
+    height: 360px;
+    position: relative;
+    font-family: 'JetBrains Mono', monospace;
+    background:
+      radial-gradient(ellipse at 50% 40%, #ffffff 0%, #f4f6f8 55%, #e4e8ec 100%);
+    overflow: hidden;
+    border: 1px solid rgba(20, 55, 110, 0.18);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,0.8),
+      inset 0 0 80px rgba(40, 85, 255, 0.04),
+      0 4px 24px rgba(0,0,0,0.08);
+  }
+
+  #scanner-root canvas {
+    display: block;
+    position: absolute;
+    inset: 0;
+    will-change: transform;
+  }
+
+  .grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(20, 55, 110, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20, 55, 110, 0.07) 1px, transparent 1px),
+      linear-gradient(rgba(20, 55, 110, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20, 55, 110, 0.035) 1px, transparent 1px);
+    background-size: 60px 60px, 60px 60px, 12px 12px, 12px 12px;
+    mask-image: radial-gradient(ellipse at center, black 20%, rgba(0,0,0,0.4) 70%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 20%, rgba(0,0,0,0.4) 70%, transparent 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .paper-grain {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0.35;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.08  0 0 0 0 0.14  0 0 0 0 0.28  0 0 0 0.08 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  .hud-corner {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    z-index: 5;
+  }
+  .hud-corner::before, .hud-corner::after {
+    content: '';
+    position: absolute;
+    background: #0a2c6e;
+  }
+  .hud-corner::before { width: 14px; height: 1px; }
+  .hud-corner::after { width: 1px; height: 14px; }
+  .hud-corner.tl { top: 14px; left: 14px; }
+  .hud-corner.tl::before { top: 0; left: 0; }
+  .hud-corner.tl::after { top: 0; left: 0; }
+  .hud-corner.tr { top: 14px; right: 14px; }
+  .hud-corner.tr::before { top: 0; right: 0; }
+  .hud-corner.tr::after { top: 0; right: 0; }
+  .hud-corner.bl { bottom: 14px; left: 14px; }
+  .hud-corner.bl::before { bottom: 0; left: 0; }
+  .hud-corner.bl::after { bottom: 0; left: 0; }
+  .hud-corner.br { bottom: 14px; right: 14px; }
+  .hud-corner.br::before { bottom: 0; right: 0; }
+  .hud-corner.br::after { bottom: 0; right: 0; }
+
+  .status-bar {
+    position: absolute;
+    top: 18px;
+    left: 42px;
+    right: 42px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: #0a2c6e;
+    z-index: 5;
+    text-transform: uppercase;
+    font-weight: 600;
+    font-family: 'Rajdhani', sans-serif;
+  }
+  .status-bar .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: #2855ff;
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse 1.4s ease-in-out infinite;
+    vertical-align: middle;
+    box-shadow: 0 0 0 2px rgba(40, 85, 255, 0.18);
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  .bottom-bar {
+    position: absolute;
+    bottom: 18px;
+    left: 42px;
+    right: 42px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: rgba(10, 44, 110, 0.5);
+    z-index: 5;
+    text-transform: uppercase;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 500;
+  }
+  .bottom-bar .label {
+    color: rgba(10, 44, 110, 0.4);
+    font-weight: 400;
+  }
+  .bottom-bar .value {
+    color: #0a2c6e;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+  }
+
+  .scan-readout {
+    position: absolute;
+    top: 38px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    color: #0a2c6e;
+    letter-spacing: 0.35em;
+    z-index: 5;
+    text-align: center;
+    font-weight: 600;
+    font-family: 'Rajdhani', sans-serif;
+  }
+  .scan-readout .progress-track {
+    margin-top: 6px;
+    width: 90px;
+    height: 1px;
+    background: rgba(10, 44, 110, 0.12);
+    position: relative;
+    overflow: hidden;
+  }
+  .scan-readout .progress-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: #2855ff;
+    width: 0%;
+    transition: width 0.1s linear;
+  }
+  .scan-readout .progress-track::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(90deg, rgba(10,44,110,0.2) 1px, transparent 1px);
+    background-size: 9px 1px;
+  }
+
+  .animus-mark {
+    position: absolute;
+    top: 50%;
+    right: 18px;
+    transform: translateY(-50%);
+    font-size: 7px;
+    letter-spacing: 0.4em;
+    color: rgba(10, 44, 110, 0.35);
+    writing-mode: vertical-rl;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    z-index: 5;
+  }
+
+  .vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 8;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(20, 55, 110, 0.10) 100%);
+  }
+</style>
+</head>
+<body>
+
+<div id="scanner-root">
+  <div class="grid-bg"></div>
+
+  <div class="hud-corner tl"></div>
+  <div class="hud-corner tr"></div>
+  <div class="hud-corner bl"></div>
+  <div class="hud-corner br"></div>
+
+  <div class="status-bar">
+    <span><span class="dot"></span><span id="status-left">POLICY_ENGINE</span></span>
+    <span id="status-right">GOV.01</span>
+  </div>
+
+  <div class="scan-readout">
+    <div id="scan-label">AWAITING</div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+
+  <div class="bottom-bar">
+    <span><span class="label">ROLE</span> <span class="value" id="role-value">---</span></span>
+    <span><span class="label">STATE</span> <span class="value" id="state-value">G 00 / D 00</span></span>
+  </div>
+
+  <div class="animus-mark">ANIMUS</div>
+
+  <div class="vignette"></div>
+  <div class="paper-grain"></div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+  import * as THREE from 'three';
+
+  const root = document.getElementById('scanner-root');
+  const W = 360, H = 360;
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0xf4f6f8, 14, 32);
+
+  const camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 50);
+  camera.position.set(0, 0.1, 13);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+  root.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+  const keyLight = new THREE.DirectionalLight(0xe8efff, 0.5);
+  keyLight.position.set(2, 4, 3);
+  scene.add(keyLight);
+
+  // ===== 配色 =====
+  const ANIMUS_BLUE = 0x2855ff;
+  const ANIMUS_DEEP = 0x0a2c6e;
+  const ANIMUS_INK = 0x14233f;
+  const PAPER_WHITE = 0xfafbfd;
+
+  const SENS_PII    = 0xdc2626;
+  const SENS_CONFID = 0xd97706;
+  const SENS_PUBLIC = 0x2855ff;
+
+  const GRANT_GREEN = 0x059669;
+  const DENY_RED    = 0xb91c1c;
+
+  // ===== LAYOUT =====
+  const SOURCE_X = -2.95;
+  const ROLE_X = 2.3;
+  const ROLE_Y_TOP = 2.1;
+  const ROLE_Y_MID = 0;
+  const ROLE_Y_BOT = -2.1;
+
+  const docW = 1.05;
+  const docH = 1.42;
+
+  // 欄位 (y 和寬度都是以原 doc 尺寸 1.5x2.0 為基準設計的, 這裡按比例縮放)
+  const fieldSpecs = [
+    { id: 0, y:  0.50, sensitivity: 'pii',    labelW: 0.16, contentW: 0.50 },
+    { id: 1, y:  0.355, sensitivity: 'public', labelW: 0.13, contentW: 0.55 },
+    { id: 2, y:  0.21, sensitivity: 'confid', labelW: 0.17, contentW: 0.46 },
+    { id: 3, y:  0.07, sensitivity: 'public', labelW: 0.14, contentW: 0.53 },
+    { id: 4, y: -0.07, sensitivity: 'pii',    labelW: 0.16, contentW: 0.49 },
+    { id: 5, y: -0.21, sensitivity: 'public', labelW: 0.13, contentW: 0.58 },
+    { id: 6, y: -0.355, sensitivity: 'confid', labelW: 0.17, contentW: 0.42 },
+    { id: 7, y: -0.50, sensitivity: 'public', labelW: 0.14, contentW: 0.54 },
+  ];
+
+  function sensColor(sens) {
+    if (sens === 'pii') return SENS_PII;
+    if (sens === 'confid') return SENS_CONFID;
+    return SENS_PUBLIC;
+  }
+
+  function isGranted(sens, tier) {
+    if (tier === 0) return true;
+    if (tier === 1) return sens !== 'pii';
+    if (tier === 2) return sens === 'public';
+    return false;
+  }
+
+  // ============================================================
+  //   SOURCE DOCUMENT
+  // ============================================================
+  const sourceGroup = new THREE.Group();
+  sourceGroup.position.x = SOURCE_X;
+  scene.add(sourceGroup);
+
+  const srcPaperGeo = new THREE.PlaneGeometry(docW, docH);
+  const srcPaperMat = new THREE.MeshStandardMaterial({
+    color: PAPER_WHITE,
+    roughness: 0.95,
+    metalness: 0.0,
+    side: THREE.DoubleSide,
+  });
+  const srcPaper = new THREE.Mesh(srcPaperGeo, srcPaperMat);
+  sourceGroup.add(srcPaper);
+
+  const srcShadowGeo = new THREE.PlaneGeometry(docW * 1.06, docH * 1.04);
+  const srcShadowMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0.08,
+    depthWrite: false,
+  });
+  const srcShadow = new THREE.Mesh(srcShadowGeo, srcShadowMat);
+  srcShadow.position.set(0.04, -0.04, -0.01);
+  sourceGroup.add(srcShadow);
+
+  const srcEdgeGeo = new THREE.EdgesGeometry(srcPaperGeo);
+  const srcEdgeMat = new THREE.LineBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0.9,
+  });
+  const srcEdges = new THREE.LineSegments(srcEdgeGeo, srcEdgeMat);
+  sourceGroup.add(srcEdges);
+
+  const srcTitleGeo = new THREE.PlaneGeometry(docW * 0.85, 0.09);
+  const srcTitleMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0.92,
+  });
+  const srcTitle = new THREE.Mesh(srcTitleGeo, srcTitleMat);
+  srcTitle.position.set(0, docH / 2 - 0.13, 0.005);
+  sourceGroup.add(srcTitle);
+
+  for (let i = 0; i < 3; i++) {
+    const w = 0.06 + i * 0.02;
+    const g = new THREE.PlaneGeometry(w, 0.025);
+    const m = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.95,
+    });
+    const block = new THREE.Mesh(g, m);
+    block.position.set(-docW / 2 + 0.14 + i * 0.17, docH / 2 - 0.13, 0.015);
+    sourceGroup.add(block);
+  }
+
+  const sourceFields = [];
+  fieldSpecs.forEach(f => {
+    const color = sensColor(f.sensitivity);
+
+    const labelGeo = new THREE.PlaneGeometry(f.labelW, 0.038);
+    const labelMat = new THREE.MeshBasicMaterial({
+      color: color,
+      transparent: true,
+      opacity: 0.9,
+    });
+    const labelMesh = new THREE.Mesh(labelGeo, labelMat);
+    labelMesh.position.set(-docW / 2 + 0.07 + f.labelW / 2, f.y, 0.005);
+    sourceGroup.add(labelMesh);
+
+    const contentGeo = new THREE.PlaneGeometry(f.contentW, 0.032);
+    const contentMat = new THREE.MeshBasicMaterial({
+      color: ANIMUS_INK,
+      transparent: true,
+      opacity: 0.55,
+    });
+    const contentMesh = new THREE.Mesh(contentGeo, contentMat);
+    contentMesh.position.set(
+      -docW / 2 + 0.07 + f.labelW + 0.03 + f.contentW / 2,
+      f.y,
+      0.005
+    );
+    sourceGroup.add(contentMesh);
+
+    const highlightGeo = new THREE.PlaneGeometry(docW * 0.95, 0.09);
+    const highlightMat = new THREE.MeshBasicMaterial({
+      color: color,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    });
+    const highlight = new THREE.Mesh(highlightGeo, highlightMat);
+    highlight.position.set(0, f.y, 0.002);
+    sourceGroup.add(highlight);
+
+    const arrowShape = new THREE.Shape();
+    arrowShape.moveTo(0.06, 0);
+    arrowShape.lineTo(0, 0.03);
+    arrowShape.lineTo(0, -0.03);
+    arrowShape.lineTo(0.06, 0);
+    const arrowGeo = new THREE.ShapeGeometry(arrowShape);
+    const arrowMat = new THREE.MeshBasicMaterial({
+      color: color,
+      transparent: true,
+      opacity: 0,
+      side: THREE.DoubleSide,
+    });
+    const arrow = new THREE.Mesh(arrowGeo, arrowMat);
+    arrow.position.set(docW / 2 + 0.06, f.y, 0.01);
+    sourceGroup.add(arrow);
+
+    sourceFields.push({
+      field: f,
+      labelMesh, contentMesh,
+      highlight, highlightMat,
+      arrow, arrowMat,
+    });
+  });
+
+  // Protection shell corners
+  const shellCornerSize = 0.13;
+  const shellOffsetX = docW / 2 + 0.1;
+  const shellOffsetY = docH / 2 + 0.1;
+
+  const shellCornerGeoms = [];
+
+  function makeLCorner(x, y, flipX, flipY) {
+    const points = [
+      new THREE.Vector3(x, y + (flipY ? -shellCornerSize : shellCornerSize), 0),
+      new THREE.Vector3(x, y, 0),
+      new THREE.Vector3(x + (flipX ? -shellCornerSize : shellCornerSize), y, 0),
+    ];
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    const mat = new THREE.LineBasicMaterial({
+      color: ANIMUS_BLUE,
+      transparent: true,
+      opacity: 0.75,
+    });
+    const line = new THREE.Line(geo, mat);
+    sourceGroup.add(line);
+    return { line, mat };
+  }
+
+  shellCornerGeoms.push(makeLCorner(-shellOffsetX,  shellOffsetY, false, true));
+  shellCornerGeoms.push(makeLCorner( shellOffsetX,  shellOffsetY, true,  true));
+  shellCornerGeoms.push(makeLCorner(-shellOffsetX, -shellOffsetY, false, false));
+  shellCornerGeoms.push(makeLCorner( shellOffsetX, -shellOffsetY, true,  false));
+
+  // "PROTECTED" banner
+  const protLabelGeo = new THREE.PlaneGeometry(0.7, 0.07);
+  const protLabelMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_BLUE,
+    transparent: true,
+    opacity: 0.92,
+  });
+  const protLabel = new THREE.Mesh(protLabelGeo, protLabelMat);
+  protLabel.position.set(0, docH / 2 + 0.2, 0.01);
+  sourceGroup.add(protLabel);
+
+  const protTextBlocks = [0.065, 0.06, 0.07, 0.06, 0.065, 0.06, 0.07];
+  let protX = -(protTextBlocks.reduce((s, w) => s + w, 0) + 0.008 * (protTextBlocks.length - 1)) / 2;
+  protTextBlocks.forEach(bw => {
+    const bGeo = new THREE.PlaneGeometry(bw, 0.024);
+    const bMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.95,
+    });
+    const b = new THREE.Mesh(bGeo, bMat);
+    b.position.set(protX + bw / 2 + 0.05, docH / 2 + 0.2, 0.015);
+    sourceGroup.add(b);
+    protX += bw + 0.008;
+  });
+
+  // Lock icon on banner
+  const lockBgGeo = new THREE.PlaneGeometry(0.045, 0.03);
+  const lockBgMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.95,
+  });
+  const lockBg = new THREE.Mesh(lockBgGeo, lockBgMat);
+  lockBg.position.set(-0.3, docH / 2 + 0.197, 0.015);
+  sourceGroup.add(lockBg);
+  const lockArcGeo = new THREE.RingGeometry(0.013, 0.019, 12, 1, 0, Math.PI);
+  const lockArcMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.95,
+    side: THREE.DoubleSide,
+  });
+  const lockArc = new THREE.Mesh(lockArcGeo, lockArcMat);
+  lockArc.position.set(-0.3, docH / 2 + 0.22, 0.015);
+  sourceGroup.add(lockArc);
+
+  // ============================================================
+  //   POLICY ENGINE (判決中心)
+  // ============================================================
+  const policyGroup = new THREE.Group();
+  policyGroup.position.x = -0.5;
+  scene.add(policyGroup);
+
+  // 大幅放大 policy engine - 這是視覺重點
+  const policyW = 1.85;
+  const policyH = 2.55;
+
+  const policyFrameGeo = new THREE.PlaneGeometry(policyW, policyH);
+  const policyFrameMat = new THREE.MeshBasicMaterial({
+    color: PAPER_WHITE,
+    transparent: true,
+    opacity: 0.97,
+  });
+  const policyFrame = new THREE.Mesh(policyFrameGeo, policyFrameMat);
+  policyGroup.add(policyFrame);
+
+  const policyEdgeGeo = new THREE.EdgesGeometry(policyFrameGeo);
+  const policyEdgeMat = new THREE.LineBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0.95,
+  });
+  const policyEdge = new THREE.LineSegments(policyEdgeGeo, policyEdgeMat);
+  policyGroup.add(policyEdge);
+
+  // 雙層邊框 (內側薄線)
+  const policyInnerEdgeGeo = new THREE.EdgesGeometry(new THREE.PlaneGeometry(policyW - 0.06, policyH - 0.06));
+  const policyInnerEdgeMat = new THREE.LineBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0.25,
+  });
+  const policyInnerEdge = new THREE.LineSegments(policyInnerEdgeGeo, policyInnerEdgeMat);
+  policyInnerEdge.position.z = 0.001;
+  policyGroup.add(policyInnerEdge);
+
+  const policyShadowGeo = new THREE.PlaneGeometry(policyW * 1.04, policyH * 1.03);
+  const policyShadowMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0.1,
+    depthWrite: false,
+  });
+  const policyShadow = new THREE.Mesh(policyShadowGeo, policyShadowMat);
+  policyShadow.position.set(0.04, -0.04, -0.01);
+  policyGroup.add(policyShadow);
+
+  // === POLICY ENGINE 頂部標題列 (深色) ===
+  const polTitleGeo = new THREE.PlaneGeometry(policyW, 0.19);
+  const polTitleMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0.96,
+  });
+  const polTitle = new THREE.Mesh(polTitleGeo, polTitleMat);
+  polTitle.position.set(0, policyH / 2 - 0.095, 0.005);
+  policyGroup.add(polTitle);
+
+  // POLICY ENGINE 標題白字塊 (左側)
+  const polTitleBlocks = [0.08, 0.07, 0.09, 0.06, 0.07, 0.08, 0.06, 0.08, 0.09, 0.07, 0.08, 0.06];
+  let polX = -policyW / 2 + 0.18;
+  polTitleBlocks.forEach(bw => {
+    const bGeo = new THREE.PlaneGeometry(bw, 0.036);
+    const bMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.95,
+    });
+    const b = new THREE.Mesh(bGeo, bMat);
+    b.position.set(polX + bw / 2, policyH / 2 - 0.095, 0.01);
+    policyGroup.add(b);
+    polX += bw + 0.01;
+  });
+
+  // 標題列右側狀態燈 (藍色小圓)
+  const polStatusDotGeo = new THREE.CircleGeometry(0.025, 16);
+  const polStatusDotMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_BLUE,
+    transparent: true,
+    opacity: 0.95,
+  });
+  const polStatusDot = new THREE.Mesh(polStatusDotGeo, polStatusDotMat);
+  polStatusDot.position.set(policyW / 2 - 0.12, policyH / 2 - 0.095, 0.01);
+  policyGroup.add(polStatusDot);
+
+  // === 分隔線 (標題下方) ===
+  const divider1Geo = new THREE.PlaneGeometry(policyW - 0.2, 0.008);
+  const divider1Mat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0.3,
+  });
+  const divider1 = new THREE.Mesh(divider1Geo, divider1Mat);
+  divider1.position.set(0, policyH / 2 - 0.24, 0.003);
+  policyGroup.add(divider1);
+
+  // === 小字標籤: REVIEWING ===
+  const reviewLabelGeo = new THREE.PlaneGeometry(0.45, 0.05);
+  const reviewLabelMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_BLUE,
+    transparent: true,
+    opacity: 0.85,
+  });
+  const reviewLabel = new THREE.Mesh(reviewLabelGeo, reviewLabelMat);
+  reviewLabel.position.set(-policyW / 2 + 0.32, policyH / 2 - 0.32, 0.004);
+  policyGroup.add(reviewLabel);
+
+  // REVIEWING 白塊文字
+  const reviewTextBlocks = [0.045, 0.05, 0.04, 0.05, 0.045, 0.05, 0.045, 0.04, 0.05];
+  let revX = -policyW / 2 + 0.12;
+  reviewTextBlocks.forEach(bw => {
+    const bGeo = new THREE.PlaneGeometry(bw, 0.02);
+    const bMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.95,
+    });
+    const b = new THREE.Mesh(bGeo, bMat);
+    b.position.set(revX + bw / 2, policyH / 2 - 0.32, 0.008);
+    policyGroup.add(b);
+    revX += bw + 0.005;
+  });
+
+  // === FIELD PREVIEW: 正在審核的欄位 (放大版) ===
+  // 這是動畫的核心視覺: 顯示當前被審的欄位, 放大 2.5x
+  const previewY = policyH / 2 - 0.55;
+  const previewGroup = new THREE.Group();
+  previewGroup.position.set(0, previewY, 0.005);
+  policyGroup.add(previewGroup);
+
+  // 預覽背景 (淡藍底)
+  const previewBgGeo = new THREE.PlaneGeometry(policyW - 0.22, 0.42);
+  const previewBgMat = new THREE.MeshBasicMaterial({
+    color: 0xe8eeff,
+    transparent: true,
+    opacity: 0,
+  });
+  const previewBg = new THREE.Mesh(previewBgGeo, previewBgMat);
+  previewGroup.add(previewBg);
+
+  // 預覽邊框
+  const previewBgEdgeGeo = new THREE.EdgesGeometry(previewBgGeo);
+  const previewBgEdgeMat = new THREE.LineBasicMaterial({
+    color: ANIMUS_BLUE,
+    transparent: true,
+    opacity: 0,
+  });
+  const previewBgEdge = new THREE.LineSegments(previewBgEdgeGeo, previewBgEdgeMat);
+  previewBgEdge.position.z = 0.001;
+  previewGroup.add(previewBgEdge);
+
+  // 預覽中的欄位 (放大版的 label + content)
+  const previewFieldGroup = new THREE.Group();
+  previewFieldGroup.position.set(0, 0, 0.005);
+  previewGroup.add(previewFieldGroup);
+
+  // 預覽欄位的 sensitivity label 方塊 (左側)
+  const previewLabelGeo = new THREE.PlaneGeometry(0.32, 0.11);
+  const previewLabelMat = new THREE.MeshBasicMaterial({
+    color: 0xcccccc,
+    transparent: true,
+    opacity: 0,
+  });
+  const previewLabel = new THREE.Mesh(previewLabelGeo, previewLabelMat);
+  previewLabel.position.set(-policyW / 2 + 0.32, 0, 0.001);
+  previewFieldGroup.add(previewLabel);
+
+  // 預覽欄位的 sensitivity 代碼文字塊 (在 label 內)
+  const previewSensTextBlocks = [];
+  for (let i = 0; i < 3; i++) {
+    const bw = 0.055;
+    const bGeo = new THREE.PlaneGeometry(bw, 0.03);
+    const bMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0,
+    });
+    const b = new THREE.Mesh(bGeo, bMat);
+    b.position.set(-policyW / 2 + 0.23 + i * 0.06, 0, 0.005);
+    previewFieldGroup.add(b);
+    previewSensTextBlocks.push(b);
+  }
+
+  // 預覽欄位的內容 (中間/右側)
+  const previewContentGeo = new THREE.PlaneGeometry(1.02, 0.08);
+  const previewContentMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_INK,
+    transparent: true,
+    opacity: 0,
+  });
+  const previewContent = new THREE.Mesh(previewContentGeo, previewContentMat);
+  previewContent.position.set(0.16, 0, 0.001);
+  previewFieldGroup.add(previewContent);
+
+  // 預覽欄位下方的 meta 資訊 (field ID + source 標示)
+  const previewMetaGeo = new THREE.PlaneGeometry(0.45, 0.025);
+  const previewMetaMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_INK,
+    transparent: true,
+    opacity: 0,
+  });
+  const previewMeta = new THREE.Mesh(previewMetaGeo, previewMetaMat);
+  previewMeta.position.set(-policyW / 2 + 0.34, -0.11, 0.001);
+  previewFieldGroup.add(previewMeta);
+
+  // === 分隔線 (預覽下方) ===
+  const divider2Geo = new THREE.PlaneGeometry(policyW - 0.2, 0.008);
+  const divider2Mat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0.3,
+  });
+  const divider2 = new THREE.Mesh(divider2Geo, divider2Mat);
+  divider2.position.set(0, -0.02, 0.003);
+  policyGroup.add(divider2);
+
+  // === 角色標示 (請求者) ===
+  const requesterLabelGeo = new THREE.PlaneGeometry(0.45, 0.05);
+  const requesterLabelMat = new THREE.MeshBasicMaterial({
+    color: 0x888888,
+    transparent: true,
+    opacity: 0.6,
+  });
+  const requesterLabel = new THREE.Mesh(requesterLabelGeo, requesterLabelMat);
+  requesterLabel.position.set(-policyW / 2 + 0.32, -0.14, 0.004);
+  policyGroup.add(requesterLabel);
+
+  // REQUESTER 小字塊
+  const requesterTextBlocks = [0.05, 0.045, 0.05, 0.04, 0.05, 0.045, 0.05, 0.04, 0.05];
+  let reqX = -policyW / 2 + 0.12;
+  requesterTextBlocks.forEach(bw => {
+    const bGeo = new THREE.PlaneGeometry(bw, 0.02);
+    const bMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.85,
+    });
+    const b = new THREE.Mesh(bGeo, bMat);
+    b.position.set(reqX + bw / 2, -0.14, 0.008);
+    policyGroup.add(b);
+    reqX += bw + 0.005;
+  });
+
+  // 當前請求者彩條 (會依當前 role 變色)
+  const activeRequesterGeo = new THREE.PlaneGeometry(0.9, 0.11);
+  const activeRequesterMat = new THREE.MeshBasicMaterial({
+    color: 0xcccccc,
+    transparent: true,
+    opacity: 0,
+  });
+  const activeRequester = new THREE.Mesh(activeRequesterGeo, activeRequesterMat);
+  activeRequester.position.set(0.22, -0.14, 0.003);
+  policyGroup.add(activeRequester);
+
+  // 當前請求者名稱白塊
+  const activeRequesterTextBlocks = [];
+  for (let i = 0; i < 8; i++) {
+    const bw = 0.05;
+    const bGeo = new THREE.PlaneGeometry(bw, 0.03);
+    const bMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0,
+    });
+    const b = new THREE.Mesh(bGeo, bMat);
+    b.position.set(0, -0.14, 0.007);
+    policyGroup.add(b);
+    activeRequesterTextBlocks.push({ mesh: b, mat: bMat });
+  }
+
+  // === VERDICT BADGE (下方) - 大幅放大 ===
+  const verdictGeo = new THREE.PlaneGeometry(policyW - 0.3, 0.42);
+  const verdictMat = new THREE.MeshBasicMaterial({
+    color: GRANT_GREEN,
+    transparent: true,
+    opacity: 0,
+  });
+  const verdict = new THREE.Mesh(verdictGeo, verdictMat);
+  verdict.position.set(0, -policyH / 2 + 0.36, 0.005);
+  policyGroup.add(verdict);
+
+  const verdictEdgeGeo = new THREE.EdgesGeometry(verdictGeo);
+  const verdictEdgeMat = new THREE.LineBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0,
+  });
+  const verdictEdge = new THREE.LineSegments(verdictEdgeGeo, verdictEdgeMat);
+  verdictEdge.position.copy(verdict.position);
+  verdictEdge.position.z = 0.008;
+  policyGroup.add(verdictEdge);
+
+  // GRANT / DENY 文字塊 (白色大字)
+  const verdictTextBlocks = [];
+  for (let i = 0; i < 5; i++) {
+    const bGeo = new THREE.PlaneGeometry(0.11, 0.13);
+    const bMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0,
+    });
+    const b = new THREE.Mesh(bGeo, bMat);
+    b.position.set(0, -policyH / 2 + 0.36, 0.015);
+    policyGroup.add(b);
+    verdictTextBlocks.push({ mesh: b, mat: bMat });
+  }
+
+  // Check / X symbols (大幅放大)
+  function makeCheckShape() {
+    const s = new THREE.Shape();
+    s.moveTo(-0.12, 0);
+    s.lineTo(-0.04, -0.08);
+    s.lineTo(0.13, 0.09);
+    s.lineTo(0.11, 0.115);
+    s.lineTo(-0.04, -0.045);
+    s.lineTo(-0.105, 0.03);
+    s.lineTo(-0.12, 0);
+    return s;
+  }
+  const checkGeo = new THREE.ShapeGeometry(makeCheckShape());
+  const checkMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0,
+    side: THREE.DoubleSide,
+  });
+  const checkMesh = new THREE.Mesh(checkGeo, checkMat);
+  checkMesh.position.set(-policyW / 2 + 0.28, -policyH / 2 + 0.36, 0.015);
+  policyGroup.add(checkMesh);
+
+  const xGroup = new THREE.Group();
+  const xLine1Geo = new THREE.PlaneGeometry(0.25, 0.03);
+  const xLine1Mat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0,
+  });
+  const xLine1 = new THREE.Mesh(xLine1Geo, xLine1Mat);
+  xLine1.rotation.z = Math.PI / 4;
+  xGroup.add(xLine1);
+  const xLine2Geo = new THREE.PlaneGeometry(0.25, 0.03);
+  const xLine2Mat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0,
+  });
+  const xLine2 = new THREE.Mesh(xLine2Geo, xLine2Mat);
+  xLine2.rotation.z = -Math.PI / 4;
+  xGroup.add(xLine2);
+  xGroup.position.set(-policyW / 2 + 0.28, -policyH / 2 + 0.36, 0.015);
+  policyGroup.add(xGroup);
+
+  // ============================================================
+  //   ROLES
+  // ============================================================
+  const roleThemes = [
+    {
+      tier: 0, label: 'ADMIN',
+      accentColor: 0xb45309, edgeColor: 0x78350f,
+      y: ROLE_Y_TOP,
+      labelBlocks: [0.07, 0.06, 0.08, 0.05, 0.07],
+    },
+    {
+      tier: 1, label: 'ANALYST',
+      accentColor: 0x047857, edgeColor: 0x064e3b,
+      y: ROLE_Y_MID,
+      labelBlocks: [0.06, 0.05, 0.07, 0.05, 0.06, 0.07, 0.05],
+    },
+    {
+      tier: 2, label: 'PUBLIC',
+      accentColor: 0x6d28d9, edgeColor: 0x4c1d95,
+      y: ROLE_Y_BOT,
+      labelBlocks: [0.08, 0.06, 0.07, 0.07, 0.06, 0.06],
+    },
+  ];
+
+  const roleStates = [];
+
+  roleThemes.forEach((theme, idx) => {
+    const roleGroup = new THREE.Group();
+    roleGroup.position.set(ROLE_X, theme.y, 0);
+    scene.add(roleGroup);
+
+    // === Role 圖示 ===
+    const iconGroup = new THREE.Group();
+    iconGroup.position.set(-1.1, 0, 0);
+    roleGroup.add(iconGroup);
+
+    const headGeo = new THREE.CircleGeometry(0.1, 24);
+    const headMat = new THREE.MeshBasicMaterial({
+      color: theme.accentColor,
+      transparent: true,
+      opacity: 0,
+    });
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.position.set(0, 0.12, 0.01);
+    iconGroup.add(head);
+
+    const shoulderShape = new THREE.Shape();
+    shoulderShape.moveTo(-0.16, 0);
+    shoulderShape.lineTo(-0.13, -0.1);
+    shoulderShape.lineTo(0.13, -0.1);
+    shoulderShape.lineTo(0.16, 0);
+    shoulderShape.quadraticCurveTo(0, 0.06, -0.16, 0);
+    const shoulderGeo = new THREE.ShapeGeometry(shoulderShape);
+    const shoulderMat = new THREE.MeshBasicMaterial({
+      color: theme.accentColor,
+      transparent: true,
+      opacity: 0,
+      side: THREE.DoubleSide,
+    });
+    const shoulder = new THREE.Mesh(shoulderGeo, shoulderMat);
+    shoulder.position.set(0, -0.02, 0.01);
+    iconGroup.add(shoulder);
+
+    const ringGeo = new THREE.RingGeometry(0.26, 0.28, 32);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: theme.accentColor,
+      transparent: true,
+      opacity: 0,
+      side: THREE.DoubleSide,
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    iconGroup.add(ring);
+
+    const labelBarGeo = new THREE.PlaneGeometry(0.6, 0.09);
+    const labelBarMat = new THREE.MeshBasicMaterial({
+      color: theme.accentColor,
+      transparent: true,
+      opacity: 0,
+    });
+    const labelBar = new THREE.Mesh(labelBarGeo, labelBarMat);
+    labelBar.position.set(0, -0.33, 0.005);
+    iconGroup.add(labelBar);
+
+    const labelBarTextBlocks = [];
+    const totalLabelW = theme.labelBlocks.reduce((s, w) => s + w, 0) + 0.008 * (theme.labelBlocks.length - 1);
+    let labelX = -totalLabelW / 2;
+    theme.labelBlocks.forEach(bw => {
+      const bGeo = new THREE.PlaneGeometry(bw, 0.028);
+      const bMat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0,
+      });
+      const b = new THREE.Mesh(bGeo, bMat);
+      b.position.set(labelX + bw / 2, -0.33, 0.01);
+      iconGroup.add(b);
+      labelBarTextBlocks.push(b);
+      labelX += bw + 0.008;
+    });
+
+    // === Role 的輸出視圖 ===
+    const viewGroup = new THREE.Group();
+    viewGroup.position.set(0, 0, 0);
+    roleGroup.add(viewGroup);
+
+    const viewW = 1.3;
+    const viewH = 1.75;
+
+    const viewBgGeo = new THREE.PlaneGeometry(viewW, viewH);
+    const viewBgMat = new THREE.MeshStandardMaterial({
+      color: PAPER_WHITE,
+      roughness: 0.95,
+      metalness: 0.0,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0,
+    });
+    const viewBg = new THREE.Mesh(viewBgGeo, viewBgMat);
+    viewGroup.add(viewBg);
+
+    const viewShadowGeo = new THREE.PlaneGeometry(viewW * 1.06, viewH * 1.04);
+    const viewShadowMat = new THREE.MeshBasicMaterial({
+      color: theme.edgeColor,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    });
+    const viewShadow = new THREE.Mesh(viewShadowGeo, viewShadowMat);
+    viewShadow.position.set(0.035, -0.035, -0.01);
+    viewGroup.add(viewShadow);
+
+    const viewEdgeGeo = new THREE.EdgesGeometry(viewBgGeo);
+    const viewEdgeMat = new THREE.LineBasicMaterial({
+      color: theme.edgeColor,
+      transparent: true,
+      opacity: 0,
+    });
+    const viewEdges = new THREE.LineSegments(viewEdgeGeo, viewEdgeMat);
+    viewGroup.add(viewEdges);
+
+    const viewTitleGeo = new THREE.PlaneGeometry(viewW * 0.86, 0.1);
+    const viewTitleMat = new THREE.MeshBasicMaterial({
+      color: theme.edgeColor,
+      transparent: true,
+      opacity: 0,
+    });
+    const viewTitle = new THREE.Mesh(viewTitleGeo, viewTitleMat);
+    viewTitle.position.set(0, viewH / 2 - 0.16, 0.005);
+    viewGroup.add(viewTitle);
+
+    const viewTitleBlocks = [];
+    for (let i = 0; i < 3; i++) {
+      const w = 0.08 + i * 0.025;
+      const g = new THREE.PlaneGeometry(w, 0.028);
+      const m = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0,
+      });
+      const block = new THREE.Mesh(g, m);
+      block.position.set(-viewW / 2 + 0.18 + i * 0.2, viewH / 2 - 0.16, 0.015);
+      viewGroup.add(block);
+      viewTitleBlocks.push(block);
+    }
+
+    const viewFieldHeight = viewH * 0.72;
+    const viewFieldTop = viewH / 2 - 0.3;
+    const fieldSlots = [];
+
+    fieldSpecs.forEach((f, fIdx) => {
+      const normalY = (f.y + 0.7) / 1.4;
+      const slotY = viewFieldTop - (1 - normalY) * viewFieldHeight;
+
+      const slotGroup = new THREE.Group();
+      slotGroup.position.set(0, slotY, 0.005);
+      viewGroup.add(slotGroup);
+
+      const scaledLabelW = f.labelW * (viewW / docW);
+      const scaledContentW = f.contentW * (viewW / docW);
+      const xLeft = -viewW / 2 + 0.1;
+
+      const slotLabelGeo = new THREE.PlaneGeometry(scaledLabelW, 0.048);
+      const slotLabelMat = new THREE.MeshBasicMaterial({
+        color: sensColor(f.sensitivity),
+        transparent: true,
+        opacity: 0,
+      });
+      const slotLabel = new THREE.Mesh(slotLabelGeo, slotLabelMat);
+      slotLabel.position.set(xLeft + scaledLabelW / 2, 0, 0.002);
+      slotGroup.add(slotLabel);
+
+      const slotContentGeo = new THREE.PlaneGeometry(scaledContentW, 0.04);
+      const slotContentMat = new THREE.MeshBasicMaterial({
+        color: ANIMUS_INK,
+        transparent: true,
+        opacity: 0,
+      });
+      const slotContent = new THREE.Mesh(slotContentGeo, slotContentMat);
+      slotContent.position.set(
+        xLeft + scaledLabelW + 0.04 + scaledContentW / 2,
+        0,
+        0.002
+      );
+      slotGroup.add(slotContent);
+
+      const totalMaskW = scaledLabelW + 0.04 + scaledContentW;
+      const maskGeo = new THREE.PlaneGeometry(totalMaskW + 0.04, 0.065);
+      const maskMat = new THREE.MeshBasicMaterial({
+        color: 0x0a0a0a,
+        transparent: true,
+        opacity: 0,
+      });
+      const mask = new THREE.Mesh(maskGeo, maskMat);
+      mask.position.set(xLeft + totalMaskW / 2, 0, 0.004);
+      slotGroup.add(mask);
+
+      const maskEdgeGeo = new THREE.EdgesGeometry(maskGeo);
+      const maskEdgeMat = new THREE.LineBasicMaterial({
+        color: DENY_RED,
+        transparent: true,
+        opacity: 0,
+      });
+      const maskEdge = new THREE.LineSegments(maskEdgeGeo, maskEdgeMat);
+      maskEdge.position.copy(mask.position);
+      maskEdge.position.z = 0.006;
+      slotGroup.add(maskEdge);
+
+      const maskDashes = [];
+      for (let i = 0; i < 4; i++) {
+        const dashW = totalMaskW * 0.08;
+        const dashGeo = new THREE.PlaneGeometry(dashW, 0.018);
+        const dashMat = new THREE.MeshBasicMaterial({
+          color: 0x555555,
+          transparent: true,
+          opacity: 0,
+        });
+        const dash = new THREE.Mesh(dashGeo, dashMat);
+        dash.position.set(
+          xLeft + totalMaskW * (0.15 + i * 0.22),
+          0,
+          0.008
+        );
+        slotGroup.add(dash);
+        maskDashes.push({ mesh: dash, mat: dashMat });
+      }
+
+      fieldSlots.push({
+        spec: f,
+        slotGroup,
+        slotLabel, slotLabelMat,
+        slotContent, slotContentMat,
+        mask, maskMat,
+        maskEdge, maskEdgeMat,
+        maskDashes,
+        decided: null,
+        decisionTime: 0,
+      });
+    });
+
+    // 請求線
+    const reqLineGeo = new THREE.BufferGeometry();
+    const reqLineVerts = new Float32Array(6);
+    reqLineGeo.setAttribute('position', new THREE.BufferAttribute(reqLineVerts, 3));
+    const reqLineMat = new THREE.LineBasicMaterial({
+      color: theme.accentColor,
+      transparent: true,
+      opacity: 0,
+    });
+    const reqLine = new THREE.Line(reqLineGeo, reqLineMat);
+    scene.add(reqLine);
+
+    roleStates.push({
+      theme, group: roleGroup, iconGroup,
+      headMat, shoulderMat, ringMat, labelBarMat,
+      labelBarTextBlocks,
+      viewGroup,
+      viewBgMat, viewShadowMat, viewEdgeMat, viewTitleMat,
+      viewTitleBlocks,
+      fieldSlots,
+      reqLineGeo, reqLineMat, reqLine,
+      totalGranted: 0,
+      totalDenied: 0,
+    });
+  });
+
+  // Source → Policy base line
+  const sourceToPolicyLinePoints = [
+    new THREE.Vector3(SOURCE_X + docW/2 + 0.15, 0, 0),
+    new THREE.Vector3(-0.5 - policyW/2 - 0.02, 0, 0),
+  ];
+  const sourceToPolicyLineGeo = new THREE.BufferGeometry().setFromPoints(sourceToPolicyLinePoints);
+  const sourceToPolicyLineMat = new THREE.LineBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0.2,
+  });
+  const sourceToPolicyLine = new THREE.Line(sourceToPolicyLineGeo, sourceToPolicyLineMat);
+  scene.add(sourceToPolicyLine);
+
+  // ============================================================
+  //   STATE MACHINE
+  // ============================================================
+  const REQUEST_DURATION = 0.55;
+  const REVIEW_FIELD_DURATION = 0.28;
+  const REVIEW_DURATION = REVIEW_FIELD_DURATION * fieldSpecs.length;
+  const SETTLE_DURATION = 0.4;
+  const ROLE_CYCLE = REQUEST_DURATION + REVIEW_DURATION + SETTLE_DURATION;
+  const HOLD_DURATION = 2.2;
+  const RESET_DURATION = 0.7;
+  const TOTAL_CYCLE = ROLE_CYCLE * 3 + HOLD_DURATION + RESET_DURATION;
+
+  const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
+
+  function getAnimState(t) {
+    const ct = t % TOTAL_CYCLE;
+
+    for (let roleIdx = 0; roleIdx < 3; roleIdx++) {
+      const roleStart = roleIdx * ROLE_CYCLE;
+
+      if (ct < roleStart + REQUEST_DURATION) {
+        return {
+          phase: 'REQUEST',
+          roleIdx,
+          phaseT: ct - roleStart,
+          phaseProgress: (ct - roleStart) / REQUEST_DURATION,
+          cycleT: ct,
+        };
+      }
+      if (ct < roleStart + REQUEST_DURATION + REVIEW_DURATION) {
+        const localT = ct - roleStart - REQUEST_DURATION;
+        const fieldIdx = Math.min(fieldSpecs.length - 1, Math.floor(localT / REVIEW_FIELD_DURATION));
+        const fieldProgress = (localT - fieldIdx * REVIEW_FIELD_DURATION) / REVIEW_FIELD_DURATION;
+        return {
+          phase: 'REVIEW',
+          roleIdx,
+          fieldIdx,
+          fieldProgress,
+          phaseT: localT,
+          cycleT: ct,
+        };
+      }
+      if (ct < roleStart + ROLE_CYCLE) {
+        return {
+          phase: 'SETTLE',
+          roleIdx,
+          phaseT: ct - roleStart - REQUEST_DURATION - REVIEW_DURATION,
+          phaseProgress: (ct - roleStart - REQUEST_DURATION - REVIEW_DURATION) / SETTLE_DURATION,
+          cycleT: ct,
+        };
+      }
+    }
+
+    if (ct < 3 * ROLE_CYCLE + HOLD_DURATION) {
+      return {
+        phase: 'HOLD',
+        phaseT: ct - 3 * ROLE_CYCLE,
+        phaseProgress: (ct - 3 * ROLE_CYCLE) / HOLD_DURATION,
+        cycleT: ct,
+      };
+    }
+
+    return {
+      phase: 'RESET',
+      phaseT: ct - 3 * ROLE_CYCLE - HOLD_DURATION,
+      phaseProgress: (ct - 3 * ROLE_CYCLE - HOLD_DURATION) / RESET_DURATION,
+      cycleT: ct,
+    };
+  }
+
+  function resetRoleState(roleState) {
+    roleState.totalGranted = 0;
+    roleState.totalDenied = 0;
+    roleState.fieldSlots.forEach(slot => {
+      slot.decided = null;
+      slot.decisionTime = 0;
+      slot.slotLabelMat.opacity = 0;
+      slot.slotContentMat.opacity = 0;
+      slot.maskMat.opacity = 0;
+      slot.maskEdgeMat.opacity = 0;
+      slot.maskDashes.forEach(d => d.mat.opacity = 0);
+    });
+  }
+
+  function setRoleIconOpacity(roleState, o) {
+    roleState.headMat.opacity = o;
+    roleState.shoulderMat.opacity = o;
+    roleState.ringMat.opacity = o * 0.5;
+    roleState.labelBarMat.opacity = o * 0.92;
+    roleState.labelBarTextBlocks.forEach(b => b.material.opacity = o * 0.95);
+  }
+
+  function setRoleViewOpacity(roleState, o) {
+    roleState.viewBgMat.opacity = o;
+    roleState.viewShadowMat.opacity = o * 0.1;
+    roleState.viewEdgeMat.opacity = o * 0.9;
+    roleState.viewTitleMat.opacity = o * 0.92;
+    roleState.viewTitleBlocks.forEach(b => b.material.opacity = o * 0.95);
+  }
+
+  // HUD
+  const progressEl = document.getElementById('progress-fill');
+  const scanLabelEl = document.getElementById('scan-label');
+  const statusLeftEl = document.getElementById('status-left');
+  const roleValueEl = document.getElementById('role-value');
+  const stateValueEl = document.getElementById('state-value');
+
+  const clock = new THREE.Clock();
+  let lastCycle = -1;
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+    const state = getAnimState(t);
+
+    const currentCycle = Math.floor(t / TOTAL_CYCLE);
+    if (currentCycle !== lastCycle) {
+      lastCycle = currentCycle;
+      roleStates.forEach(resetRoleState);
+    }
+
+    camera.position.x = Math.sin(t * 0.3) * 0.06;
+    camera.position.y = 0.1 + Math.sin(t * 0.4) * 0.03;
+    camera.lookAt(0, 0, 0);
+
+    sourceGroup.rotation.y = Math.sin(t * 0.5) * 0.02;
+    sourceGroup.position.y = Math.sin(t * 0.6) * 0.015;
+    policyGroup.position.y = Math.sin(t * 0.7) * 0.015;
+
+    // === 處理每個角色 ===
+    roleStates.forEach((rs, idx) => {
+      let iconOpacity = 0;
+      let viewOpacity = 0;
+
+      // 決定此角色的可見度
+      if (state.phase === 'REQUEST') {
+        if (state.roleIdx === idx) {
+          iconOpacity = state.phaseProgress;
+          viewOpacity = state.phaseProgress * 0.6;
+        } else if (state.roleIdx > idx) {
+          iconOpacity = 1;
+          viewOpacity = 1;
+        }
+      } else if (state.phase === 'REVIEW' || state.phase === 'SETTLE') {
+        if (state.roleIdx >= idx) {
+          iconOpacity = 1;
+          viewOpacity = 1;
+        }
+      } else if (state.phase === 'HOLD') {
+        iconOpacity = 1;
+        viewOpacity = 1;
+      } else if (state.phase === 'RESET') {
+        const fade = 1 - easeOutCubic(state.phaseProgress);
+        iconOpacity = fade;
+        viewOpacity = fade;
+      }
+
+      setRoleIconOpacity(rs, iconOpacity);
+      setRoleViewOpacity(rs, viewOpacity);
+
+      // === 請求線 ===
+      let reqLineAlpha = 0;
+      let reqLineProgress = 0;
+      const baseColor = new THREE.Color(rs.theme.accentColor);
+      let reqLineColor = baseColor.clone();
+
+      if (state.phase === 'REQUEST' && state.roleIdx === idx) {
+        reqLineProgress = easeOutCubic(state.phaseProgress);
+        reqLineAlpha = state.phaseProgress * 0.9;
+      } else if (state.phase === 'REVIEW' && state.roleIdx === idx) {
+        reqLineProgress = 1;
+        reqLineAlpha = 0.8;
+      } else if (state.phase === 'SETTLE' && state.roleIdx === idx) {
+        reqLineProgress = 1;
+        reqLineAlpha = Math.max(0, 1 - state.phaseProgress) * 0.7;
+      }
+
+      const roleIconWorldX = ROLE_X - 1.1;
+      const roleIconWorldY = rs.theme.y;
+      const policyEdgeX = -0.5 + policyW / 2 + 0.02;
+      const lineStart = new THREE.Vector3(roleIconWorldX - 0.27, roleIconWorldY, 0);
+      const lineEnd = new THREE.Vector3(policyEdgeX, 0, 0);
+      const currentEnd = new THREE.Vector3().lerpVectors(lineStart, lineEnd, reqLineProgress);
+
+      const verts = rs.reqLineGeo.attributes.position.array;
+      verts[0] = lineStart.x;
+      verts[1] = lineStart.y;
+      verts[2] = lineStart.z;
+      verts[3] = currentEnd.x;
+      verts[4] = currentEnd.y;
+      verts[5] = currentEnd.z;
+      rs.reqLineGeo.attributes.position.needsUpdate = true;
+
+      rs.reqLineMat.opacity = reqLineAlpha;
+      rs.reqLineMat.color.copy(reqLineColor);
+
+      // === Field slots 顯示 ===
+      rs.fieldSlots.forEach((slot, fIdx) => {
+        if (slot.decided === 'grant') {
+          const elapsed = t - slot.decisionTime;
+          const fadeIn = Math.min(1, elapsed / 0.2);
+          slot.slotLabelMat.opacity = fadeIn * 0.9 * viewOpacity;
+          slot.slotContentMat.opacity = fadeIn * 0.55 * viewOpacity;
+          slot.maskMat.opacity = 0;
+          slot.maskEdgeMat.opacity = 0;
+          slot.maskDashes.forEach(d => d.mat.opacity = 0);
+          slot.mask.scale.set(1, 1, 1);
+          slot.maskEdge.scale.set(1, 1, 1);
+        } else if (slot.decided === 'deny') {
+          const elapsed = t - slot.decisionTime;
+          const fadeIn = Math.min(1, elapsed / 0.22);
+          // 擠壓下落動畫
+          const squash = 1 + (1 - fadeIn) * 0.25;
+          const maskScaleY = 0.4 + fadeIn * 0.6;
+          slot.mask.scale.set(squash, maskScaleY, 1);
+          slot.maskEdge.scale.set(squash, maskScaleY, 1);
+
+          slot.maskMat.opacity = fadeIn * 0.95 * viewOpacity;
+          slot.maskEdgeMat.opacity = fadeIn * 0.8 * viewOpacity;
+          slot.maskDashes.forEach(d => d.mat.opacity = fadeIn * 0.45 * viewOpacity);
+          slot.slotLabelMat.opacity = 0;
+          slot.slotContentMat.opacity = 0;
+        } else {
+          slot.slotLabelMat.opacity = 0;
+          slot.slotContentMat.opacity = 0;
+          slot.maskMat.opacity = 0;
+          slot.maskEdgeMat.opacity = 0;
+          slot.maskDashes.forEach(d => d.mat.opacity = 0);
+        }
+      });
+    });
+
+    // === 原文高亮 ===
+    sourceFields.forEach((sf, fIdx) => {
+      let hiOpacity = 0;
+      let arrowOpacity = 0;
+      if (state.phase === 'REVIEW' && state.fieldIdx === fIdx) {
+        const fp = state.fieldProgress;
+        if (fp < 0.3) hiOpacity = fp / 0.3;
+        else if (fp < 0.7) hiOpacity = 1;
+        else hiOpacity = Math.max(0, 1 - (fp - 0.7) / 0.3);
+        hiOpacity *= 0.35;
+        arrowOpacity = hiOpacity * 2.5;
+      }
+      sf.highlightMat.opacity = hiOpacity;
+      sf.arrowMat.opacity = Math.min(1, arrowOpacity);
+    });
+
+    // === Policy engine verdict UI ===
+    if (state.phase === 'REVIEW') {
+      const field = fieldSpecs[state.fieldIdx];
+      const roleState = roleStates[state.roleIdx];
+      const granted = isGranted(field.sensitivity, roleState.theme.tier);
+      const fp = state.fieldProgress;
+
+      // --- 欄位預覽區淡入淡出 ---
+      // 在欄位進入審核時 (fp: 0 -> 0.15), 預覽區和欄位內容淡入
+      // 在 fp: 0.85 -> 1 時淡出, 為下一個欄位做準備
+      let previewAlpha = 0;
+      if (fp < 0.15) previewAlpha = fp / 0.15;
+      else if (fp < 0.85) previewAlpha = 1;
+      else previewAlpha = Math.max(0, 1 - (fp - 0.85) / 0.15);
+
+      previewBgMat.opacity = previewAlpha * 0.7;
+      previewBgEdgeMat.opacity = previewAlpha * 0.5;
+
+      // 預覽的 sensitivity label 方塊 (使用該欄位的敏感度色)
+      previewLabelMat.color.setHex(sensColor(field.sensitivity));
+      previewLabelMat.opacity = previewAlpha * 0.95;
+      previewSensTextBlocks.forEach(b => {
+        b.material.opacity = previewAlpha * 0.95;
+      });
+
+      // 預覽內容條 (顏色固定深墨, 表示原始內容)
+      previewContentMat.opacity = previewAlpha * 0.65;
+
+      // meta 資訊 (field id 指示)
+      previewMetaMat.opacity = previewAlpha * 0.3;
+
+      // --- Active requester 彩條 (顯示當前請求的角色) ---
+      // 請求者彩條在整個 REVIEW 階段都應該顯示 (此角色正在請求中)
+      activeRequesterMat.color.setHex(roleState.theme.accentColor);
+      activeRequesterMat.opacity = 0.92;
+      activeRequesterTextBlocks.forEach((b, i) => {
+        if (i < roleState.theme.labelBlocks.length) {
+          // 按角色標籤的 block 寬度排列
+          const blocks = roleState.theme.labelBlocks;
+          const totalW = blocks.reduce((s, w) => s + w, 0) + 0.012 * (blocks.length - 1);
+          const startX = 0.22 - totalW / 2;
+          let xAccum = 0;
+          for (let j = 0; j < i; j++) xAccum += blocks[j] + 0.012;
+          const scaledW = blocks[i] * 1.6;
+          b.mesh.scale.set(scaledW / 0.05, 1, 1);
+          b.mesh.position.set(startX + xAccum + blocks[i] / 2, -0.14, 0.007);
+          b.mat.opacity = 0.95;
+        } else {
+          b.mat.opacity = 0;
+        }
+      });
+
+      // --- Verdict badge (下方) ---
+      // 判決徽章: fp 0.3 -> 0.45 彈入, 0.45 -> 0.85 顯示, 0.85 -> 1 淡出
+      let verdictAlpha = 0;
+      if (fp >= 0.3 && fp < 0.45) {
+        verdictAlpha = easeOutCubic((fp - 0.3) / 0.15);
+      } else if (fp < 0.85) {
+        verdictAlpha = 1;
+      } else {
+        verdictAlpha = Math.max(0, 1 - (fp - 0.85) / 0.15);
+      }
+
+      const verdictColor = granted ? GRANT_GREEN : DENY_RED;
+      verdictMat.color.setHex(verdictColor);
+      verdictMat.opacity = verdictAlpha * 0.97;
+      verdictEdgeMat.opacity = verdictAlpha * 0.85;
+
+      // Check 或 X 符號
+      if (granted) {
+        checkMat.opacity = verdictAlpha * 0.98;
+        xLine1Mat.opacity = 0;
+        xLine2Mat.opacity = 0;
+      } else {
+        checkMat.opacity = 0;
+        xLine1Mat.opacity = verdictAlpha * 0.98;
+        xLine2Mat.opacity = verdictAlpha * 0.98;
+      }
+
+      // 判決文字塊 (GRANT 5 字母, DENY 4 字母)
+      const textCount = granted ? 5 : 4;
+      const charW = 0.085;
+      const charSpacing = 0.018;
+      const totalTextW = textCount * charW + (textCount - 1) * charSpacing;
+      const textStartX = -totalTextW / 2 + charW / 2 + 0.18; // 偏右, 讓 check/X 在左側
+      verdictTextBlocks.forEach((b, i) => {
+        if (i < textCount) {
+          b.mesh.position.set(
+            textStartX + i * (charW + charSpacing),
+            -policyH / 2 + 0.36,
+            0.02
+          );
+          b.mat.opacity = verdictAlpha * 0.95;
+        } else {
+          b.mat.opacity = 0;
+        }
+      });
+
+      // 彈入動畫的縮放
+      if (fp >= 0.3 && fp < 0.45) {
+        const bounce = 1 + (1 - (fp - 0.3) / 0.15) * 0.12;
+        verdict.scale.set(bounce, bounce, 1);
+        verdictEdge.scale.set(bounce, bounce, 1);
+      } else {
+        verdict.scale.set(1, 1, 1);
+        verdictEdge.scale.set(1, 1, 1);
+      }
+
+      // 在 fp >= 0.5 時把判決結果寫入 role 的 slot
+      if (fp >= 0.5) {
+        const slot = roleState.fieldSlots[state.fieldIdx];
+        if (slot.decided === null) {
+          slot.decided = granted ? 'grant' : 'deny';
+          slot.decisionTime = t;
+          if (granted) roleState.totalGranted++;
+          else roleState.totalDenied++;
+        }
+      }
+
+      // 請求線在判決期間閃爍成結果顏色
+      if (fp >= 0.45 && fp < 0.95) {
+        const flashColor = granted ? new THREE.Color(GRANT_GREEN) : new THREE.Color(DENY_RED);
+        const mixAmount = fp < 0.55 ? (fp - 0.45) / 0.1 : Math.max(0, 1 - (fp - 0.75) / 0.2);
+        const base = new THREE.Color(roleState.theme.accentColor);
+        roleState.reqLineMat.color.copy(base.clone().lerp(flashColor, mixAmount * 0.7));
+        roleState.reqLineMat.opacity = Math.min(1, 0.8 + mixAmount * 0.2);
+      }
+
+    } else {
+      // 非 REVIEW 階段: 隱藏所有判決 UI
+      previewBgMat.opacity = 0;
+      previewBgEdgeMat.opacity = 0;
+      previewLabelMat.opacity = 0;
+      previewSensTextBlocks.forEach(b => b.material.opacity = 0);
+      previewContentMat.opacity = 0;
+      previewMetaMat.opacity = 0;
+
+      // 非 REVIEW 時隱藏 active requester, 但 REQUEST 和 SETTLE 階段保留
+      if (state.phase === 'REQUEST' || state.phase === 'SETTLE') {
+        const rs = roleStates[state.roleIdx];
+        activeRequesterMat.color.setHex(rs.theme.accentColor);
+        let reqAlpha = 0;
+        if (state.phase === 'REQUEST') {
+          reqAlpha = state.phaseProgress * 0.92;
+        } else {
+          reqAlpha = Math.max(0, 1 - state.phaseProgress) * 0.92;
+        }
+        activeRequesterMat.opacity = reqAlpha;
+        activeRequesterTextBlocks.forEach((b, i) => {
+          if (i < rs.theme.labelBlocks.length) {
+            const blocks = rs.theme.labelBlocks;
+            const totalW = blocks.reduce((s, w) => s + w, 0) + 0.012 * (blocks.length - 1);
+            const startX = 0.22 - totalW / 2;
+            let xAccum = 0;
+            for (let j = 0; j < i; j++) xAccum += blocks[j] + 0.012;
+            b.mesh.scale.set(blocks[i] / 0.05 * 1.6, 1, 1);
+            b.mesh.position.set(startX + xAccum + blocks[i] / 2, -0.14, 0.007);
+            b.mat.opacity = reqAlpha;
+          } else {
+            b.mat.opacity = 0;
+          }
+        });
+      } else {
+        activeRequesterMat.opacity = 0;
+        activeRequesterTextBlocks.forEach(b => b.mat.opacity = 0);
+      }
+
+      verdictMat.opacity = 0;
+      verdictEdgeMat.opacity = 0;
+      checkMat.opacity = 0;
+      xLine1Mat.opacity = 0;
+      xLine2Mat.opacity = 0;
+      verdictTextBlocks.forEach(b => b.mat.opacity = 0);
+    }
+
+    // Shell corners pulse
+    shellCornerGeoms.forEach((c, i) => {
+      const pulse = 0.6 + Math.sin(t * 1.5 + i * 0.5) * 0.15;
+      c.mat.opacity = pulse;
+    });
+
+    // HUD
+    progressEl.style.width = (state.cycleT / TOTAL_CYCLE * 100) + '%';
+
+    if (state.phase === 'REQUEST') {
+      const rs = roleStates[state.roleIdx];
+      scanLabelEl.textContent = 'REQUEST';
+      statusLeftEl.textContent = 'ACCESS_REQUEST';
+      roleValueEl.textContent = rs.theme.label;
+      stateValueEl.textContent = 'PENDING';
+    } else if (state.phase === 'REVIEW') {
+      const rs = roleStates[state.roleIdx];
+      scanLabelEl.textContent = 'ENFORCING';
+      statusLeftEl.textContent = 'POLICY_CHECK';
+      roleValueEl.textContent = rs.theme.label;
+      stateValueEl.textContent = `G ${String(rs.totalGranted).padStart(2, '0')} / D ${String(rs.totalDenied).padStart(2, '0')}`;
+    } else if (state.phase === 'SETTLE') {
+      const rs = roleStates[state.roleIdx];
+      scanLabelEl.textContent = 'APPLIED';
+      statusLeftEl.textContent = 'POLICY_APPLIED';
+      roleValueEl.textContent = rs.theme.label;
+      stateValueEl.textContent = `G ${String(rs.totalGranted).padStart(2, '0')} / D ${String(rs.totalDenied).padStart(2, '0')}`;
+    } else if (state.phase === 'HOLD') {
+      scanLabelEl.textContent = 'GOVERNED';
+      statusLeftEl.textContent = 'ALL_ROLES_DONE';
+      roleValueEl.textContent = 'ALL';
+      const totalG = roleStates.reduce((s, r) => s + r.totalGranted, 0);
+      const totalD = roleStates.reduce((s, r) => s + r.totalDenied, 0);
+      stateValueEl.textContent = `G ${String(totalG).padStart(2, '0')} / D ${String(totalD).padStart(2, '0')}`;
+    } else {
+      scanLabelEl.textContent = 'RESET';
+      statusLeftEl.textContent = 'STANDBY';
+      roleValueEl.textContent = '---';
+      stateValueEl.textContent = 'G 00 / D 00';
+    }
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
+</script>
+</body>
+</html>

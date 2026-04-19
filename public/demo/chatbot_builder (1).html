@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+  body { margin: 0; background: #e8e8e0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+
+  #scanner-root {
+    width: 360px;
+    height: 360px;
+    position: relative;
+    font-family: 'JetBrains Mono', monospace;
+    background:
+      radial-gradient(ellipse at 50% 40%, #ffffff 0%, #f4f6f8 55%, #e4e8ec 100%);
+    overflow: hidden;
+    border: 1px solid rgba(20, 55, 110, 0.18);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,0.8),
+      inset 0 0 80px rgba(40, 85, 255, 0.04),
+      0 4px 24px rgba(0,0,0,0.08);
+  }
+
+  #scanner-root canvas {
+    display: block;
+    position: absolute;
+    inset: 0;
+    will-change: transform;
+  }
+
+  /* 技術製圖網格 */
+  .grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(20, 55, 110, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20, 55, 110, 0.07) 1px, transparent 1px),
+      linear-gradient(rgba(20, 55, 110, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20, 55, 110, 0.035) 1px, transparent 1px);
+    background-size: 60px 60px, 60px 60px, 12px 12px, 12px 12px;
+    mask-image: radial-gradient(ellipse at center, black 20%, rgba(0,0,0,0.4) 70%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 20%, rgba(0,0,0,0.4) 70%, transparent 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* 紙張紋理 */
+  .paper-grain {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0.35;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.08  0 0 0 0 0.14  0 0 0 0 0.28  0 0 0 0.08 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  /* HUD 角落 */
+  .hud-corner {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    z-index: 5;
+  }
+  .hud-corner::before, .hud-corner::after {
+    content: '';
+    position: absolute;
+    background: #0a2c6e;
+  }
+  .hud-corner::before { width: 14px; height: 1px; }
+  .hud-corner::after { width: 1px; height: 14px; }
+  .hud-corner.tl { top: 14px; left: 14px; }
+  .hud-corner.tl::before { top: 0; left: 0; }
+  .hud-corner.tl::after { top: 0; left: 0; }
+  .hud-corner.tr { top: 14px; right: 14px; }
+  .hud-corner.tr::before { top: 0; right: 0; }
+  .hud-corner.tr::after { top: 0; right: 0; }
+  .hud-corner.bl { bottom: 14px; left: 14px; }
+  .hud-corner.bl::before { bottom: 0; left: 0; }
+  .hud-corner.bl::after { bottom: 0; left: 0; }
+  .hud-corner.br { bottom: 14px; right: 14px; }
+  .hud-corner.br::before { bottom: 0; right: 0; }
+  .hud-corner.br::after { bottom: 0; right: 0; }
+
+  .crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 24px;
+    transform: translate(-50%, -50%);
+    z-index: 4;
+    opacity: 0.22;
+    pointer-events: none;
+  }
+  .crosshair::before, .crosshair::after {
+    content: '';
+    position: absolute;
+    background: #0a2c6e;
+  }
+  .crosshair::before { top: 50%; left: 0; right: 0; height: 1px; }
+  .crosshair::after { left: 50%; top: 0; bottom: 0; width: 1px; }
+
+  /* 頂部狀態列 */
+  .status-bar {
+    position: absolute;
+    top: 18px;
+    left: 42px;
+    right: 42px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: #0a2c6e;
+    z-index: 5;
+    text-transform: uppercase;
+    font-weight: 600;
+    font-family: 'Rajdhani', sans-serif;
+  }
+  .status-bar .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: #2855ff;
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse 1.4s ease-in-out infinite;
+    vertical-align: middle;
+    box-shadow: 0 0 0 2px rgba(40, 85, 255, 0.18);
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  /* 底部狀態列 */
+  .bottom-bar {
+    position: absolute;
+    bottom: 18px;
+    left: 42px;
+    right: 42px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: rgba(10, 44, 110, 0.5);
+    z-index: 5;
+    text-transform: uppercase;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 500;
+  }
+  .bottom-bar .label {
+    color: rgba(10, 44, 110, 0.4);
+    font-weight: 400;
+  }
+  .bottom-bar .value {
+    color: #0a2c6e;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+  }
+
+  .scan-readout {
+    position: absolute;
+    top: 38px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    color: #0a2c6e;
+    letter-spacing: 0.35em;
+    z-index: 5;
+    text-align: center;
+    font-weight: 600;
+    font-family: 'Rajdhani', sans-serif;
+  }
+  .scan-readout .progress-track {
+    margin-top: 6px;
+    width: 90px;
+    height: 1px;
+    background: rgba(10, 44, 110, 0.12);
+    position: relative;
+    overflow: hidden;
+  }
+  .scan-readout .progress-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: #2855ff;
+    width: 0%;
+    transition: width 0.1s linear;
+  }
+  .scan-readout .progress-track::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(90deg, rgba(10,44,110,0.2) 1px, transparent 1px);
+    background-size: 9px 1px;
+  }
+
+  .animus-mark {
+    position: absolute;
+    top: 50%;
+    right: 18px;
+    transform: translateY(-50%);
+    font-size: 7px;
+    letter-spacing: 0.4em;
+    color: rgba(10, 44, 110, 0.35);
+    writing-mode: vertical-rl;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    z-index: 5;
+  }
+
+  .vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 8;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(20, 55, 110, 0.10) 100%);
+  }
+
+  /* Drop zone */
+  .drop-hint {
+    position: absolute;
+    inset: 44px;
+    border: 1px dashed rgba(10, 44, 110, 0.3);
+    z-index: 4;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    transition: opacity 0.4s ease, border-color 0.3s ease, transform 0.4s ease, box-shadow 0.3s ease;
+  }
+  .drop-hint.active {
+    border-color: rgba(40, 85, 255, 0.7);
+    border-style: solid;
+    box-shadow:
+      inset 0 0 0 1px rgba(40, 85, 255, 0.15),
+      inset 0 0 30px rgba(40, 85, 255, 0.06);
+    transform: scale(1.02);
+  }
+  .drop-hint.hidden {
+    opacity: 0;
+  }
+  .drop-hint::before, .drop-hint::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: 1px solid rgba(40, 85, 255, 0.6);
+  }
+  .drop-hint::before {
+    top: -4px; left: -4px;
+    border-right: none;
+    border-bottom: none;
+  }
+  .drop-hint::after {
+    bottom: -4px; right: -4px;
+    border-left: none;
+    border-top: none;
+  }
+  .drop-hint-icon {
+    font-size: 20px;
+    color: #0a2c6e;
+    opacity: 0.8;
+    letter-spacing: 0;
+    line-height: 1;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 300;
+  }
+  .drop-hint.active .drop-hint-icon {
+    color: #2855ff;
+    opacity: 1;
+  }
+  .drop-hint-text {
+    font-size: 9px;
+    color: rgba(10, 44, 110, 0.75);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    font-weight: 600;
+    font-family: 'Rajdhani', sans-serif;
+  }
+  .drop-hint.active .drop-hint-text {
+    color: #2855ff;
+  }
+  .drop-hint-sub {
+    font-size: 7px;
+    color: rgba(10, 44, 110, 0.4);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<div id="scanner-root">
+  <div class="grid-bg"></div>
+
+  <div class="hud-corner tl"></div>
+  <div class="hud-corner tr"></div>
+  <div class="hud-corner bl"></div>
+  <div class="hud-corner br"></div>
+
+  <div class="crosshair"></div>
+
+  <div class="status-bar">
+    <span><span class="dot"></span><span id="status-left">AWAITING_INPUT</span></span>
+    <span id="status-right">AGENT.01</span>
+  </div>
+
+  <div class="scan-readout">
+    <div id="scan-label">READY</div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+
+  <div class="bottom-bar">
+    <span><span class="label">DOCS</span> <span class="value" id="docs-value">00</span></span>
+    <span><span class="label">TOKENS</span> <span class="value" id="tokens-value">0.0K</span></span>
+  </div>
+
+  <div class="drop-hint" id="drop-hint">
+    <div class="drop-hint-icon">⇩</div>
+    <div class="drop-hint-text">Drop Knowledge</div>
+    <div class="drop-hint-sub">to build agent</div>
+  </div>
+
+  <div class="animus-mark">ANIMUS</div>
+
+  <div class="vignette"></div>
+  <div class="paper-grain"></div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+  import * as THREE from 'three';
+
+  const root = document.getElementById('scanner-root');
+  const W = 360, H = 360;
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0xf4f6f8, 8, 18);
+
+  const camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 50);
+  camera.position.set(0, 0.2, 6.0);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+  root.appendChild(renderer.domElement);
+
+  // ===== 配色 =====
+  const ANIMUS_BLUE = 0x2855ff;
+  const ANIMUS_DEEP = 0x0a2c6e;
+  const ANIMUS_INK = 0x14233f;
+  const PAPER_WHITE = 0xfafbfd;
+  const BOT_ACCENT = 0x2855ff;
+  const USER_ACCENT = 0x047857; // 使用者訊息使用翠綠
+
+  // ===== LIGHTING =====
+  scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+  const keyLight = new THREE.DirectionalLight(0xe8efff, 0.5);
+  keyLight.position.set(2, 4, 3);
+  scene.add(keyLight);
+  const rimLight = new THREE.PointLight(ANIMUS_BLUE, 0.6, 10);
+  rimLight.position.set(-2, 1, 2);
+  scene.add(rimLight);
+
+  // ============================================================
+  //   SMALL FILE ICONS (用於 DRAGGING 階段飛入)
+  //   包含 3 種檔案: PDF / DOCX / TXT
+  // ============================================================
+  const fileIconGroups = [];
+  const iconW = 0.38, iconH = 0.48;
+
+  function buildFileIcon(labelColor, labelBars) {
+    const group = new THREE.Group();
+
+    // 紙張
+    const bodyGeo = new THREE.PlaneGeometry(iconW, iconH);
+    const bodyMat = new THREE.MeshBasicMaterial({
+      color: PAPER_WHITE,
+      transparent: true,
+      opacity: 0,
+      side: THREE.DoubleSide,
+    });
+    bodyMat.userData.baseOpacity = 0.97;
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    group.add(body);
+
+    // 陰影
+    const shadowGeo = new THREE.PlaneGeometry(iconW * 1.06, iconH * 1.04);
+    const shadowMat = new THREE.MeshBasicMaterial({
+      color: ANIMUS_DEEP,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    });
+    shadowMat.userData.baseOpacity = 0.1;
+    const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+    shadow.position.set(0.025, -0.025, -0.01);
+    group.add(shadow);
+
+    // 邊框
+    const edgeGeo = new THREE.EdgesGeometry(bodyGeo);
+    const edgeMat = new THREE.LineBasicMaterial({
+      color: ANIMUS_DEEP,
+      transparent: true,
+      opacity: 0,
+    });
+    edgeMat.userData.baseOpacity = 0.9;
+    const edges = new THREE.LineSegments(edgeGeo, edgeMat);
+    group.add(edges);
+
+    // 摺角
+    const cornerGeo = new THREE.PlaneGeometry(0.1, 0.1);
+    const cornerMat = new THREE.MeshBasicMaterial({
+      color: ANIMUS_DEEP,
+      transparent: true,
+      opacity: 0,
+    });
+    cornerMat.userData.baseOpacity = 0.85;
+    const corner = new THREE.Mesh(cornerGeo, cornerMat);
+    corner.position.set(iconW / 2 - 0.05, iconH / 2 - 0.05, 0.01);
+    group.add(corner);
+
+    // 檔案類型標籤 (彩色小色塊, 位於底部)
+    const labelGeo = new THREE.PlaneGeometry(iconW * 0.45, 0.075);
+    const labelMat = new THREE.MeshBasicMaterial({
+      color: labelColor,
+      transparent: true,
+      opacity: 0,
+    });
+    labelMat.userData.baseOpacity = 0.92;
+    const label = new THREE.Mesh(labelGeo, labelMat);
+    label.position.set(-iconW / 2 + iconW * 0.25, -iconH / 2 + 0.08, 0.015);
+    group.add(label);
+
+    // 內部文字線條
+    for (let i = 0; i < labelBars; i++) {
+      const w = iconW * (0.45 + Math.random() * 0.2);
+      const lG = new THREE.PlaneGeometry(w, 0.022);
+      const lM = new THREE.MeshBasicMaterial({
+        color: ANIMUS_INK,
+        transparent: true,
+        opacity: 0,
+      });
+      lM.userData.baseOpacity = 0.5;
+      const l = new THREE.Mesh(lG, lM);
+      l.position.set(-iconW / 2 + w / 2 + 0.04, 0.1 - i * 0.08, 0.01);
+      group.add(l);
+    }
+
+    return group;
+  }
+
+  // 三個檔案: PDF (紅) / DOCX (藍) / TXT (琥珀)
+  const iconColors = [0xb91c1c, 0x2855ff, 0xb45309];
+  const iconLabels = ['PDF', 'DOCX', 'TXT'];
+  for (let i = 0; i < 3; i++) {
+    const g = buildFileIcon(iconColors[i], 3);
+    g.rotation.x = -0.1;
+    g.rotation.y = 0.1;
+    scene.add(g);
+    fileIconGroups.push({
+      group: g,
+      label: iconLabels[i],
+      color: iconColors[i],
+    });
+  }
+
+  function setIconOpacity(iconGroup, o) {
+    iconGroup.traverse(obj => {
+      if (obj.isMesh || obj.isLine || obj.isLineSegments) {
+        if (obj.material) {
+          obj.material.transparent = true;
+          const base = obj.material.userData.baseOpacity ?? 1;
+          obj.material.opacity = o * base;
+        }
+      }
+    });
+  }
+
+  // ============================================================
+  //   CHAT WINDOW FRAME
+  //   聊天介面的框架, 以技術製圖風格繪製
+  // ============================================================
+  const chatGroup = new THREE.Group();
+  scene.add(chatGroup);
+
+  const chatW = 2.6, chatH = 3.1;
+
+  // Chat window 背景 (白紙)
+  const chatBgGeo = new THREE.PlaneGeometry(chatW, chatH);
+  const chatBgMat = new THREE.MeshStandardMaterial({
+    color: PAPER_WHITE,
+    emissive: 0x000000,
+    emissiveIntensity: 0.05,
+    roughness: 0.95,
+    metalness: 0.0,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0,
+  });
+  chatBgMat.userData.baseOpacity = 1;
+  const chatBg = new THREE.Mesh(chatBgGeo, chatBgMat);
+  chatGroup.add(chatBg);
+
+  // 陰影
+  const chatShadowGeo = new THREE.PlaneGeometry(chatW * 1.05, chatH * 1.03);
+  const chatShadowMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+  });
+  chatShadowMat.userData.baseOpacity = 0.08;
+  const chatShadow = new THREE.Mesh(chatShadowGeo, chatShadowMat);
+  chatShadow.position.set(0.04, -0.04, -0.01);
+  chatGroup.add(chatShadow);
+
+  // 主邊框
+  const chatEdgeGeo = new THREE.EdgesGeometry(chatBgGeo);
+  const chatEdgeMat = new THREE.LineBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0,
+  });
+  chatEdgeMat.userData.baseOpacity = 0.9;
+  const chatEdges = new THREE.LineSegments(chatEdgeGeo, chatEdgeMat);
+  chatGroup.add(chatEdges);
+
+  // 頂部標題列 (深藍)
+  const chatHeaderGeo = new THREE.PlaneGeometry(chatW, 0.34);
+  const chatHeaderMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0,
+  });
+  chatHeaderMat.userData.baseOpacity = 0.92;
+  const chatHeader = new THREE.Mesh(chatHeaderGeo, chatHeaderMat);
+  chatHeader.position.set(0, chatH / 2 - 0.17, 0.005);
+  chatGroup.add(chatHeader);
+
+  // 標題內部: bot avatar (小圓點) + 文字塊
+  const avatarGeo = new THREE.CircleGeometry(0.08, 32);
+  const avatarMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_BLUE,
+    transparent: true,
+    opacity: 0,
+  });
+  avatarMat.userData.baseOpacity = 1;
+  const avatar = new THREE.Mesh(avatarGeo, avatarMat);
+  avatar.position.set(-chatW / 2 + 0.2, chatH / 2 - 0.17, 0.015);
+  chatGroup.add(avatar);
+
+  // Avatar 外環
+  const avatarRingGeo = new THREE.RingGeometry(0.09, 0.10, 32);
+  const avatarRingMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0,
+  });
+  avatarRingMat.userData.baseOpacity = 0.6;
+  const avatarRing = new THREE.Mesh(avatarRingGeo, avatarRingMat);
+  avatarRing.position.set(-chatW / 2 + 0.2, chatH / 2 - 0.17, 0.018);
+  chatGroup.add(avatarRing);
+
+  // 標題文字塊 (白色)
+  const titleTextGeo = new THREE.PlaneGeometry(0.75, 0.045);
+  const titleTextMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0,
+  });
+  titleTextMat.userData.baseOpacity = 0.95;
+  const titleText = new THREE.Mesh(titleTextGeo, titleTextMat);
+  titleText.position.set(-chatW / 2 + 0.72, chatH / 2 - 0.13, 0.015);
+  chatGroup.add(titleText);
+
+  // 副標題 (狀態: ONLINE)
+  const subtitleGeo = new THREE.PlaneGeometry(0.5, 0.025);
+  const subtitleMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0,
+  });
+  subtitleMat.userData.baseOpacity = 0.55;
+  const subtitle = new THREE.Mesh(subtitleGeo, subtitleMat);
+  subtitle.position.set(-chatW / 2 + 0.60, chatH / 2 - 0.22, 0.015);
+  chatGroup.add(subtitle);
+
+  // 右上角狀態點 (綠色, 在線)
+  const onlineGeo = new THREE.CircleGeometry(0.035, 16);
+  const onlineMat = new THREE.MeshBasicMaterial({
+    color: 0x10b981,
+    transparent: true,
+    opacity: 0,
+  });
+  onlineMat.userData.baseOpacity = 1;
+  const onlineDot = new THREE.Mesh(onlineGeo, onlineMat);
+  onlineDot.position.set(chatW / 2 - 0.18, chatH / 2 - 0.17, 0.015);
+  chatGroup.add(onlineDot);
+
+  // 底部輸入框
+  const inputBarGeo = new THREE.PlaneGeometry(chatW - 0.2, 0.3);
+  const inputBarMat = new THREE.MeshBasicMaterial({
+    color: 0xeef2f7,
+    transparent: true,
+    opacity: 0,
+  });
+  inputBarMat.userData.baseOpacity = 0.95;
+  const inputBar = new THREE.Mesh(inputBarGeo, inputBarMat);
+  inputBar.position.set(0, -chatH / 2 + 0.2, 0.005);
+  chatGroup.add(inputBar);
+
+  // 輸入框邊框
+  const inputEdgeGeo = new THREE.EdgesGeometry(inputBarGeo);
+  const inputEdgeMat = new THREE.LineBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0,
+  });
+  inputEdgeMat.userData.baseOpacity = 0.4;
+  const inputEdge = new THREE.LineSegments(inputEdgeGeo, inputEdgeMat);
+  inputEdge.position.copy(inputBar.position);
+  chatGroup.add(inputEdge);
+
+  // 輸入框內 placeholder 文字
+  const placeholderGeo = new THREE.PlaneGeometry(0.9, 0.022);
+  const placeholderMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0,
+  });
+  placeholderMat.userData.baseOpacity = 0.3;
+  const placeholder = new THREE.Mesh(placeholderGeo, placeholderMat);
+  placeholder.position.set(-chatW / 2 + 0.65, -chatH / 2 + 0.2, 0.012);
+  chatGroup.add(placeholder);
+
+  // 發送按鈕 (右側, 藍色小方塊)
+  const sendBtnGeo = new THREE.PlaneGeometry(0.22, 0.22);
+  const sendBtnMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_BLUE,
+    transparent: true,
+    opacity: 0,
+  });
+  sendBtnMat.userData.baseOpacity = 0.95;
+  const sendBtn = new THREE.Mesh(sendBtnGeo, sendBtnMat);
+  sendBtn.position.set(chatW / 2 - 0.23, -chatH / 2 + 0.2, 0.012);
+  chatGroup.add(sendBtn);
+
+  // 發送箭頭 (白色三角形)
+  const arrowShape = new THREE.Shape();
+  arrowShape.moveTo(-0.04, -0.05);
+  arrowShape.lineTo(0.05, 0);
+  arrowShape.lineTo(-0.04, 0.05);
+  arrowShape.lineTo(-0.02, 0);
+  arrowShape.lineTo(-0.04, -0.05);
+  const arrowGeo = new THREE.ShapeGeometry(arrowShape);
+  const arrowMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0,
+    side: THREE.DoubleSide,
+  });
+  arrowMat.userData.baseOpacity = 1;
+  const arrow = new THREE.Mesh(arrowGeo, arrowMat);
+  arrow.position.set(chatW / 2 - 0.23, -chatH / 2 + 0.2, 0.018);
+  chatGroup.add(arrow);
+
+  // 四角定位十字
+  const chatCornerSize = 0.1;
+  const chatCornerPositions = [
+    [-chatW/2 * 1.04, chatH/2 * 1.03],
+    [ chatW/2 * 1.04, chatH/2 * 1.03],
+    [-chatW/2 * 1.04, -chatH/2 * 1.03],
+    [ chatW/2 * 1.04, -chatH/2 * 1.03],
+  ];
+  const chatCornerCrosses = [];
+  chatCornerPositions.forEach(pos => {
+    const points = [
+      new THREE.Vector3(pos[0] - chatCornerSize, pos[1], 0),
+      new THREE.Vector3(pos[0] + chatCornerSize, pos[1], 0),
+      new THREE.Vector3(pos[0], pos[1] - chatCornerSize, 0),
+      new THREE.Vector3(pos[0], pos[1] + chatCornerSize, 0),
+    ];
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    const mat = new THREE.LineBasicMaterial({
+      color: ANIMUS_BLUE,
+      transparent: true,
+      opacity: 0,
+    });
+    mat.userData.baseOpacity = 0.7;
+    const cross = new THREE.LineSegments(geo, mat);
+    chatGroup.add(cross);
+    chatCornerCrosses.push(cross);
+  });
+
+  // ============================================================
+  //   CHAT MESSAGES (訊息氣泡)
+  //   依時間軸逐一顯現
+  // ============================================================
+  const messageGroup = new THREE.Group();
+  messageGroup.position.z = 0.01;
+  chatGroup.add(messageGroup);
+
+  const messages = [];
+
+  // 訊息結構: { sender: 'bot'|'user', lines: [widthRatio,...], revealAt: number (0-1 within CHATTING phase) }
+  const messageSpecs = [
+    { sender: 'bot',  lines: [0.85, 0.65],        revealAt: 0.00 },
+    { sender: 'user', lines: [0.55],              revealAt: 0.22 },
+    { sender: 'bot',  lines: [0.90, 0.80, 0.50],  revealAt: 0.42 },
+    { sender: 'user', lines: [0.70, 0.35],        revealAt: 0.70 },
+  ];
+
+  const messageAreaTop = chatH / 2 - 0.40;
+  const messageAreaBottom = -chatH / 2 + 0.40;
+  const messageAreaH = messageAreaTop - messageAreaBottom;
+  const bubblePadding = 0.06;
+  const lineSpacing = 0.06;
+  const lineH = 0.028;
+  const bubbleSpacing = 0.10;
+
+  let yCursor = messageAreaTop;
+
+  messageSpecs.forEach((spec, idx) => {
+    const msgEls = [];
+    const isBot = spec.sender === 'bot';
+    const accentColor = isBot ? BOT_ACCENT : USER_ACCENT;
+    const bgColor = isBot ? 0xeaf0ff : 0xe8f5ef;
+    const textColor = isBot ? ANIMUS_DEEP : 0x022c22;
+
+    const bubbleW = chatW * 0.65;
+    const linesCount = spec.lines.length;
+    const bubbleH = bubblePadding * 2 + lineH * linesCount + lineSpacing * (linesCount - 1);
+
+    yCursor -= bubbleH / 2;
+
+    const xOffset = isBot ? -chatW / 2 + bubbleW / 2 + 0.15 : chatW / 2 - bubbleW / 2 - 0.15;
+
+    // Bubble 背景
+    const bubbleGeo = new THREE.PlaneGeometry(bubbleW, bubbleH);
+    const bubbleMat = new THREE.MeshBasicMaterial({
+      color: bgColor,
+      transparent: true,
+      opacity: 0,
+    });
+    bubbleMat.userData.baseOpacity = 1;
+    const bubble = new THREE.Mesh(bubbleGeo, bubbleMat);
+    bubble.position.set(xOffset, yCursor, 0.002);
+    messageGroup.add(bubble);
+    msgEls.push({ mesh: bubble, baseOpacity: 1 });
+
+    // Bubble 邊框
+    const bubbleEdgeGeo = new THREE.EdgesGeometry(bubbleGeo);
+    const bubbleEdgeMat = new THREE.LineBasicMaterial({
+      color: accentColor,
+      transparent: true,
+      opacity: 0,
+    });
+    bubbleEdgeMat.userData.baseOpacity = 0.75;
+    const bubbleEdge = new THREE.LineSegments(bubbleEdgeGeo, bubbleEdgeMat);
+    bubbleEdge.position.copy(bubble.position);
+    bubbleEdge.position.z = 0.004;
+    messageGroup.add(bubbleEdge);
+    msgEls.push({ mesh: bubbleEdge, baseOpacity: 0.75 });
+
+    // 左側/右側小色條 (accent tab)
+    const tabGeo = new THREE.PlaneGeometry(0.035, bubbleH * 0.85);
+    const tabMat = new THREE.MeshBasicMaterial({
+      color: accentColor,
+      transparent: true,
+      opacity: 0,
+    });
+    tabMat.userData.baseOpacity = 0.9;
+    const tab = new THREE.Mesh(tabGeo, tabMat);
+    const tabX = isBot ? xOffset - bubbleW / 2 + 0.018 : xOffset + bubbleW / 2 - 0.018;
+    tab.position.set(tabX, yCursor, 0.006);
+    messageGroup.add(tab);
+    msgEls.push({ mesh: tab, baseOpacity: 0.9 });
+
+    // 文字線條
+    spec.lines.forEach((wRatio, li) => {
+      const lW = bubbleW * 0.75 * wRatio;
+      const lineGeo = new THREE.PlaneGeometry(lW, lineH * 0.65);
+      const lineMat = new THREE.MeshBasicMaterial({
+        color: textColor,
+        transparent: true,
+        opacity: 0,
+      });
+      lineMat.userData.baseOpacity = 0.6;
+      const line = new THREE.Mesh(lineGeo, lineMat);
+      const lineStartX = isBot
+        ? xOffset - bubbleW / 2 + 0.08 + lW / 2
+        : xOffset + bubbleW / 2 - 0.08 - lW / 2;
+      const lineY = yCursor + bubbleH / 2 - bubblePadding - lineH / 2 - li * (lineH + lineSpacing);
+      line.position.set(lineStartX, lineY, 0.008);
+      messageGroup.add(line);
+      msgEls.push({ mesh: line, baseOpacity: 0.6, delay: li * 0.05 });
+    });
+
+    messages.push({
+      spec,
+      elements: msgEls,
+      bubbleY: yCursor,
+      bubbleH,
+    });
+
+    yCursor -= bubbleH / 2 + bubbleSpacing;
+  });
+
+  // Typing indicator (三個點) - 在某些時刻顯示
+  const typingGroup = new THREE.Group();
+  chatGroup.add(typingGroup);
+  const typingDots = [];
+  for (let i = 0; i < 3; i++) {
+    const dotGeo = new THREE.CircleGeometry(0.024, 16);
+    const dotMat = new THREE.MeshBasicMaterial({
+      color: BOT_ACCENT,
+      transparent: true,
+      opacity: 0,
+    });
+    dotMat.userData.baseOpacity = 0.85;
+    const dot = new THREE.Mesh(dotGeo, dotMat);
+    dot.position.set(-chatW / 2 + 0.25 + i * 0.07, 0, 0.015);
+    typingGroup.add(dot);
+    typingDots.push({ mesh: dot, mat: dotMat });
+  }
+
+  // ============================================================
+  //   MATERIALIZATION BEAM (構建時的光暈)
+  // ============================================================
+  const beamGeo = new THREE.PlaneGeometry(chatW * 1.3, chatH * 1.3);
+  const beamMat = new THREE.ShaderMaterial({
+    transparent: true,
+    blending: THREE.NormalBlending,
+    depthWrite: false,
+    uniforms: {
+      uOpacity: { value: 0 },
+      uColor: { value: new THREE.Color(ANIMUS_BLUE) },
+      uTime: { value: 0 },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+    `,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform float uOpacity;
+      uniform vec3 uColor;
+      uniform float uTime;
+      void main(){
+        vec2 p = (vUv - 0.5) * 2.0;
+        float d = length(p * vec2(0.9, 1.0));
+        float glow = smoothstep(1.0, 0.1, d);
+        float stripes = 0.5 + 0.5 * sin(vUv.y * 100.0 - uTime * 5.0);
+        glow *= (0.75 + stripes * 0.25);
+        gl_FragColor = vec4(uColor, glow * uOpacity * 0.22);
+      }
+    `
+  });
+  const beam = new THREE.Mesh(beamGeo, beamMat);
+  beam.position.z = -0.02;
+  chatGroup.add(beam);
+
+  // 掃描線
+  const sweepGeo = new THREE.PlaneGeometry(chatW * 1.1, 0.08);
+  const sweepMat = new THREE.ShaderMaterial({
+    transparent: true,
+    blending: THREE.NormalBlending,
+    depthWrite: false,
+    uniforms: {
+      uOpacity: { value: 0 },
+      uColor: { value: new THREE.Color(ANIMUS_BLUE) },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+    `,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform float uOpacity;
+      uniform vec3 uColor;
+      void main(){
+        float d = abs(vUv.y - 0.5) * 2.0;
+        float a = pow(1.0 - d, 3.0);
+        gl_FragColor = vec4(uColor, a * uOpacity);
+      }
+    `
+  });
+  const sweep = new THREE.Mesh(sweepGeo, sweepMat);
+  sweep.position.z = 0.05;
+  chatGroup.add(sweep);
+
+  // ============================================================
+  //   IMPACT BURST 粒子
+  // ============================================================
+  const burstCount = 60;
+  const burstGeo = new THREE.BufferGeometry();
+  const burstPos = new Float32Array(burstCount * 3);
+  const burstVel = [];
+  for (let i = 0; i < burstCount; i++) {
+    burstPos[i*3] = 0;
+    burstPos[i*3+1] = 0;
+    burstPos[i*3+2] = 0;
+    const theta = Math.random() * Math.PI * 2;
+    const r = 0.5 + Math.random() * 1.5;
+    burstVel.push({
+      vx: Math.cos(theta) * r,
+      vy: Math.sin(theta) * r * 0.7,
+      vz: (Math.random() - 0.5) * 0.5,
+      life: Math.random() * 0.5 + 0.5,
+    });
+  }
+  burstGeo.setAttribute('position', new THREE.BufferAttribute(burstPos, 3));
+  const burstMat = new THREE.PointsMaterial({
+    color: ANIMUS_BLUE,
+    size: 0.035,
+    transparent: true,
+    opacity: 0,
+    blending: THREE.NormalBlending,
+    depthWrite: false,
+  });
+  const burst = new THREE.Points(burstGeo, burstMat);
+  scene.add(burst);
+  let burstActive = false;
+  let burstStartTime = 0;
+
+  // ============================================================
+  //   AMBIENT PARTICLES
+  // ============================================================
+  const particleCount = 30;
+  const pGeo = new THREE.BufferGeometry();
+  const pPos = new Float32Array(particleCount * 3);
+  const pSeed = new Float32Array(particleCount);
+  for (let i = 0; i < particleCount; i++) {
+    pPos[i*3]   = (Math.random() - 0.5) * 5;
+    pPos[i*3+1] = (Math.random() - 0.5) * 4;
+    pPos[i*3+2] = (Math.random() - 0.5) * 2;
+    pSeed[i] = Math.random() * 10;
+  }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  pGeo.setAttribute('seed', new THREE.BufferAttribute(pSeed, 1));
+  const pMat = new THREE.PointsMaterial({
+    color: ANIMUS_DEEP,
+    size: 0.02,
+    transparent: true,
+    opacity: 0.25,
+    blending: THREE.NormalBlending,
+    depthWrite: false,
+  });
+  const particles = new THREE.Points(pGeo, pMat);
+  scene.add(particles);
+
+  // ============================================================
+  //   STATE MACHINE
+  // ============================================================
+  const phases = {
+    IDLE:          { duration: 0.6, label: 'STANDBY',       status: 'AWAITING_INPUT' },
+    DRAGGING:      { duration: 2.8, label: 'INGESTING',     status: 'LOADING_DOCS' },
+    IMPACT:        { duration: 0.35, label: 'RECEIVED',     status: 'DOCS_LOADED' },
+    BUILDING:      { duration: 1.6, label: 'BUILDING',      status: 'COMPILING_AGENT' },
+    CHATTING:      { duration: 4.2, label: 'ACTIVE',        status: 'AGENT_ONLINE' },
+    HOLD:          { duration: 0.8, label: 'COMPLETE',      status: 'SESSION_END' },
+  };
+  const phaseOrder = ['IDLE', 'DRAGGING', 'IMPACT', 'BUILDING', 'CHATTING', 'HOLD'];
+  const cycleDuration = phaseOrder.reduce((s, p) => s + phases[p].duration, 0);
+
+  function getPhase(t) {
+    const ct = t % cycleDuration;
+    let acc = 0;
+    for (const p of phaseOrder) {
+      const d = phases[p].duration;
+      if (ct < acc + d) {
+        return { name: p, progress: (ct - acc) / d, cycleT: ct, phaseStart: acc };
+      }
+      acc += d;
+    }
+    return { name: 'HOLD', progress: 1, cycleT: ct, phaseStart: acc };
+  }
+
+  const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
+  const easeInCubic = (x) => x * x * x;
+  const easeOutQuart = (x) => 1 - Math.pow(1 - x, 4);
+
+  // 輔助: 設置 chat window 所有元素透明度
+  const chatElements = [
+    { mesh: chatBg, mat: chatBgMat },
+    { mesh: chatShadow, mat: chatShadowMat },
+    { mesh: chatEdges, mat: chatEdgeMat },
+    { mesh: chatHeader, mat: chatHeaderMat },
+    { mesh: avatar, mat: avatarMat },
+    { mesh: avatarRing, mat: avatarRingMat },
+    { mesh: titleText, mat: titleTextMat },
+    { mesh: subtitle, mat: subtitleMat },
+    { mesh: onlineDot, mat: onlineMat },
+    { mesh: inputBar, mat: inputBarMat },
+    { mesh: inputEdge, mat: inputEdgeMat },
+    { mesh: placeholder, mat: placeholderMat },
+    { mesh: sendBtn, mat: sendBtnMat },
+    { mesh: arrow, mat: arrowMat },
+  ];
+
+  function setChatFrameOpacity(o) {
+    chatElements.forEach(({ mat }) => {
+      mat.transparent = true;
+      const base = mat.userData.baseOpacity ?? 1;
+      mat.opacity = o * base;
+    });
+    chatCornerCrosses.forEach(cross => {
+      cross.material.transparent = true;
+      const base = cross.material.userData.baseOpacity ?? 1;
+      cross.material.opacity = o * base;
+    });
+  }
+
+  function setMessagesOpacity(phaseProgress) {
+    // phaseProgress: 0-1 within CHATTING phase
+    messages.forEach(msg => {
+      const revealStart = msg.spec.revealAt;
+      const revealDuration = 0.12;
+      const local = (phaseProgress - revealStart) / revealDuration;
+      const bubbleFade = Math.max(0, Math.min(1, local));
+
+      msg.elements.forEach((el, idx) => {
+        const delay = el.delay ?? 0;
+        const elLocal = (phaseProgress - revealStart - delay) / revealDuration;
+        const elFade = Math.max(0, Math.min(1, elLocal));
+        el.mesh.material.transparent = true;
+        el.mesh.material.opacity = elFade * el.baseOpacity;
+      });
+    });
+  }
+
+  // 檔案圖示的飛行路徑
+  const fileStartPositions = [
+    { x: -3.2, y: 2.6, z: 1.8, delay: 0.0 },
+    { x: -3.6, y: 1.8, z: 1.6, delay: 0.18 },
+    { x: -3.4, y: 3.2, z: 2.0, delay: 0.35 },
+  ];
+  // 飛行終點(中央, 互相稍微錯開)
+  const fileEndOffsets = [
+    { x: -0.25, y: 0.15, z: 1.2 },
+    { x: 0.05, y: -0.05, z: 1.3 },
+    { x: 0.30, y: 0.20, z: 1.1 },
+  ];
+
+  const dropHint = document.getElementById('drop-hint');
+  const progressEl = document.getElementById('progress-fill');
+  const scanLabelEl = document.getElementById('scan-label');
+  const statusLeftEl = document.getElementById('status-left');
+  const docsEl = document.getElementById('docs-value');
+  const tokensEl = document.getElementById('tokens-value');
+
+  const clock = new THREE.Clock();
+  let currentTokens = 0;
+  let lastCycle = -1;
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+    const phase = getPhase(t);
+
+    const currentCycle = Math.floor(t / cycleDuration);
+    if (currentCycle !== lastCycle) {
+      lastCycle = currentCycle;
+    }
+
+    beamMat.uniforms.uTime.value = t;
+
+    // ---------- IDLE ----------
+    if (phase.name === 'IDLE') {
+      dropHint.classList.remove('active', 'hidden');
+      setChatFrameOpacity(0);
+      messages.forEach(msg => {
+        msg.elements.forEach(el => el.mesh.material.opacity = 0);
+      });
+      typingDots.forEach(d => d.mat.opacity = 0);
+      fileIconGroups.forEach(f => setIconOpacity(f.group, 0));
+      beamMat.uniforms.uOpacity.value = 0;
+      sweepMat.uniforms.uOpacity.value = 0;
+      burstMat.opacity = 0;
+      burstActive = false;
+
+      scanLabelEl.textContent = phases.IDLE.label;
+      statusLeftEl.textContent = phases.IDLE.status;
+      progressEl.style.width = '0%';
+      docsEl.textContent = '00';
+      tokensEl.textContent = '0.0K';
+    }
+
+    // ---------- DRAGGING ----------
+    else if (phase.name === 'DRAGGING') {
+      dropHint.classList.add('active');
+      dropHint.classList.remove('hidden');
+
+      const p = phase.progress;
+
+      let visibleDocs = 0;
+      let totalTokens = 0;
+
+      // 每個檔案有自己的 delay 和路徑
+      fileIconGroups.forEach((f, i) => {
+        const start = fileStartPositions[i];
+        const end = fileEndOffsets[i];
+        const delay = start.delay;
+        const duration = 0.75;
+
+        // 總時間上的進度
+        const localT = (p - delay) / duration;
+
+        if (localT < 0) {
+          setIconOpacity(f.group, 0);
+          return;
+        }
+
+        const fadeInP = Math.min(1, localT * 10);
+        const clampedLocal = Math.min(1, localT);
+
+        // 飛行路徑 (一段式平滑拖入)
+        const pathP = easeOutCubic(clampedLocal);
+
+        const posX = start.x + (end.x - start.x) * pathP;
+        const posY = start.y + (end.y - start.y) * pathP;
+        const posZ = start.z + (end.z - start.z) * pathP;
+
+        f.group.position.set(posX, posY, posZ);
+        f.group.rotation.x = -0.1 + Math.sin(t * 2 + i) * 0.03;
+        f.group.rotation.y = 0.1 + Math.sin(t * 1.5 + i * 2) * 0.04;
+        f.group.rotation.z = Math.sin(t * 1.2 + i * 3) * 0.02;
+
+        let alpha;
+        if (localT < 0.1) alpha = localT / 0.1;
+        else if (clampedLocal >= 1.0) alpha = 0.7; // 停留時略為透明
+        else alpha = 1;
+
+        setIconOpacity(f.group, Math.max(0, Math.min(1, alpha)));
+
+        if (clampedLocal > 0.3) visibleDocs++;
+        totalTokens += clampedLocal * (800 + i * 420);
+      });
+
+      setChatFrameOpacity(0);
+      messages.forEach(msg => {
+        msg.elements.forEach(el => el.mesh.material.opacity = 0);
+      });
+      typingDots.forEach(d => d.mat.opacity = 0);
+      beamMat.uniforms.uOpacity.value = 0;
+      sweepMat.uniforms.uOpacity.value = 0;
+      burstMat.opacity = 0;
+
+      scanLabelEl.textContent = phases.DRAGGING.label;
+      statusLeftEl.textContent = phases.DRAGGING.status;
+      progressEl.style.width = (p * 20) + '%';
+      docsEl.textContent = String(Math.min(3, visibleDocs)).padStart(2, '0');
+      tokensEl.textContent = (totalTokens / 1000).toFixed(1) + 'K';
+      currentTokens = totalTokens;
+    }
+
+    // ---------- IMPACT ----------
+    else if (phase.name === 'IMPACT') {
+      dropHint.classList.add('hidden');
+
+      if (!burstActive) {
+        burstActive = true;
+        burstStartTime = t;
+        const pos = burst.geometry.attributes.position;
+        for (let i = 0; i < burstCount; i++) {
+          pos.array[i*3] = 0;
+          pos.array[i*3+1] = 0;
+          pos.array[i*3+2] = 0;
+        }
+        pos.needsUpdate = true;
+      }
+
+      // 檔案快速收縮消失
+      const bp = phase.progress;
+      fileIconGroups.forEach((f, i) => {
+        const end = fileEndOffsets[i];
+        f.group.position.set(
+          end.x * (1 - bp),
+          end.y * (1 - bp),
+          end.z - bp * 1.0
+        );
+        const scale = 1 - bp;
+        f.group.scale.setScalar(Math.max(0.01, scale));
+        setIconOpacity(f.group, Math.max(0, 1 - bp * 1.5));
+      });
+
+      const pos = burst.geometry.attributes.position;
+      for (let i = 0; i < burstCount; i++) {
+        const v = burstVel[i];
+        pos.array[i*3] = v.vx * bp * 0.7;
+        pos.array[i*3+1] = v.vy * bp * 0.7;
+        pos.array[i*3+2] = v.vz * bp * 0.7;
+      }
+      pos.needsUpdate = true;
+      burstMat.opacity = (1 - bp) * 0.75;
+      burstMat.size = 0.03 + bp * 0.02;
+
+      beamMat.uniforms.uOpacity.value = easeOutQuart(bp) * 1.0;
+
+      setChatFrameOpacity(bp * 0.2);
+      messages.forEach(msg => {
+        msg.elements.forEach(el => el.mesh.material.opacity = 0);
+      });
+      typingDots.forEach(d => d.mat.opacity = 0);
+
+      scanLabelEl.textContent = phases.IMPACT.label;
+      statusLeftEl.textContent = phases.IMPACT.status;
+      progressEl.style.width = (20 + bp * 8) + '%';
+      docsEl.textContent = '03';
+    }
+
+    // ---------- BUILDING ----------
+    else if (phase.name === 'BUILDING') {
+      dropHint.classList.add('hidden');
+      fileIconGroups.forEach(f => {
+        setIconOpacity(f.group, 0);
+        f.group.scale.setScalar(1);
+      });
+
+      const p = phase.progress;
+      const eased = easeOutCubic(p);
+
+      beamMat.uniforms.uOpacity.value = Math.max(0, 1 - p * 1.3);
+
+      // 掃描線從上掃到下
+      const sweepY = (chatH / 2) - p * chatH;
+      sweep.position.y = sweepY;
+
+      let sweepAlpha;
+      if (p < 0.1) sweepAlpha = p / 0.1;
+      else if (p > 0.9) sweepAlpha = (1 - p) / 0.1;
+      else sweepAlpha = 1;
+      sweepMat.uniforms.uOpacity.value = sweepAlpha * 0.85;
+
+      // Chat window 從上往下顯現
+      setChatFrameOpacity(Math.min(1, p * 1.5));
+
+      // 殘餘粒子
+      if (burstActive && t - burstStartTime < 1.0) {
+        const bp = Math.min(1, (t - burstStartTime) / 1.0);
+        const pos = burst.geometry.attributes.position;
+        for (let i = 0; i < burstCount; i++) {
+          const v = burstVel[i];
+          pos.array[i*3] = v.vx * bp * 1.2;
+          pos.array[i*3+1] = v.vy * bp * 1.2 - bp * bp * 0.5;
+          pos.array[i*3+2] = v.vz * bp * 1.2;
+        }
+        pos.needsUpdate = true;
+        burstMat.opacity = Math.max(0, (1 - bp) * 0.55);
+      } else {
+        burstMat.opacity = 0;
+        burstActive = false;
+      }
+
+      messages.forEach(msg => {
+        msg.elements.forEach(el => el.mesh.material.opacity = 0);
+      });
+      typingDots.forEach(d => d.mat.opacity = 0);
+
+      scanLabelEl.textContent = phases.BUILDING.label;
+      statusLeftEl.textContent = phases.BUILDING.status;
+      progressEl.style.width = (28 + eased * 50) + '%';
+    }
+
+    // ---------- CHATTING ----------
+    else if (phase.name === 'CHATTING') {
+      dropHint.classList.add('hidden');
+      setChatFrameOpacity(1);
+      beamMat.uniforms.uOpacity.value = 0;
+      sweepMat.uniforms.uOpacity.value = 0;
+      burstMat.opacity = 0;
+
+      const p = phase.progress;
+      setMessagesOpacity(p);
+
+      // Typing indicator: 在訊息之間顯示
+      // 在 bot 訊息出現之前 0.1 秒顯示 typing
+      let showTyping = false;
+      let typingY = 0;
+      messages.forEach(msg => {
+        if (msg.spec.sender === 'bot') {
+          const revealAt = msg.spec.revealAt;
+          const typingStart = revealAt - 0.08;
+          if (p > typingStart && p < revealAt) {
+            showTyping = true;
+            typingY = msg.bubbleY;
+          }
+        }
+      });
+
+      typingDots.forEach((d, i) => {
+        if (showTyping) {
+          typingGroup.position.y = typingY;
+          const pulse = 0.4 + Math.sin(t * 6 - i * 0.7) * 0.5;
+          d.mat.opacity = pulse * d.mat.userData.baseOpacity;
+        } else {
+          d.mat.opacity = 0;
+        }
+      });
+
+      // 發送按鈕 在 user 訊息發出時閃一下
+      messages.forEach(msg => {
+        if (msg.spec.sender === 'user') {
+          const revealAt = msg.spec.revealAt;
+          const localP = Math.abs(p - revealAt);
+          if (localP < 0.05) {
+            const flash = 1 - localP / 0.05;
+            sendBtnMat.opacity = sendBtnMat.userData.baseOpacity * (1 + flash * 0.3);
+            sendBtn.scale.setScalar(1 + flash * 0.1);
+          } else {
+            sendBtn.scale.setScalar(1);
+          }
+        }
+      });
+
+      // Online dot 脈衝
+      const onlinePulse = 0.7 + Math.sin(t * 3) * 0.3;
+      onlineMat.opacity = onlineMat.userData.baseOpacity * onlinePulse;
+
+      scanLabelEl.textContent = phases.CHATTING.label;
+      statusLeftEl.textContent = phases.CHATTING.status;
+      progressEl.style.width = (78 + p * 18) + '%';
+
+      // Tokens 增長
+      const visibleMsgs = messages.filter(m => p >= m.spec.revealAt).length;
+      const totalT = currentTokens + visibleMsgs * 180;
+      tokensEl.textContent = (totalT / 1000).toFixed(1) + 'K';
+      docsEl.textContent = '03';
+    }
+
+    // ---------- HOLD ----------
+    else if (phase.name === 'HOLD') {
+      dropHint.classList.add('hidden');
+      const p = phase.progress;
+
+      // 逐漸淡出整個場景
+      const fadeOut = 1 - easeOutCubic(p);
+      setChatFrameOpacity(fadeOut);
+      messages.forEach(msg => {
+        msg.elements.forEach(el => {
+          el.mesh.material.opacity = el.baseOpacity * fadeOut;
+        });
+      });
+      typingDots.forEach(d => d.mat.opacity = 0);
+
+      scanLabelEl.textContent = phases.HOLD.label;
+      statusLeftEl.textContent = phases.HOLD.status;
+      progressEl.style.width = '100%';
+    }
+
+    // Chat window 微微浮動 (BUILDING 後)
+    if (phase.name === 'CHATTING' || phase.name === 'HOLD' || phase.name === 'BUILDING') {
+      chatGroup.rotation.y = Math.sin(t * 0.5) * 0.03;
+      chatGroup.position.y = Math.sin(t * 0.7) * 0.03;
+      chatGroup.position.x = Math.sin(t * 0.4) * 0.02;
+    } else {
+      chatGroup.rotation.y = 0;
+      chatGroup.position.y = 0;
+      chatGroup.position.x = 0;
+    }
+
+    // 輕微的相機浮動
+    camera.position.x = Math.sin(t * 0.3) * 0.06;
+    camera.position.y = 0.2 + Math.sin(t * 0.4) * 0.03;
+    camera.lookAt(0, 0, 0);
+
+    // 環境粒子
+    const posAttr = particles.geometry.attributes.position;
+    const seedAttr = particles.geometry.attributes.seed;
+    for (let i = 0; i < particleCount; i++) {
+      const seed = seedAttr.array[i];
+      posAttr.array[i*3+1] += 0.002 + Math.sin(t + seed) * 0.0008;
+      posAttr.array[i*3] += Math.cos(t * 0.5 + seed) * 0.0012;
+      if (posAttr.array[i*3+1] > 2.2) {
+        posAttr.array[i*3+1] = -2.2;
+        posAttr.array[i*3] = (Math.random() - 0.5) * 5;
+      }
+    }
+    posAttr.needsUpdate = true;
+    pMat.opacity = 0.20 + Math.sin(t * 2) * 0.06;
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
+</script>
+</body>
+</html>

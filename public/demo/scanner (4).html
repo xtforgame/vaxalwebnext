@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap');
+
+  body { margin: 0; background: #000; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+
+  #scanner-root {
+    width: 360px;
+    height: 360px;
+    position: relative;
+    font-family: 'JetBrains Mono', monospace;
+    background: radial-gradient(ellipse at center, #0a1520 0%, #030509 70%);
+    overflow: hidden;
+    border: 1px solid rgba(0, 229, 255, 0.15);
+    box-shadow: inset 0 0 60px rgba(0, 229, 255, 0.08);
+  }
+
+  #scanner-root canvas {
+    display: block;
+    position: absolute;
+    inset: 0;
+    will-change: transform;
+  }
+
+  /* Grid floor texture overlay */
+  .grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0, 229, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 229, 255, 0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Noise overlay */
+  .noise {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0.08;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  /* Corner HUD brackets */
+  .hud-corner {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid #00e5ff;
+    z-index: 5;
+    opacity: 0.8;
+  }
+  .hud-corner.tl { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+  .hud-corner.tr { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+  .hud-corner.bl { bottom: 10px; left: 10px; border-right: none; border-top: none; }
+  .hud-corner.br { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+
+  /* Top status bar */
+  .status-bar {
+    position: absolute;
+    top: 14px;
+    left: 34px;
+    right: 34px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    color: #00e5ff;
+    z-index: 5;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .status-bar .dot {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    background: #00e5ff;
+    border-radius: 50%;
+    margin-right: 5px;
+    box-shadow: 0 0 6px #00e5ff;
+    animation: pulse 1.2s ease-in-out infinite;
+    vertical-align: middle;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Bottom status bar */
+  .bottom-bar {
+    position: absolute;
+    bottom: 14px;
+    left: 34px;
+    right: 34px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    color: rgba(0, 229, 255, 0.6);
+    z-index: 5;
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .bottom-bar .label {
+    color: rgba(0, 229, 255, 0.35);
+  }
+  .bottom-bar .value {
+    color: #00e5ff;
+    font-weight: 700;
+  }
+
+  /* Scan progress readout - center top */
+  .scan-readout {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 7px;
+    color: rgba(0, 229, 255, 0.7);
+    letter-spacing: 0.25em;
+    z-index: 5;
+    text-align: center;
+    font-weight: 500;
+  }
+  .scan-readout .progress-track {
+    margin-top: 4px;
+    width: 80px;
+    height: 2px;
+    background: rgba(0, 229, 255, 0.15);
+    position: relative;
+    overflow: hidden;
+  }
+  .scan-readout .progress-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: #00e5ff;
+    box-shadow: 0 0 6px #00e5ff;
+    width: 0%;
+    transition: width 0.1s linear;
+  }
+
+  /* Vignette */
+  .vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 8;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%);
+  }
+</style>
+</head>
+<body>
+
+<div id="scanner-root">
+  <div class="grid-bg"></div>
+
+  <div class="hud-corner tl"></div>
+  <div class="hud-corner tr"></div>
+  <div class="hud-corner bl"></div>
+  <div class="hud-corner br"></div>
+
+  <div class="status-bar">
+    <span><span class="dot"></span>SCAN_ACTIVE</span>
+    <span id="status-right">DOC.01</span>
+  </div>
+
+  <div class="scan-readout">
+    <div id="scan-label">ANALYZING</div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+
+  <div class="bottom-bar">
+    <span><span class="label">TAGS</span> <span class="value" id="tag-count">00</span></span>
+    <span><span class="label">CONF</span> <span class="value" id="conf-value">98.7%</span></span>
+  </div>
+
+  <div class="vignette"></div>
+  <div class="noise"></div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+  import * as THREE from 'three';
+
+  const root = document.getElementById('scanner-root');
+  const W = 360, H = 360;
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x030509, 6, 14);
+
+  const camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 50);
+  camera.position.set(0, 2.2, 5.2);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+  root.appendChild(renderer.domElement);
+
+  // ===== LIGHTING =====
+  const ambient = new THREE.AmbientLight(0x204060, 0.6);
+  scene.add(ambient);
+
+  const keyLight = new THREE.DirectionalLight(0x88ddff, 0.8);
+  keyLight.position.set(2, 4, 3);
+  scene.add(keyLight);
+
+  const rimLight = new THREE.PointLight(0x00e5ff, 1.2, 8);
+  rimLight.position.set(-2, 1, 2);
+  scene.add(rimLight);
+
+  // ===== DOCUMENT (with tilt for sci-fi hologram feel) =====
+  const docGroup = new THREE.Group();
+  docGroup.rotation.x = -0.35;
+  docGroup.rotation.y = 0.15;
+  docGroup.position.y = -0.1;
+  scene.add(docGroup);
+
+  // Document paper - slightly luminescent
+  const docW = 2.2, docH = 3.0;
+  const paperGeo = new THREE.PlaneGeometry(docW, docH);
+  const paperMat = new THREE.MeshStandardMaterial({
+    color: 0x0a1828,
+    emissive: 0x0a2838,
+    emissiveIntensity: 0.3,
+    roughness: 0.7,
+    metalness: 0.2,
+    side: THREE.DoubleSide,
+  });
+  const paper = new THREE.Mesh(paperGeo, paperMat);
+  docGroup.add(paper);
+
+  // Paper border - glowing edge
+  const edgeGeo = new THREE.EdgesGeometry(paperGeo);
+  const edgeMat = new THREE.LineBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.6 });
+  const edges = new THREE.LineSegments(edgeGeo, edgeMat);
+  docGroup.add(edges);
+
+  // Document content - text lines and a "title block"
+  const contentGroup = new THREE.Group();
+  contentGroup.position.z = 0.01;
+  docGroup.add(contentGroup);
+
+  // Title bar at top
+  const titleBarGeo = new THREE.PlaneGeometry(docW * 0.85, 0.18);
+  const titleBarMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.35 });
+  const titleBar = new THREE.Mesh(titleBarGeo, titleBarMat);
+  titleBar.position.set(0, docH / 2 - 0.25, 0.005);
+  contentGroup.add(titleBar);
+
+  // Title "text" - small bright blocks
+  for (let i = 0; i < 3; i++) {
+    const w = 0.15 + Math.random() * 0.15;
+    const g = new THREE.PlaneGeometry(w, 0.05);
+    const m = new THREE.MeshBasicMaterial({ color: 0xaaf0ff });
+    const block = new THREE.Mesh(g, m);
+    block.position.set(-docW / 2 + 0.25 + i * 0.35, docH / 2 - 0.25, 0.01);
+    contentGroup.add(block);
+  }
+
+  // Text lines - varying widths
+  const lineColors = [0x6aa5c0, 0x6aa5c0, 0x6aa5c0, 0x6aa5c0];
+  const lineWidths = [
+    0.95, 0.85, 0.92, 0.70,
+    0.90, 0.88, 0.60,
+    0.95, 0.82, 0.75, 0.88,
+    0.70, 0.92, 0.80
+  ];
+  let yPos = docH / 2 - 0.55;
+  lineWidths.forEach((wRatio, i) => {
+    const lineW = docW * 0.85 * wRatio;
+    const lineGeo = new THREE.PlaneGeometry(lineW, 0.035);
+    const lineMat = new THREE.MeshBasicMaterial({
+      color: lineColors[0],
+      transparent: true,
+      opacity: 0.5,
+    });
+    const line = new THREE.Mesh(lineGeo, lineMat);
+    line.position.set(
+      -docW / 2 + 0.2 + lineW / 2,
+      yPos,
+      0.005
+    );
+    contentGroup.add(line);
+    yPos -= 0.14;
+    // Paragraph break
+    if (i === 3 || i === 6 || i === 10) yPos -= 0.08;
+  });
+
+  // A small "chart" block in lower area
+  const chartGeo = new THREE.PlaneGeometry(0.6, 0.4);
+  const chartMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.15 });
+  const chart = new THREE.Mesh(chartGeo, chartMat);
+  chart.position.set(docW / 2 - 0.45, -docH / 2 + 0.4, 0.005);
+  contentGroup.add(chart);
+  // Chart bars
+  for (let i = 0; i < 4; i++) {
+    const h = 0.08 + Math.random() * 0.22;
+    const bG = new THREE.PlaneGeometry(0.08, h);
+    const bM = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
+    const bar = new THREE.Mesh(bG, bM);
+    bar.position.set(
+      docW / 2 - 0.65 + i * 0.12,
+      -docH / 2 + 0.3 + h / 2 - 0.15,
+      0.01
+    );
+    contentGroup.add(bar);
+  }
+
+  // ===== ANNOTATIONS (貼在文件上) =====
+  // 標籤直接貼在文件平面上，跟著文件傾斜
+  // docX/docY 為文件本地座標 (-1..1 範圍再乘以一半的寬高)
+  // bg = 背景色, fg = 文字/菱形色, glow = 光暈色
+  const annotationData = [
+    { docX: -0.25, docY: 0.85,  label: 'TITLE',   width: 0.80, bg: '#ffb400', fg: '#0a1420', glow: 0xffb400 },
+    { docX: -0.45, docY: 0.52,  label: 'ENTITY',  width: 0.88, bg: '#00e5ff', fg: '#041018', glow: 0x00e5ff },
+    { docX:  0.35, docY: 0.15,  label: 'DATE',    width: 0.78, bg: '#b388ff', fg: '#120820', glow: 0xb388ff },
+    { docX: -0.45, docY: -0.25, label: 'AMOUNT',  width: 0.85, bg: '#4ade80', fg: '#041810', glow: 0x4ade80 },
+    { docX:  0.40, docY: -0.70, label: 'METRIC',  width: 0.85, bg: '#ff5e8a', fg: '#1a0612', glow: 0xff5e8a },
+  ];
+
+  // 用 Canvas 產生標籤紋理 (實心背景、菱形符號、文字，無外框)
+  function makeTagTexture(label, bgColor, fgColor) {
+    const canvas = document.createElement('canvas');
+    const scale = 4; // 高解析度避免模糊
+    const baseW = 320, baseH = 88;
+    canvas.width = baseW * scale;
+    canvas.height = baseH * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+
+    // 實心背景 (圓角矩形)
+    const radius = 6;
+    ctx.fillStyle = bgColor;
+    ctx.beginPath();
+    ctx.moveTo(radius, 0);
+    ctx.lineTo(baseW - radius, 0);
+    ctx.quadraticCurveTo(baseW, 0, baseW, radius);
+    ctx.lineTo(baseW, baseH - radius);
+    ctx.quadraticCurveTo(baseW, baseH, baseW - radius, baseH);
+    ctx.lineTo(radius, baseH);
+    ctx.quadraticCurveTo(0, baseH, 0, baseH - radius);
+    ctx.lineTo(0, radius);
+    ctx.quadraticCurveTo(0, 0, radius, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // 菱形符號
+    ctx.fillStyle = fgColor;
+    ctx.font = 'bold 40px "JetBrains Mono", monospace';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('◆', 20, baseH / 2);
+
+    // 標籤文字
+    ctx.fillStyle = fgColor;
+    ctx.font = 'bold 40px "JetBrains Mono", monospace';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, 62, baseH / 2 + 1);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.anisotropy = 8;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    return { tex, aspect: baseW / baseH };
+  }
+
+  const annotationMeshes = [];
+  annotationData.forEach((ann) => {
+    const { tex, aspect } = makeTagTexture(ann.label, ann.bg, ann.fg);
+    const tagW = ann.width;
+    const tagH = tagW / aspect;
+
+    const mat = new THREE.MeshBasicMaterial({
+      map: tex,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      depthTest: false, // 永遠畫在文件上，不會被 z-fighting 影響
+    });
+    const geo = new THREE.PlaneGeometry(tagW, tagH);
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(
+      ann.docX * (docW / 2),
+      ann.docY * (docH / 2),
+      0.1 // 拉高，避免與文件表面競爭
+    );
+    mesh.renderOrder = 10; // 確保最後繪製
+
+    // 輕微發光外框 (用一個比標籤稍大的 plane，發散的光暈)
+    const glowGeo = new THREE.PlaneGeometry(tagW * 1.25, tagH * 1.9);
+    const glowMat = new THREE.ShaderMaterial({
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        uOpacity: { value: 0 },
+        uColor: { value: new THREE.Color(ann.glow) }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        uniform float uOpacity;
+        uniform vec3 uColor;
+        void main(){
+          vec2 p = (vUv - 0.5) * 2.0;
+          float d = length(p * vec2(1.0, 0.6));
+          float a = smoothstep(1.0, 0.3, d) * 0.4 * uOpacity;
+          gl_FragColor = vec4(uColor, a);
+        }
+      `
+    });
+    const glow = new THREE.Mesh(glowGeo, glowMat);
+    glow.position.copy(mesh.position);
+    glow.position.z = 0.09; // 光暈在標籤後面一點
+    glow.renderOrder = 9;
+    docGroup.add(glow);
+    docGroup.add(mesh);
+
+    annotationMeshes.push({
+      mesh, mat, glow, glowMat,
+      data: ann,
+      active: false,
+      activatedAt: 0,
+    });
+  });
+
+  // ===== SCAN PLANE =====
+  const scanGroup = new THREE.Group();
+  docGroup.add(scanGroup);
+
+  // Main scan line - thin bright bar
+  const scanLineGeo = new THREE.PlaneGeometry(docW * 1.15, 0.04);
+  const scanLineMat = new THREE.MeshBasicMaterial({
+    color: 0x00ffff,
+    transparent: true,
+    opacity: 1,
+    blending: THREE.AdditiveBlending,
+  });
+  const scanLine = new THREE.Mesh(scanLineGeo, scanLineMat);
+  scanLine.position.z = 0.05;
+  scanGroup.add(scanLine);
+
+  // Scan glow - wider translucent band behind the line
+  const scanGlowGeo = new THREE.PlaneGeometry(docW * 1.15, 0.5);
+  const scanGlowMat = new THREE.ShaderMaterial({
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    uniforms: { uColor: { value: new THREE.Color(0x00e5ff) } },
+    vertexShader: `
+      varying vec2 vUv;
+      void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+    `,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform vec3 uColor;
+      void main(){
+        float d = abs(vUv.y - 0.5) * 2.0;
+        float a = pow(1.0 - d, 3.0) * 0.55;
+        gl_FragColor = vec4(uColor, a);
+      }
+    `
+  });
+  const scanGlow = new THREE.Mesh(scanGlowGeo, scanGlowMat);
+  scanGlow.position.z = 0.04;
+  scanGroup.add(scanGlow);
+
+  // "Revealed strip" - a ghost that trails the scan to show processed area
+  const revealGeo = new THREE.PlaneGeometry(docW * 1.02, docH);
+  const revealMat = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    uniforms: {
+      uProgress: { value: 0.0 },
+      uColor: { value: new THREE.Color(0x00e5ff) }
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+    `,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform float uProgress;
+      uniform vec3 uColor;
+      void main(){
+        // uProgress is 0..1, top-to-bottom. vUv.y is bottom-to-top.
+        float scanY = 1.0 - uProgress;
+        if (vUv.y < scanY) discard;
+        // Scanline pattern
+        float stripes = step(0.5, fract(vUv.y * 80.0));
+        float intensity = 0.08 + stripes * 0.05;
+        // Fade toward bottom (oldest scanned)
+        float fade = smoothstep(1.0 - uProgress, scanY, vUv.y);
+        gl_FragColor = vec4(uColor, intensity * fade);
+      }
+    `
+  });
+  const revealMesh = new THREE.Mesh(revealGeo, revealMat);
+  revealMesh.position.z = 0.03;
+  docGroup.add(revealMesh);
+
+  // ===== PARTICLES (data motes around doc) =====
+  const particleCount = 40;
+  const pGeo = new THREE.BufferGeometry();
+  const pPos = new Float32Array(particleCount * 3);
+  const pSeed = new Float32Array(particleCount);
+  for (let i = 0; i < particleCount; i++) {
+    pPos[i*3]   = (Math.random() - 0.5) * 4;
+    pPos[i*3+1] = (Math.random() - 0.5) * 4;
+    pPos[i*3+2] = (Math.random() - 0.5) * 2;
+    pSeed[i] = Math.random() * 10;
+  }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  pGeo.setAttribute('seed', new THREE.BufferAttribute(pSeed, 1));
+  const pMat = new THREE.PointsMaterial({
+    color: 0x00e5ff,
+    size: 0.025,
+    transparent: true,
+    opacity: 0.6,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  const particles = new THREE.Points(pGeo, pMat);
+  scene.add(particles);
+
+  // ===== ANIMATION LOOP =====
+  const clock = new THREE.Clock();
+  let scanProgress = 0;
+  const scanDuration = 3.5;
+  const holdDuration = 1.8;
+  const cycleDuration = scanDuration + holdDuration;
+
+  const progressEl = document.getElementById('progress-fill');
+  const tagCountEl = document.getElementById('tag-count');
+  const scanLabelEl = document.getElementById('scan-label');
+  const confEl = document.getElementById('conf-value');
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+
+    // Cycle time
+    const cycleT = t % cycleDuration;
+    let progress, phase;
+    if (cycleT < scanDuration) {
+      progress = cycleT / scanDuration;
+      phase = 'scan';
+    } else {
+      progress = 1;
+      phase = 'hold';
+    }
+    scanProgress = progress;
+
+    // Update scan line position (top of doc at y=docH/2, bottom at -docH/2)
+    const scanY = docH / 2 - progress * docH;
+    scanGroup.position.y = scanY;
+
+    // Scan line pulse brightness
+    const pulse = 0.85 + Math.sin(t * 12) * 0.15;
+    scanLineMat.opacity = phase === 'scan' ? pulse : Math.max(0, 1 - (cycleT - scanDuration) * 2);
+    scanGlowMat.uniforms.uColor.value.setHSL(0.5, 1, 0.5 + Math.sin(t * 8) * 0.05);
+    scanGroup.visible = phase === 'scan' || cycleT < scanDuration + 0.5;
+
+    // Update reveal strip
+    revealMat.uniforms.uProgress.value = progress;
+
+    // Subtle doc hover
+    docGroup.rotation.y = 0.15 + Math.sin(t * 0.6) * 0.04;
+    docGroup.position.x = Math.sin(t * 0.4) * 0.03;
+
+    // Animate particles
+    const posAttr = particles.geometry.attributes.position;
+    const seedAttr = particles.geometry.attributes.seed;
+    for (let i = 0; i < particleCount; i++) {
+      const seed = seedAttr.array[i];
+      posAttr.array[i*3+1] += 0.003 + Math.sin(t + seed) * 0.001;
+      posAttr.array[i*3] += Math.cos(t * 0.5 + seed) * 0.002;
+      if (posAttr.array[i*3+1] > 2.2) {
+        posAttr.array[i*3+1] = -2.2;
+        posAttr.array[i*3] = (Math.random() - 0.5) * 4;
+      }
+    }
+    posAttr.needsUpdate = true;
+    pMat.opacity = 0.4 + Math.sin(t * 2) * 0.15;
+
+    // Reset annotations at start of each cycle
+    if (cycleT < 0.05) {
+      annotationMeshes.forEach(a => {
+        a.active = false;
+        a.activatedAt = 0;
+      });
+    }
+
+    // Activate annotations as scan passes them
+    let activeCount = 0;
+    annotationMeshes.forEach((a) => {
+      const activationProgress = (1 - a.data.docY) / 2;
+      const shouldBeActive = progress >= activationProgress;
+      if (shouldBeActive && !a.active) {
+        a.active = true;
+        a.activatedAt = t;
+      }
+      if (a.active) {
+        activeCount++;
+        // Fade-in 動畫 (0.35 秒)
+        const elapsed = t - a.activatedAt;
+        const fade = Math.min(1, elapsed / 0.35);
+        // 輕微的呼吸脈動效果
+        const breathe = 0.92 + Math.sin((t - a.activatedAt) * 4) * 0.08;
+        a.mat.opacity = fade;
+        a.glowMat.uniforms.uOpacity.value = fade * breathe;
+        // 出現時微微放大再回彈 (pop-in)
+        const scale = fade < 1 ? 0.8 + fade * 0.2 : 1;
+        a.mesh.scale.setScalar(scale);
+        a.glow.scale.setScalar(scale);
+      } else {
+        a.mat.opacity = 0;
+        a.glowMat.uniforms.uOpacity.value = 0;
+      }
+    });
+
+    // Update HUD
+    progressEl.style.width = (progress * 100) + '%';
+    tagCountEl.textContent = String(activeCount).padStart(2, '0');
+    if (phase === 'scan') {
+      scanLabelEl.textContent = 'ANALYZING';
+    } else {
+      scanLabelEl.textContent = 'COMPLETE';
+    }
+
+    // Confidence ticker
+    if (phase === 'scan' && Math.random() < 0.1) {
+      const c = (97 + Math.random() * 2.5).toFixed(1);
+      confEl.textContent = c + '%';
+    } else if (phase === 'hold') {
+      confEl.textContent = '99.4%';
+    }
+
+    renderer.render(scene, camera);
+  }
+  animate();
+</script>
+</body>
+</html>

@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap');
+
+  body { margin: 0; background: #000; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+
+  #scanner-root {
+    width: 360px;
+    height: 360px;
+    position: relative;
+    font-family: 'JetBrains Mono', monospace;
+    background: radial-gradient(ellipse at center, #0a1520 0%, #030509 70%);
+    overflow: hidden;
+    border: 1px solid rgba(0, 229, 255, 0.15);
+    box-shadow: inset 0 0 60px rgba(0, 229, 255, 0.08);
+  }
+
+  #scanner-root canvas {
+    display: block;
+    position: absolute;
+    inset: 0;
+    will-change: transform;
+  }
+
+  /* Grid floor texture overlay */
+  .grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0, 229, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 229, 255, 0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Noise overlay */
+  .noise {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0.08;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  /* Corner HUD brackets */
+  .hud-corner {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid #00e5ff;
+    z-index: 5;
+    opacity: 0.8;
+  }
+  .hud-corner.tl { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+  .hud-corner.tr { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+  .hud-corner.bl { bottom: 10px; left: 10px; border-right: none; border-top: none; }
+  .hud-corner.br { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+
+  /* Top status bar */
+  .status-bar {
+    position: absolute;
+    top: 14px;
+    left: 34px;
+    right: 34px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    color: #00e5ff;
+    z-index: 5;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .status-bar .dot {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    background: #00e5ff;
+    border-radius: 50%;
+    margin-right: 5px;
+    box-shadow: 0 0 6px #00e5ff;
+    animation: pulse 1.2s ease-in-out infinite;
+    vertical-align: middle;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Bottom status bar */
+  .bottom-bar {
+    position: absolute;
+    bottom: 14px;
+    left: 34px;
+    right: 34px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    color: rgba(0, 229, 255, 0.6);
+    z-index: 5;
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .bottom-bar .label {
+    color: rgba(0, 229, 255, 0.35);
+  }
+  .bottom-bar .value {
+    color: #00e5ff;
+    font-weight: 700;
+  }
+
+  /* Center readout */
+  .scan-readout {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 7px;
+    color: rgba(0, 229, 255, 0.7);
+    letter-spacing: 0.25em;
+    z-index: 5;
+    text-align: center;
+    font-weight: 500;
+  }
+  .scan-readout .progress-track {
+    margin-top: 4px;
+    width: 80px;
+    height: 2px;
+    background: rgba(0, 229, 255, 0.15);
+    position: relative;
+    overflow: hidden;
+  }
+  .scan-readout .progress-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: #00e5ff;
+    box-shadow: 0 0 6px #00e5ff;
+    width: 0%;
+    transition: width 0.1s linear;
+  }
+
+  /* Vignette */
+  .vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 8;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%);
+  }
+
+  /* Drop zone hint overlay - shown during IDLE phase */
+  .drop-hint {
+    position: absolute;
+    inset: 40px;
+    border: 1.5px dashed rgba(0, 229, 255, 0.35);
+    border-radius: 8px;
+    z-index: 4;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    transition: opacity 0.4s ease, border-color 0.3s ease, transform 0.4s ease;
+  }
+  .drop-hint.active {
+    border-color: rgba(0, 229, 255, 0.75);
+    box-shadow: 0 0 24px rgba(0, 229, 255, 0.25), inset 0 0 24px rgba(0, 229, 255, 0.12);
+    transform: scale(1.02);
+  }
+  .drop-hint.hidden {
+    opacity: 0;
+  }
+  .drop-hint-icon {
+    font-size: 22px;
+    color: #00e5ff;
+    opacity: 0.9;
+    letter-spacing: 0;
+    line-height: 1;
+    filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.5));
+  }
+  .drop-hint-text {
+    font-size: 9px;
+    color: rgba(0, 229, 255, 0.85);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .drop-hint-sub {
+    font-size: 7px;
+    color: rgba(0, 229, 255, 0.45);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div id="scanner-root">
+  <div class="grid-bg"></div>
+
+  <div class="hud-corner tl"></div>
+  <div class="hud-corner tr"></div>
+  <div class="hud-corner bl"></div>
+  <div class="hud-corner br"></div>
+
+  <div class="status-bar">
+    <span><span class="dot"></span><span id="status-left">AWAITING_INPUT</span></span>
+    <span id="status-right">DOC.01</span>
+  </div>
+
+  <div class="scan-readout">
+    <div id="scan-label">READY</div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+
+  <div class="bottom-bar">
+    <span><span class="label">FMT</span> <span class="value" id="fmt-value">---</span></span>
+    <span><span class="label">SIZE</span> <span class="value" id="size-value">0.00KB</span></span>
+  </div>
+
+  <div class="drop-hint" id="drop-hint">
+    <div class="drop-hint-icon">⇩</div>
+    <div class="drop-hint-text">Drop File</div>
+    <div class="drop-hint-sub">to materialize</div>
+  </div>
+
+  <div class="vignette"></div>
+  <div class="noise"></div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+  import * as THREE from 'three';
+
+  const root = document.getElementById('scanner-root');
+  const W = 360, H = 360;
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x030509, 6, 14);
+
+  const camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 50);
+  camera.position.set(0, 2.2, 5.2);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+  root.appendChild(renderer.domElement);
+
+  // ===== LIGHTING =====
+  const ambient = new THREE.AmbientLight(0x204060, 0.6);
+  scene.add(ambient);
+
+  const keyLight = new THREE.DirectionalLight(0x88ddff, 0.8);
+  keyLight.position.set(2, 4, 3);
+  scene.add(keyLight);
+
+  const rimLight = new THREE.PointLight(0x00e5ff, 1.2, 8);
+  rimLight.position.set(-2, 1, 2);
+  scene.add(rimLight);
+
+  // ===== DOCUMENT =====
+  const docGroup = new THREE.Group();
+  docGroup.rotation.x = -0.35;
+  docGroup.rotation.y = 0.15;
+  docGroup.position.y = -0.1;
+  scene.add(docGroup);
+
+  // Document paper
+  const docW = 2.2, docH = 3.0;
+  const paperGeo = new THREE.PlaneGeometry(docW, docH);
+  const paperMat = new THREE.MeshStandardMaterial({
+    color: 0x0a1828,
+    emissive: 0x0a2838,
+    emissiveIntensity: 0.3,
+    roughness: 0.7,
+    metalness: 0.2,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0,
+  });
+  const paper = new THREE.Mesh(paperGeo, paperMat);
+  docGroup.add(paper);
+
+  // Paper border - glowing edge
+  const edgeGeo = new THREE.EdgesGeometry(paperGeo);
+  const edgeMat = new THREE.LineBasicMaterial({
+    color: 0x00e5ff,
+    transparent: true,
+    opacity: 0,
+  });
+  const edges = new THREE.LineSegments(edgeGeo, edgeMat);
+  docGroup.add(edges);
+
+  // Content group - all inner elements with individual staggered reveal
+  const contentGroup = new THREE.Group();
+  contentGroup.position.z = 0.01;
+  docGroup.add(contentGroup);
+
+  // Track all content meshes + their individual reveal delay (0..1 normalized)
+  const contentItems = [];
+
+  function addContentItem(mesh, revealOrder) {
+    mesh.material.transparent = true;
+    mesh.material.opacity = 0;
+    contentItems.push({
+      mesh,
+      baseOpacity: mesh.material.userData.baseOpacity ?? mesh.material.opacity ?? 1,
+      revealOrder, // 0..1 — later items appear later
+    });
+  }
+
+  // Title bar at top
+  const titleBarGeo = new THREE.PlaneGeometry(docW * 0.85, 0.18);
+  const titleBarMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0 });
+  titleBarMat.userData.baseOpacity = 0.35;
+  const titleBar = new THREE.Mesh(titleBarGeo, titleBarMat);
+  titleBar.position.set(0, docH / 2 - 0.25, 0.005);
+  contentGroup.add(titleBar);
+  addContentItem(titleBar, 0.0);
+
+  // Title blocks
+  for (let i = 0; i < 3; i++) {
+    const w = 0.15 + Math.random() * 0.15;
+    const g = new THREE.PlaneGeometry(w, 0.05);
+    const m = new THREE.MeshBasicMaterial({ color: 0xaaf0ff, transparent: true, opacity: 0 });
+    m.userData.baseOpacity = 1;
+    const block = new THREE.Mesh(g, m);
+    block.position.set(-docW / 2 + 0.25 + i * 0.35, docH / 2 - 0.25, 0.01);
+    contentGroup.add(block);
+    addContentItem(block, 0.05 + i * 0.02);
+  }
+
+  // Text lines
+  const lineWidths = [
+    0.95, 0.85, 0.92, 0.70,
+    0.90, 0.88, 0.60,
+    0.95, 0.82, 0.75, 0.88,
+    0.70, 0.92, 0.80
+  ];
+  let yPos = docH / 2 - 0.55;
+  lineWidths.forEach((wRatio, i) => {
+    const lineW = docW * 0.85 * wRatio;
+    const lineGeo = new THREE.PlaneGeometry(lineW, 0.035);
+    const lineMat = new THREE.MeshBasicMaterial({
+      color: 0x6aa5c0,
+      transparent: true,
+      opacity: 0,
+    });
+    lineMat.userData.baseOpacity = 0.5;
+    const line = new THREE.Mesh(lineGeo, lineMat);
+    line.position.set(
+      -docW / 2 + 0.2 + lineW / 2,
+      yPos,
+      0.005
+    );
+    contentGroup.add(line);
+    // 文字行從上到下依序顯現 (0.15 ~ 0.85)
+    addContentItem(line, 0.15 + (i / lineWidths.length) * 0.7);
+    yPos -= 0.14;
+    if (i === 3 || i === 6 || i === 10) yPos -= 0.08;
+  });
+
+  // Chart block (appears last)
+  const chartGeo = new THREE.PlaneGeometry(0.6, 0.4);
+  const chartMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0 });
+  chartMat.userData.baseOpacity = 0.15;
+  const chart = new THREE.Mesh(chartGeo, chartMat);
+  chart.position.set(docW / 2 - 0.45, -docH / 2 + 0.4, 0.005);
+  contentGroup.add(chart);
+  addContentItem(chart, 0.88);
+
+  // Chart bars
+  for (let i = 0; i < 4; i++) {
+    const h = 0.08 + Math.random() * 0.22;
+    const bG = new THREE.PlaneGeometry(0.08, h);
+    const bM = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0 });
+    bM.userData.baseOpacity = 1;
+    const bar = new THREE.Mesh(bG, bM);
+    bar.position.set(
+      docW / 2 - 0.65 + i * 0.12,
+      -docH / 2 + 0.3 + h / 2 - 0.15,
+      0.01
+    );
+    contentGroup.add(bar);
+    addContentItem(bar, 0.92 + i * 0.015);
+  }
+
+  // ===== MATERIALIZATION BEAM (光束從上方落下的效果) =====
+  // 在文件出現的瞬間，有一道光束從上方落下、擴散
+  const beamGeo = new THREE.PlaneGeometry(docW * 1.3, docH * 1.3);
+  const beamMat = new THREE.ShaderMaterial({
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    uniforms: {
+      uOpacity: { value: 0 },
+      uColor: { value: new THREE.Color(0x00e5ff) },
+      uTime: { value: 0 },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+    `,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform float uOpacity;
+      uniform vec3 uColor;
+      uniform float uTime;
+      void main(){
+        vec2 p = (vUv - 0.5) * 2.0;
+        // 橢圓徑向漸變
+        float d = length(p * vec2(0.9, 1.0));
+        float glow = smoothstep(1.0, 0.1, d);
+        // 垂直掃描條紋
+        float stripes = 0.5 + 0.5 * sin(vUv.y * 80.0 - uTime * 6.0);
+        glow *= (0.7 + stripes * 0.3);
+        gl_FragColor = vec4(uColor, glow * uOpacity * 0.6);
+      }
+    `
+  });
+  const beam = new THREE.Mesh(beamGeo, beamMat);
+  beam.position.z = -0.02;
+  docGroup.add(beam);
+
+  // ===== MATERIALIZATION SWEEP (文件出現時由上而下的掃描光條) =====
+  const sweepGeo = new THREE.PlaneGeometry(docW * 1.1, 0.15);
+  const sweepMat = new THREE.ShaderMaterial({
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    uniforms: {
+      uOpacity: { value: 0 },
+      uColor: { value: new THREE.Color(0x66f0ff) },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+    `,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform float uOpacity;
+      uniform vec3 uColor;
+      void main(){
+        float d = abs(vUv.y - 0.5) * 2.0;
+        float a = pow(1.0 - d, 2.5);
+        gl_FragColor = vec4(uColor, a * uOpacity);
+      }
+    `
+  });
+  const sweep = new THREE.Mesh(sweepGeo, sweepMat);
+  sweep.position.z = 0.05;
+  docGroup.add(sweep);
+
+  // ===== FALLING FILE ICON (檔案圖示從上方落下) =====
+  // 在 DRAGGING 階段顯示一個小小的檔案圖示在掉落
+  const fileIconGroup = new THREE.Group();
+  scene.add(fileIconGroup);
+
+  // 圖示主體 (小矩形，模擬檔案)
+  const iconW = 0.45, iconH = 0.58;
+  const iconBodyGeo = new THREE.PlaneGeometry(iconW, iconH);
+  const iconBodyMat = new THREE.MeshBasicMaterial({
+    color: 0x0a1828,
+    transparent: true,
+    opacity: 0,
+    side: THREE.DoubleSide,
+  });
+  const iconBody = new THREE.Mesh(iconBodyGeo, iconBodyMat);
+  fileIconGroup.add(iconBody);
+
+  // 圖示邊框
+  const iconEdgeGeo = new THREE.EdgesGeometry(iconBodyGeo);
+  const iconEdgeMat = new THREE.LineBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0 });
+  const iconEdges = new THREE.LineSegments(iconEdgeGeo, iconEdgeMat);
+  fileIconGroup.add(iconEdges);
+
+  // 圖示摺角 (右上角小三角的示意，用一個小矩形代替)
+  const iconCornerGeo = new THREE.PlaneGeometry(0.12, 0.12);
+  const iconCornerMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0 });
+  const iconCorner = new THREE.Mesh(iconCornerGeo, iconCornerMat);
+  iconCorner.position.set(iconW / 2 - 0.06, iconH / 2 - 0.06, 0.01);
+  fileIconGroup.add(iconCorner);
+
+  // 圖示內部的示意線條
+  for (let i = 0; i < 3; i++) {
+    const lG = new THREE.PlaneGeometry(iconW * 0.6, 0.03);
+    const lM = new THREE.MeshBasicMaterial({ color: 0x66c0dd, transparent: true, opacity: 0 });
+    lM.userData.baseOpacity = 0.7;
+    const l = new THREE.Mesh(lG, lM);
+    l.position.set(-iconW * 0.08, 0.05 - i * 0.1, 0.01);
+    fileIconGroup.add(l);
+  }
+
+  fileIconGroup.rotation.x = -0.15;
+  fileIconGroup.rotation.y = 0.1;
+
+  // 游標指示器 (簡單的箭頭形狀，在檔案圖示左上角)
+  // 用 BufferGeometry 畫一個游標三角形
+  const cursorShape = new THREE.Shape();
+  cursorShape.moveTo(0, 0);
+  cursorShape.lineTo(0, -0.22);
+  cursorShape.lineTo(0.06, -0.16);
+  cursorShape.lineTo(0.11, -0.24);
+  cursorShape.lineTo(0.14, -0.22);
+  cursorShape.lineTo(0.09, -0.14);
+  cursorShape.lineTo(0.16, -0.13);
+  cursorShape.lineTo(0, 0);
+  const cursorGeo = new THREE.ShapeGeometry(cursorShape);
+  const cursorMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0,
+    side: THREE.DoubleSide,
+  });
+  cursorMat.userData.baseOpacity = 0.95;
+  const cursor = new THREE.Mesh(cursorGeo, cursorMat);
+  // 放在檔案圖示的右上角外側 (像游標抓著檔案的感覺)
+  cursor.position.set(iconW / 2 - 0.02, iconH / 2 + 0.02, 0.05);
+  fileIconGroup.add(cursor);
+
+  // 游標邊框 (暗色描邊，讓白色游標在任何背景都清楚)
+  const cursorEdgeGeo = new THREE.EdgesGeometry(cursorGeo);
+  const cursorEdgeMat = new THREE.LineBasicMaterial({
+    color: 0x041018,
+    transparent: true,
+    opacity: 0,
+  });
+  cursorEdgeMat.userData.baseOpacity = 0.8;
+  const cursorEdge = new THREE.LineSegments(cursorEdgeGeo, cursorEdgeMat);
+  cursorEdge.position.copy(cursor.position);
+  cursorEdge.position.z -= 0.001;
+  fileIconGroup.add(cursorEdge);
+
+  // ===== PARTICLES =====
+  const particleCount = 40;
+  const pGeo = new THREE.BufferGeometry();
+  const pPos = new Float32Array(particleCount * 3);
+  const pSeed = new Float32Array(particleCount);
+  for (let i = 0; i < particleCount; i++) {
+    pPos[i*3]   = (Math.random() - 0.5) * 4;
+    pPos[i*3+1] = (Math.random() - 0.5) * 4;
+    pPos[i*3+2] = (Math.random() - 0.5) * 2;
+    pSeed[i] = Math.random() * 10;
+  }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  pGeo.setAttribute('seed', new THREE.BufferAttribute(pSeed, 1));
+  const pMat = new THREE.PointsMaterial({
+    color: 0x00e5ff,
+    size: 0.025,
+    transparent: true,
+    opacity: 0.6,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  const particles = new THREE.Points(pGeo, pMat);
+  scene.add(particles);
+
+  // ===== CONVERGING BURST PARTICLES (檔案落下時的粒子爆發) =====
+  const burstCount = 60;
+  const burstGeo = new THREE.BufferGeometry();
+  const burstPos = new Float32Array(burstCount * 3);
+  const burstVel = [];
+  for (let i = 0; i < burstCount; i++) {
+    burstPos[i*3] = 0;
+    burstPos[i*3+1] = 0;
+    burstPos[i*3+2] = 0;
+    // 預先隨機化方向向量
+    const theta = Math.random() * Math.PI * 2;
+    const r = 0.5 + Math.random() * 1.5;
+    burstVel.push({
+      vx: Math.cos(theta) * r,
+      vy: Math.sin(theta) * r * 0.7,
+      vz: (Math.random() - 0.5) * 0.5,
+      life: Math.random() * 0.5 + 0.5,
+    });
+  }
+  burstGeo.setAttribute('position', new THREE.BufferAttribute(burstPos, 3));
+  const burstMat = new THREE.PointsMaterial({
+    color: 0x88f0ff,
+    size: 0.04,
+    transparent: true,
+    opacity: 0,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  const burst = new THREE.Points(burstGeo, burstMat);
+  scene.add(burst);
+  let burstActive = false;
+  let burstStartTime = 0;
+
+  // ===== STATE MACHINE =====
+  // IDLE (0.5s) → DRAGGING (1.2s, 圖示落下) → IMPACT (0.25s, 爆發) → MATERIALIZING (1.8s, 文件顯現) → HOLD (1.5s) → loop
+  const phases = {
+    IDLE:          { duration: 0.8, label: 'READY',        status: 'AWAITING_INPUT' },
+    DRAGGING:      { duration: 2.4, label: 'INCOMING',     status: 'DRAGGING_FILE' },
+    IMPACT:        { duration: 0.3, label: 'RECEIVED',    status: 'FILE_DROPPED' },
+    MATERIALIZING: { duration: 1.8, label: 'MATERIALIZE',  status: 'PROCESSING' },
+    HOLD:          { duration: 1.4, label: 'LOADED',       status: 'DOC_READY' },
+  };
+  const phaseOrder = ['IDLE', 'DRAGGING', 'IMPACT', 'MATERIALIZING', 'HOLD'];
+  const cycleDuration = phaseOrder.reduce((s, p) => s + phases[p].duration, 0);
+
+  function getPhase(t) {
+    const ct = t % cycleDuration;
+    let acc = 0;
+    for (const p of phaseOrder) {
+      const d = phases[p].duration;
+      if (ct < acc + d) {
+        return { name: p, progress: (ct - acc) / d, cycleT: ct };
+      }
+      acc += d;
+    }
+    return { name: 'HOLD', progress: 1, cycleT: ct };
+  }
+
+  // Easing functions
+  const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
+  const easeInCubic = (x) => x * x * x;
+  const easeInOutCubic = (x) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  const easeOutQuart = (x) => 1 - Math.pow(1 - x, 4);
+
+  // ===== DOM references =====
+  const dropHint = document.getElementById('drop-hint');
+  const progressEl = document.getElementById('progress-fill');
+  const scanLabelEl = document.getElementById('scan-label');
+  const statusLeftEl = document.getElementById('status-left');
+  const fmtEl = document.getElementById('fmt-value');
+  const sizeEl = document.getElementById('size-value');
+
+  // 模擬檔案資訊 (每次循環變一次，營造不同檔案的感覺)
+  const fileFormats = ['PDF', 'DOCX', 'TXT', 'MD', 'CSV'];
+  let currentFormat = fileFormats[0];
+  let currentSize = 128;
+  let lastCycle = -1;
+
+  // ===== ANIMATION LOOP =====
+  const clock = new THREE.Clock();
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+    const phase = getPhase(t);
+
+    // 每次循環開始時，隨機一個新檔案
+    const currentCycle = Math.floor(t / cycleDuration);
+    if (currentCycle !== lastCycle) {
+      lastCycle = currentCycle;
+      currentFormat = fileFormats[Math.floor(Math.random() * fileFormats.length)];
+      currentSize = (120 + Math.random() * 900).toFixed(2);
+    }
+
+    // Update beam shader time
+    beamMat.uniforms.uTime.value = t;
+
+    // ---------- IDLE ----------
+    if (phase.name === 'IDLE') {
+      dropHint.classList.remove('active', 'hidden');
+      // 文件完全不可見
+      paperMat.opacity = 0;
+      edgeMat.opacity = 0;
+      contentItems.forEach(ci => ci.mesh.material.opacity = 0);
+      // 圖示不可見
+      setIconOpacity(0);
+      beamMat.uniforms.uOpacity.value = 0;
+      sweepMat.uniforms.uOpacity.value = 0;
+      burstMat.opacity = 0;
+      burstActive = false;
+
+      scanLabelEl.textContent = phases.IDLE.label;
+      statusLeftEl.textContent = phases.IDLE.status;
+      progressEl.style.width = '0%';
+      fmtEl.textContent = '---';
+      sizeEl.textContent = '0.00KB';
+    }
+
+    // ---------- DRAGGING ----------
+    else if (phase.name === 'DRAGGING') {
+      dropHint.classList.add('active');
+      dropHint.classList.remove('hidden');
+
+      const p = phase.progress;
+      // 使用者從畫面左上外側拖入的軌跡 (直線)
+      // 起點在畫面左上外側，終點在文件上方中央
+      const startX = -3.0, startY = 2.8, startZ = 1.8;
+      const endX = 0, endY = 0.3, endZ = 1.2;
+
+      // 分段 easing：前 80% 推進到 0.97 (幾乎到位)，最後 20% 只做細微的停頓微調
+      let pathP;
+      if (p < 0.8) {
+        const sub = p / 0.8;
+        pathP = (1 - Math.pow(1 - sub, 2)) * 0.97;
+      } else {
+        const sub = (p - 0.8) / 0.2;
+        pathP = 0.97 + easeOutCubic(sub) * 0.03;
+      }
+
+      // 直線插值
+      const posX = startX + (endX - startX) * pathP;
+      const posY = startY + (endY - startY) * pathP;
+      const posZ = startZ + (endZ - startZ) * pathP;
+
+      fileIconGroup.position.set(posX, posY, posZ);
+
+      // 圖示保持被「抓著」的固定姿態，不搖擺
+      fileIconGroup.rotation.x = -0.15;
+      fileIconGroup.rotation.y = 0.1;
+      fileIconGroup.rotation.z = 0;
+
+      // 透明度：一開始從畫面外淡入，最後停留時保持實體
+      // 最後 10% (模擬「放手」瞬間) 稍微閃爍
+      let iconAlpha;
+      if (p < 0.1) iconAlpha = p / 0.1; // 淡入
+      else if (p > 0.9) {
+        // 放手前的視覺提示：短暫閃一下
+        const releaseP = (p - 0.9) / 0.1;
+        iconAlpha = 1 - releaseP * 0.3 + Math.sin(releaseP * Math.PI * 3) * 0.15;
+      } else iconAlpha = 1;
+      setIconOpacity(Math.max(0, Math.min(1, iconAlpha)));
+
+      // 文件仍不可見
+      paperMat.opacity = 0;
+      edgeMat.opacity = 0;
+      contentItems.forEach(ci => ci.mesh.material.opacity = 0);
+      beamMat.uniforms.uOpacity.value = 0;
+      sweepMat.uniforms.uOpacity.value = 0;
+      burstMat.opacity = 0;
+
+      scanLabelEl.textContent = phases.DRAGGING.label;
+      statusLeftEl.textContent = phases.DRAGGING.status;
+      progressEl.style.width = (p * 15) + '%';
+      fmtEl.textContent = currentFormat;
+      sizeEl.textContent = (currentSize * p).toFixed(2) + 'KB';
+    }
+
+    // ---------- IMPACT ----------
+    else if (phase.name === 'IMPACT') {
+      dropHint.classList.add('hidden');
+      // 觸發粒子爆發 (只觸發一次)
+      if (!burstActive) {
+        burstActive = true;
+        burstStartTime = t;
+        const pos = burst.geometry.attributes.position;
+        for (let i = 0; i < burstCount; i++) {
+          pos.array[i*3] = 0;
+          pos.array[i*3+1] = 0;
+          pos.array[i*3+2] = 0;
+        }
+        pos.needsUpdate = true;
+      }
+
+      setIconOpacity(0);
+
+      // 粒子散射 (溫和版，只是向外擴散)
+      const bp = phase.progress;
+      const pos = burst.geometry.attributes.position;
+      for (let i = 0; i < burstCount; i++) {
+        const v = burstVel[i];
+        pos.array[i*3] = v.vx * bp * 0.7;
+        pos.array[i*3+1] = v.vy * bp * 0.7;
+        pos.array[i*3+2] = v.vz * bp * 0.7;
+      }
+      pos.needsUpdate = true;
+      burstMat.opacity = (1 - bp) * 0.6;
+      burstMat.size = 0.035 + bp * 0.02;
+
+      // 光束淡入
+      beamMat.uniforms.uOpacity.value = easeOutQuart(bp) * 0.8;
+
+      // 文件邊框開始閃現
+      paperMat.opacity = bp * 0.15;
+      edgeMat.opacity = bp * 0.5;
+      contentItems.forEach(ci => ci.mesh.material.opacity = 0);
+
+      scanLabelEl.textContent = phases.IMPACT.label;
+      statusLeftEl.textContent = phases.IMPACT.status;
+      progressEl.style.width = (15 + bp * 10) + '%';
+    }
+
+    // ---------- MATERIALIZING ----------
+    else if (phase.name === 'MATERIALIZING') {
+      dropHint.classList.add('hidden');
+      setIconOpacity(0);
+      const p = phase.progress;
+      const eased = easeOutCubic(p);
+
+      // 光束淡出 (在材質化過程中慢慢減弱)
+      beamMat.uniforms.uOpacity.value = Math.max(0, 1 - p * 1.3);
+
+      // 掃描光條從上到下掃過，文件在光條後方逐漸顯現
+      // sweepY: 1 (top) → -1 (bottom)
+      const sweepProgress = p; // 0..1
+      const sweepY = (docH / 2) - sweepProgress * docH;
+      sweep.position.y = sweepY;
+      // 光條在開始和結束時淡出
+      let sweepAlpha;
+      if (p < 0.1) sweepAlpha = p / 0.1;
+      else if (p > 0.9) sweepAlpha = (1 - p) / 0.1;
+      else sweepAlpha = 1;
+      sweepMat.uniforms.uOpacity.value = sweepAlpha * 0.9;
+
+      // 紙張整體淡入 (較快)
+      paperMat.opacity = Math.min(1, p * 2);
+      edgeMat.opacity = Math.min(0.6, 0.5 + p * 0.3);
+
+      // 內容元素根據其 revealOrder 依序淡入
+      // 每個元素的 reveal 時機 = revealOrder (0..1)，對應 sweepY
+      // 在 sweep 通過後 0.1s 內淡入
+      contentItems.forEach(ci => {
+        const revealAt = ci.revealOrder; // 0..1
+        // 當 sweepProgress 超過 revealAt 時開始淡入
+        const localP = (sweepProgress - revealAt) / 0.15;
+        const fade = Math.max(0, Math.min(1, localP));
+        ci.mesh.material.opacity = fade * ci.baseOpacity;
+      });
+
+      // 粒子殘影繼續散開並淡出
+      if (burstActive && t - burstStartTime < 1.0) {
+        const bp = Math.min(1, (t - burstStartTime) / 1.0);
+        const pos = burst.geometry.attributes.position;
+        for (let i = 0; i < burstCount; i++) {
+          const v = burstVel[i];
+          pos.array[i*3] = v.vx * bp * 1.2;
+          pos.array[i*3+1] = v.vy * bp * 1.2 - bp * bp * 0.5;
+          pos.array[i*3+2] = v.vz * bp * 1.2;
+        }
+        pos.needsUpdate = true;
+        burstMat.opacity = Math.max(0, (1 - bp) * 0.5);
+      } else {
+        burstMat.opacity = 0;
+        burstActive = false;
+      }
+
+      scanLabelEl.textContent = phases.MATERIALIZING.label;
+      statusLeftEl.textContent = phases.MATERIALIZING.status;
+      progressEl.style.width = (25 + eased * 70) + '%';
+    }
+
+    // ---------- HOLD ----------
+    else if (phase.name === 'HOLD') {
+      dropHint.classList.add('hidden');
+      setIconOpacity(0);
+      // 所有元素完全顯示
+      paperMat.opacity = 1;
+      edgeMat.opacity = 0.6;
+      contentItems.forEach(ci => {
+        ci.mesh.material.opacity = ci.baseOpacity;
+      });
+      beamMat.uniforms.uOpacity.value = 0;
+      sweepMat.uniforms.uOpacity.value = 0;
+      burstMat.opacity = 0;
+
+      scanLabelEl.textContent = phases.HOLD.label;
+      statusLeftEl.textContent = phases.HOLD.status;
+      progressEl.style.width = '100%';
+    }
+
+    // ---------- 通用動畫：文件微微浮動 ----------
+    // 當文件存在時 (非 IDLE/DRAGGING)
+    if (phase.name !== 'IDLE' && phase.name !== 'DRAGGING') {
+      docGroup.rotation.y = 0.15 + Math.sin(t * 0.6) * 0.04;
+      docGroup.position.x = Math.sin(t * 0.4) * 0.03;
+    } else {
+      docGroup.rotation.y = 0.15;
+      docGroup.position.x = 0;
+    }
+
+    // ---------- 環境粒子 (始終動) ----------
+    const posAttr = particles.geometry.attributes.position;
+    const seedAttr = particles.geometry.attributes.seed;
+    for (let i = 0; i < particleCount; i++) {
+      const seed = seedAttr.array[i];
+      posAttr.array[i*3+1] += 0.003 + Math.sin(t + seed) * 0.001;
+      posAttr.array[i*3] += Math.cos(t * 0.5 + seed) * 0.002;
+      if (posAttr.array[i*3+1] > 2.2) {
+        posAttr.array[i*3+1] = -2.2;
+        posAttr.array[i*3] = (Math.random() - 0.5) * 4;
+      }
+    }
+    posAttr.needsUpdate = true;
+    pMat.opacity = 0.4 + Math.sin(t * 2) * 0.15;
+
+    renderer.render(scene, camera);
+  }
+
+  // 輔助：設定整個檔案圖示的透明度
+  function setIconOpacity(o) {
+    fileIconGroup.traverse(obj => {
+      if (obj.isMesh || obj.isLine || obj.isLineSegments) {
+        if (obj.material) {
+          obj.material.transparent = true;
+          const base = obj.material.userData.baseOpacity ?? 1;
+          obj.material.opacity = o * base;
+        }
+      }
+    });
+  }
+
+  animate();
+</script>
+</body>
+</html>

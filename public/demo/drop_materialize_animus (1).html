@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+  body { margin: 0; background: #e8e8e0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+
+  #scanner-root {
+    width: 360px;
+    height: 360px;
+    position: relative;
+    font-family: 'JetBrains Mono', monospace;
+    /* 白底帶微妙冷灰漸層, 模仿 Animus 介面的乾淨感 */
+    background:
+      radial-gradient(ellipse at 50% 40%, #ffffff 0%, #f4f6f8 55%, #e4e8ec 100%);
+    overflow: hidden;
+    border: 1px solid rgba(20, 55, 110, 0.18);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,0.8),
+      inset 0 0 80px rgba(40, 85, 255, 0.04),
+      0 4px 24px rgba(0,0,0,0.08);
+  }
+
+  #scanner-root canvas {
+    display: block;
+    position: absolute;
+    inset: 0;
+    will-change: transform;
+  }
+
+  /* 技術製圖網格 (雙層: 粗線 + 細線, 像藍圖紙) */
+  .grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(20, 55, 110, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20, 55, 110, 0.07) 1px, transparent 1px),
+      linear-gradient(rgba(20, 55, 110, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20, 55, 110, 0.035) 1px, transparent 1px);
+    background-size: 60px 60px, 60px 60px, 12px 12px, 12px 12px;
+    mask-image: radial-gradient(ellipse at center, black 20%, rgba(0,0,0,0.4) 70%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 20%, rgba(0,0,0,0.4) 70%, transparent 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* 細緻紙張紋理 */
+  .paper-grain {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0.35;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.08  0 0 0 0 0.14  0 0 0 0 0.28  0 0 0 0.08 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  /* HUD 角落十字準星 */
+  .hud-corner {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    z-index: 5;
+  }
+  .hud-corner::before, .hud-corner::after {
+    content: '';
+    position: absolute;
+    background: #0a2c6e;
+  }
+  .hud-corner::before { width: 14px; height: 1px; }
+  .hud-corner::after { width: 1px; height: 14px; }
+  .hud-corner.tl { top: 14px; left: 14px; }
+  .hud-corner.tl::before { top: 0; left: 0; }
+  .hud-corner.tl::after { top: 0; left: 0; }
+  .hud-corner.tr { top: 14px; right: 14px; }
+  .hud-corner.tr::before { top: 0; right: 0; }
+  .hud-corner.tr::after { top: 0; right: 0; }
+  .hud-corner.bl { bottom: 14px; left: 14px; }
+  .hud-corner.bl::before { bottom: 0; left: 0; }
+  .hud-corner.bl::after { bottom: 0; left: 0; }
+  .hud-corner.br { bottom: 14px; right: 14px; }
+  .hud-corner.br::before { bottom: 0; right: 0; }
+  .hud-corner.br::after { bottom: 0; right: 0; }
+
+  /* 中央十字準星 */
+  .crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 24px;
+    transform: translate(-50%, -50%);
+    z-index: 4;
+    opacity: 0.25;
+    pointer-events: none;
+  }
+  .crosshair::before, .crosshair::after {
+    content: '';
+    position: absolute;
+    background: #0a2c6e;
+  }
+  .crosshair::before { top: 50%; left: 0; right: 0; height: 1px; }
+  .crosshair::after { left: 50%; top: 0; bottom: 0; width: 1px; }
+
+  /* 頂部狀態列 */
+  .status-bar {
+    position: absolute;
+    top: 18px;
+    left: 42px;
+    right: 42px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: #0a2c6e;
+    z-index: 5;
+    text-transform: uppercase;
+    font-weight: 600;
+    font-family: 'Rajdhani', sans-serif;
+  }
+  .status-bar .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: #2855ff;
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse 1.4s ease-in-out infinite;
+    vertical-align: middle;
+    box-shadow: 0 0 0 2px rgba(40, 85, 255, 0.18);
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  /* 底部狀態列 */
+  .bottom-bar {
+    position: absolute;
+    bottom: 18px;
+    left: 42px;
+    right: 42px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: rgba(10, 44, 110, 0.5);
+    z-index: 5;
+    text-transform: uppercase;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 500;
+  }
+  .bottom-bar .label {
+    color: rgba(10, 44, 110, 0.4);
+    font-weight: 400;
+  }
+  .bottom-bar .value {
+    color: #0a2c6e;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+  }
+
+  /* 中央上方讀數 */
+  .scan-readout {
+    position: absolute;
+    top: 38px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    color: #0a2c6e;
+    letter-spacing: 0.35em;
+    z-index: 5;
+    text-align: center;
+    font-weight: 600;
+    font-family: 'Rajdhani', sans-serif;
+  }
+  .scan-readout .progress-track {
+    margin-top: 6px;
+    width: 90px;
+    height: 1px;
+    background: rgba(10, 44, 110, 0.12);
+    position: relative;
+    overflow: hidden;
+  }
+  .scan-readout .progress-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: #2855ff;
+    width: 0%;
+    transition: width 0.1s linear;
+  }
+  .scan-readout .progress-track::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(90deg, rgba(10,44,110,0.2) 1px, transparent 1px);
+    background-size: 9px 1px;
+  }
+
+  /* Animus 標誌 */
+  .animus-mark {
+    position: absolute;
+    top: 50%;
+    right: 18px;
+    transform: translateY(-50%);
+    font-size: 7px;
+    letter-spacing: 0.4em;
+    color: rgba(10, 44, 110, 0.35);
+    writing-mode: vertical-rl;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    z-index: 5;
+  }
+
+  /* 輕微 vignette */
+  .vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 8;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(20, 55, 110, 0.10) 100%);
+  }
+
+  /* Drop zone hint - Animus 風格的技術製圖框 */
+  .drop-hint {
+    position: absolute;
+    inset: 44px;
+    border: 1px dashed rgba(10, 44, 110, 0.3);
+    z-index: 4;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    transition: opacity 0.4s ease, border-color 0.3s ease, transform 0.4s ease, box-shadow 0.3s ease;
+  }
+  .drop-hint.active {
+    border-color: rgba(40, 85, 255, 0.7);
+    border-style: solid;
+    box-shadow:
+      inset 0 0 0 1px rgba(40, 85, 255, 0.15),
+      inset 0 0 30px rgba(40, 85, 255, 0.06);
+    transform: scale(1.02);
+  }
+  .drop-hint.hidden {
+    opacity: 0;
+  }
+  /* 四角小定位標記 (不用 border, 改用角落的十字) */
+  .drop-hint::before, .drop-hint::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: 1px solid rgba(40, 85, 255, 0.6);
+  }
+  .drop-hint::before {
+    top: -4px; left: -4px;
+    border-right: none;
+    border-bottom: none;
+  }
+  .drop-hint::after {
+    bottom: -4px; right: -4px;
+    border-left: none;
+    border-top: none;
+  }
+  .drop-hint-icon {
+    font-size: 20px;
+    color: #0a2c6e;
+    opacity: 0.8;
+    letter-spacing: 0;
+    line-height: 1;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 300;
+  }
+  .drop-hint.active .drop-hint-icon {
+    color: #2855ff;
+    opacity: 1;
+  }
+  .drop-hint-text {
+    font-size: 9px;
+    color: rgba(10, 44, 110, 0.75);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    font-weight: 600;
+    font-family: 'Rajdhani', sans-serif;
+  }
+  .drop-hint.active .drop-hint-text {
+    color: #2855ff;
+  }
+  .drop-hint-sub {
+    font-size: 7px;
+    color: rgba(10, 44, 110, 0.4);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<div id="scanner-root">
+  <div class="grid-bg"></div>
+
+  <div class="hud-corner tl"></div>
+  <div class="hud-corner tr"></div>
+  <div class="hud-corner bl"></div>
+  <div class="hud-corner br"></div>
+
+  <div class="crosshair"></div>
+
+  <div class="status-bar">
+    <span><span class="dot"></span><span id="status-left">AWAITING_INPUT</span></span>
+    <span id="status-right">DOC.01</span>
+  </div>
+
+  <div class="scan-readout">
+    <div id="scan-label">READY</div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+
+  <div class="bottom-bar">
+    <span><span class="label">FMT</span> <span class="value" id="fmt-value">---</span></span>
+    <span><span class="label">SIZE</span> <span class="value" id="size-value">0.00KB</span></span>
+  </div>
+
+  <div class="drop-hint" id="drop-hint">
+    <div class="drop-hint-icon">⇩</div>
+    <div class="drop-hint-text">Drop File</div>
+    <div class="drop-hint-sub">to materialize</div>
+  </div>
+
+  <div class="animus-mark">ANIMUS</div>
+
+  <div class="vignette"></div>
+  <div class="paper-grain"></div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+  import * as THREE from 'three';
+
+  const root = document.getElementById('scanner-root');
+  const W = 360, H = 360;
+
+  const scene = new THREE.Scene();
+  // 白色霧效
+  scene.fog = new THREE.Fog(0xf4f6f8, 6, 14);
+
+  const camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 50);
+  camera.position.set(0, 2.2, 5.2);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+  root.appendChild(renderer.domElement);
+
+  // ===== 配色 =====
+  const ANIMUS_BLUE = 0x2855ff;
+  const ANIMUS_DEEP = 0x0a2c6e;
+  const ANIMUS_INK = 0x14233f;
+  const PAPER_WHITE = 0xfafbfd;
+
+  // ===== LIGHTING (白底柔光) =====
+  const ambient = new THREE.AmbientLight(0xffffff, 0.85);
+  scene.add(ambient);
+
+  const keyLight = new THREE.DirectionalLight(0xe8efff, 0.5);
+  keyLight.position.set(2, 4, 3);
+  scene.add(keyLight);
+
+  const rimLight = new THREE.PointLight(ANIMUS_BLUE, 0.6, 8);
+  rimLight.position.set(-2, 1, 2);
+  scene.add(rimLight);
+
+  // ===== DOCUMENT =====
+  const docGroup = new THREE.Group();
+  docGroup.rotation.x = -0.35;
+  docGroup.rotation.y = 0.15;
+  docGroup.position.y = -0.1;
+  scene.add(docGroup);
+
+  // Document paper (白色為主)
+  const docW = 2.2, docH = 3.0;
+  const paperGeo = new THREE.PlaneGeometry(docW, docH);
+  const paperMat = new THREE.MeshStandardMaterial({
+    color: PAPER_WHITE,
+    emissive: 0x000000,
+    emissiveIntensity: 0.05,
+    roughness: 0.95,
+    metalness: 0.0,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0,
+  });
+  const paper = new THREE.Mesh(paperGeo, paperMat);
+  docGroup.add(paper);
+
+  // 紙張陰影 (深度感)
+  const shadowGeo = new THREE.PlaneGeometry(docW * 1.06, docH * 1.04);
+  const shadowMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+  });
+  shadowMat.userData.baseOpacity = 0.06;
+  const paperShadow = new THREE.Mesh(shadowGeo, shadowMat);
+  paperShadow.position.set(0.04, -0.04, -0.01);
+  docGroup.add(paperShadow);
+
+  // Paper border
+  const edgeGeo = new THREE.EdgesGeometry(paperGeo);
+  const edgeMat = new THREE.LineBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0,
+  });
+  const edges = new THREE.LineSegments(edgeGeo, edgeMat);
+  docGroup.add(edges);
+
+  // 內框雙線 (像印刷文件)
+  const innerW = docW - 0.12;
+  const innerH = docH - 0.12;
+  const innerShape = new THREE.BufferGeometry();
+  const innerVerts = new Float32Array([
+    -innerW/2, -innerH/2, 0.001,
+     innerW/2, -innerH/2, 0.001,
+     innerW/2, -innerH/2, 0.001,
+     innerW/2,  innerH/2, 0.001,
+     innerW/2,  innerH/2, 0.001,
+    -innerW/2,  innerH/2, 0.001,
+    -innerW/2,  innerH/2, 0.001,
+    -innerW/2, -innerH/2, 0.001,
+  ]);
+  innerShape.setAttribute('position', new THREE.BufferAttribute(innerVerts, 3));
+  const innerMat = new THREE.LineBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0,
+  });
+  innerMat.userData.baseOpacity = 0.25;
+  const innerBorder = new THREE.LineSegments(innerShape, innerMat);
+  docGroup.add(innerBorder);
+
+  // Content group
+  const contentGroup = new THREE.Group();
+  contentGroup.position.z = 0.01;
+  docGroup.add(contentGroup);
+
+  const contentItems = [];
+
+  function addContentItem(mesh, revealOrder) {
+    mesh.material.transparent = true;
+    mesh.material.opacity = 0;
+    contentItems.push({
+      mesh,
+      baseOpacity: mesh.material.userData.baseOpacity ?? 1,
+      revealOrder,
+    });
+  }
+
+  // 深色標題列 (像印刷文件)
+  const titleBarGeo = new THREE.PlaneGeometry(docW * 0.85, 0.18);
+  const titleBarMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0,
+  });
+  titleBarMat.userData.baseOpacity = 0.88;
+  const titleBar = new THREE.Mesh(titleBarGeo, titleBarMat);
+  titleBar.position.set(0, docH / 2 - 0.25, 0.005);
+  contentGroup.add(titleBar);
+  addContentItem(titleBar, 0.0);
+
+  // 標題色塊 (白色, 在深色標題列上)
+  for (let i = 0; i < 3; i++) {
+    const w = 0.15 + Math.random() * 0.15;
+    const g = new THREE.PlaneGeometry(w, 0.045);
+    const m = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0,
+    });
+    m.userData.baseOpacity = 0.95;
+    const block = new THREE.Mesh(g, m);
+    block.position.set(-docW / 2 + 0.25 + i * 0.35, docH / 2 - 0.25, 0.015);
+    contentGroup.add(block);
+    addContentItem(block, 0.05 + i * 0.02);
+  }
+
+  // 內文線條 (深色, 像印刷文字)
+  const lineWidths = [
+    0.95, 0.85, 0.92, 0.70,
+    0.90, 0.88, 0.60,
+    0.95, 0.82, 0.75, 0.88,
+    0.70, 0.92, 0.80
+  ];
+  let yPos = docH / 2 - 0.55;
+  lineWidths.forEach((wRatio, i) => {
+    const lineW = docW * 0.85 * wRatio;
+    const lineGeo = new THREE.PlaneGeometry(lineW, 0.032);
+    const lineMat = new THREE.MeshBasicMaterial({
+      color: ANIMUS_INK,
+      transparent: true,
+      opacity: 0,
+    });
+    lineMat.userData.baseOpacity = 0.55;
+    const line = new THREE.Mesh(lineGeo, lineMat);
+    line.position.set(
+      -docW / 2 + 0.2 + lineW / 2,
+      yPos,
+      0.005
+    );
+    contentGroup.add(line);
+    addContentItem(line, 0.15 + (i / lineWidths.length) * 0.7);
+    yPos -= 0.14;
+    if (i === 3 || i === 6 || i === 10) yPos -= 0.08;
+  });
+
+  // 底部圖表 (淡藍底)
+  const chartGeo = new THREE.PlaneGeometry(0.6, 0.4);
+  const chartMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_BLUE,
+    transparent: true,
+    opacity: 0,
+  });
+  chartMat.userData.baseOpacity = 0.12;
+  const chart = new THREE.Mesh(chartGeo, chartMat);
+  chart.position.set(docW / 2 - 0.45, -docH / 2 + 0.4, 0.005);
+  contentGroup.add(chart);
+  addContentItem(chart, 0.88);
+
+  // 圖表長條
+  for (let i = 0; i < 4; i++) {
+    const h = 0.08 + Math.random() * 0.22;
+    const bG = new THREE.PlaneGeometry(0.08, h);
+    const bM = new THREE.MeshBasicMaterial({
+      color: ANIMUS_BLUE,
+      transparent: true,
+      opacity: 0,
+    });
+    bM.userData.baseOpacity = 0.9;
+    const bar = new THREE.Mesh(bG, bM);
+    bar.position.set(
+      docW / 2 - 0.65 + i * 0.12,
+      -docH / 2 + 0.3 + h / 2 - 0.15,
+      0.01
+    );
+    contentGroup.add(bar);
+    addContentItem(bar, 0.92 + i * 0.015);
+  }
+
+  // 文件四角定位十字 (Animus 風格)
+  const cornerSize = 0.1;
+  const cornerPositions = [
+    [-docW/2 * 1.05, docH/2 * 1.04],
+    [ docW/2 * 1.05, docH/2 * 1.04],
+    [-docW/2 * 1.05, -docH/2 * 1.04],
+    [ docW/2 * 1.05, -docH/2 * 1.04],
+  ];
+  const cornerCrosses = [];
+  cornerPositions.forEach(pos => {
+    const points = [
+      new THREE.Vector3(pos[0] - cornerSize, pos[1], 0),
+      new THREE.Vector3(pos[0] + cornerSize, pos[1], 0),
+      new THREE.Vector3(pos[0], pos[1] - cornerSize, 0),
+      new THREE.Vector3(pos[0], pos[1] + cornerSize, 0),
+    ];
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    const mat = new THREE.LineBasicMaterial({
+      color: ANIMUS_BLUE,
+      transparent: true,
+      opacity: 0,
+    });
+    mat.userData.baseOpacity = 0.7;
+    const cross = new THREE.LineSegments(geo, mat);
+    docGroup.add(cross);
+    cornerCrosses.push({ mesh: cross, mat });
+  });
+
+  // ===== MATERIALIZATION BEAM (白底風格: 柔和光暈而非加法發光) =====
+  const beamGeo = new THREE.PlaneGeometry(docW * 1.3, docH * 1.3);
+  const beamMat = new THREE.ShaderMaterial({
+    transparent: true,
+    blending: THREE.NormalBlending,
+    depthWrite: false,
+    uniforms: {
+      uOpacity: { value: 0 },
+      uColor: { value: new THREE.Color(ANIMUS_BLUE) },
+      uTime: { value: 0 },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+    `,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform float uOpacity;
+      uniform vec3 uColor;
+      uniform float uTime;
+      void main(){
+        vec2 p = (vUv - 0.5) * 2.0;
+        float d = length(p * vec2(0.9, 1.0));
+        float glow = smoothstep(1.0, 0.1, d);
+        // 技術製圖風格的橫線掃描 (較細緻)
+        float stripes = 0.5 + 0.5 * sin(vUv.y * 100.0 - uTime * 5.0);
+        glow *= (0.75 + stripes * 0.25);
+        // 白底上用較低透明度避免過亮
+        gl_FragColor = vec4(uColor, glow * uOpacity * 0.22);
+      }
+    `
+  });
+  const beam = new THREE.Mesh(beamGeo, beamMat);
+  beam.position.z = -0.02;
+  docGroup.add(beam);
+
+  // ===== MATERIALIZATION SWEEP (白底版: 深藍細線而非發光光條) =====
+  const sweepGeo = new THREE.PlaneGeometry(docW * 1.1, 0.08);
+  const sweepMat = new THREE.ShaderMaterial({
+    transparent: true,
+    blending: THREE.NormalBlending,
+    depthWrite: false,
+    uniforms: {
+      uOpacity: { value: 0 },
+      uColor: { value: new THREE.Color(ANIMUS_BLUE) },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+    `,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform float uOpacity;
+      uniform vec3 uColor;
+      void main(){
+        float d = abs(vUv.y - 0.5) * 2.0;
+        float a = pow(1.0 - d, 3.0);
+        gl_FragColor = vec4(uColor, a * uOpacity);
+      }
+    `
+  });
+  const sweep = new THREE.Mesh(sweepGeo, sweepMat);
+  sweep.position.z = 0.05;
+  docGroup.add(sweep);
+
+  // 掃描線的兩側端點標記 (Animus 風格的刻度)
+  const sweepMarkerGeo = new THREE.BufferGeometry();
+  const sweepMarkerVerts = new Float32Array([
+    -docW/2 * 1.08, 0, 0.05,
+    -docW/2 * 0.92, 0, 0.05,
+     docW/2 * 0.92, 0, 0.05,
+     docW/2 * 1.08, 0, 0.05,
+  ]);
+  sweepMarkerGeo.setAttribute('position', new THREE.BufferAttribute(sweepMarkerVerts, 3));
+  const sweepMarkerMat = new THREE.LineBasicMaterial({
+    color: ANIMUS_BLUE,
+    transparent: true,
+    opacity: 0,
+  });
+  const sweepMarker = new THREE.LineSegments(sweepMarkerGeo, sweepMarkerMat);
+  sweepMarker.position.z = 0.05;
+  docGroup.add(sweepMarker);
+
+  // ===== FALLING FILE ICON (Animus 風格: 白紙深藍邊) =====
+  const fileIconGroup = new THREE.Group();
+  scene.add(fileIconGroup);
+
+  const iconW = 0.45, iconH = 0.58;
+  const iconBodyGeo = new THREE.PlaneGeometry(iconW, iconH);
+  const iconBodyMat = new THREE.MeshBasicMaterial({
+    color: PAPER_WHITE,
+    transparent: true,
+    opacity: 0,
+    side: THREE.DoubleSide,
+  });
+  iconBodyMat.userData.baseOpacity = 0.95;
+  const iconBody = new THREE.Mesh(iconBodyGeo, iconBodyMat);
+  fileIconGroup.add(iconBody);
+
+  // 圖示陰影
+  const iconShadowGeo = new THREE.PlaneGeometry(iconW * 1.05, iconH * 1.04);
+  const iconShadowMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+  });
+  iconShadowMat.userData.baseOpacity = 0.1;
+  const iconShadow = new THREE.Mesh(iconShadowGeo, iconShadowMat);
+  iconShadow.position.set(0.02, -0.02, -0.01);
+  fileIconGroup.add(iconShadow);
+
+  // 圖示邊框
+  const iconEdgeGeo = new THREE.EdgesGeometry(iconBodyGeo);
+  const iconEdgeMat = new THREE.LineBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0,
+  });
+  iconEdgeMat.userData.baseOpacity = 0.9;
+  const iconEdges = new THREE.LineSegments(iconEdgeGeo, iconEdgeMat);
+  fileIconGroup.add(iconEdges);
+
+  // 圖示摺角 (深藍)
+  const iconCornerGeo = new THREE.PlaneGeometry(0.12, 0.12);
+  const iconCornerMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0,
+  });
+  iconCornerMat.userData.baseOpacity = 0.85;
+  const iconCorner = new THREE.Mesh(iconCornerGeo, iconCornerMat);
+  iconCorner.position.set(iconW / 2 - 0.06, iconH / 2 - 0.06, 0.01);
+  fileIconGroup.add(iconCorner);
+
+  // 圖示內部線條 (深色, 模擬文字)
+  for (let i = 0; i < 3; i++) {
+    const lG = new THREE.PlaneGeometry(iconW * 0.6, 0.025);
+    const lM = new THREE.MeshBasicMaterial({
+      color: ANIMUS_INK,
+      transparent: true,
+      opacity: 0,
+    });
+    lM.userData.baseOpacity = 0.55;
+    const l = new THREE.Mesh(lG, lM);
+    l.position.set(-iconW * 0.08, 0.05 - i * 0.1, 0.01);
+    fileIconGroup.add(l);
+  }
+
+  fileIconGroup.rotation.x = -0.15;
+  fileIconGroup.rotation.y = 0.1;
+
+  // 游標 (深色箭頭, 符合白底風格)
+  const cursorShape = new THREE.Shape();
+  cursorShape.moveTo(0, 0);
+  cursorShape.lineTo(0, -0.22);
+  cursorShape.lineTo(0.06, -0.16);
+  cursorShape.lineTo(0.11, -0.24);
+  cursorShape.lineTo(0.14, -0.22);
+  cursorShape.lineTo(0.09, -0.14);
+  cursorShape.lineTo(0.16, -0.13);
+  cursorShape.lineTo(0, 0);
+  const cursorGeo = new THREE.ShapeGeometry(cursorShape);
+  const cursorMat = new THREE.MeshBasicMaterial({
+    color: ANIMUS_DEEP,
+    transparent: true,
+    opacity: 0,
+    side: THREE.DoubleSide,
+  });
+  cursorMat.userData.baseOpacity = 0.95;
+  const cursor = new THREE.Mesh(cursorGeo, cursorMat);
+  cursor.position.set(iconW / 2 - 0.02, iconH / 2 + 0.02, 0.05);
+  fileIconGroup.add(cursor);
+
+  // 游標白色描邊 (讓深色游標在白底上更清晰)
+  const cursorEdgeGeo = new THREE.EdgesGeometry(cursorGeo);
+  const cursorEdgeMat = new THREE.LineBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0,
+  });
+  cursorEdgeMat.userData.baseOpacity = 0.9;
+  const cursorEdge = new THREE.LineSegments(cursorEdgeGeo, cursorEdgeMat);
+  cursorEdge.position.copy(cursor.position);
+  cursorEdge.position.z -= 0.001;
+  fileIconGroup.add(cursorEdge);
+
+  // ===== PARTICLES (白底版: 深色小點) =====
+  const particleCount = 35;
+  const pGeo = new THREE.BufferGeometry();
+  const pPos = new Float32Array(particleCount * 3);
+  const pSeed = new Float32Array(particleCount);
+  for (let i = 0; i < particleCount; i++) {
+    pPos[i*3]   = (Math.random() - 0.5) * 4;
+    pPos[i*3+1] = (Math.random() - 0.5) * 4;
+    pPos[i*3+2] = (Math.random() - 0.5) * 2;
+    pSeed[i] = Math.random() * 10;
+  }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  pGeo.setAttribute('seed', new THREE.BufferAttribute(pSeed, 1));
+  const pMat = new THREE.PointsMaterial({
+    color: ANIMUS_DEEP,
+    size: 0.02,
+    transparent: true,
+    opacity: 0.3,
+    blending: THREE.NormalBlending,
+    depthWrite: false,
+  });
+  const particles = new THREE.Points(pGeo, pMat);
+  scene.add(particles);
+
+  // ===== CONVERGING BURST (白底版: 小深色方塊而非發光粒子) =====
+  const burstCount = 60;
+  const burstGeo = new THREE.BufferGeometry();
+  const burstPos = new Float32Array(burstCount * 3);
+  const burstVel = [];
+  for (let i = 0; i < burstCount; i++) {
+    burstPos[i*3] = 0;
+    burstPos[i*3+1] = 0;
+    burstPos[i*3+2] = 0;
+    const theta = Math.random() * Math.PI * 2;
+    const r = 0.5 + Math.random() * 1.5;
+    burstVel.push({
+      vx: Math.cos(theta) * r,
+      vy: Math.sin(theta) * r * 0.7,
+      vz: (Math.random() - 0.5) * 0.5,
+      life: Math.random() * 0.5 + 0.5,
+    });
+  }
+  burstGeo.setAttribute('position', new THREE.BufferAttribute(burstPos, 3));
+  const burstMat = new THREE.PointsMaterial({
+    color: ANIMUS_BLUE,
+    size: 0.035,
+    transparent: true,
+    opacity: 0,
+    blending: THREE.NormalBlending,
+    depthWrite: false,
+  });
+  const burst = new THREE.Points(burstGeo, burstMat);
+  scene.add(burst);
+  let burstActive = false;
+  let burstStartTime = 0;
+
+  // ===== STATE MACHINE =====
+  const phases = {
+    IDLE:          { duration: 0.8, label: 'STANDBY',      status: 'AWAITING_INPUT' },
+    DRAGGING:      { duration: 2.4, label: 'INCOMING',     status: 'DRAGGING_FILE' },
+    IMPACT:        { duration: 0.3, label: 'RECEIVED',     status: 'FILE_DROPPED' },
+    MATERIALIZING: { duration: 1.8, label: 'MATERIALIZE',  status: 'PROCESSING' },
+    HOLD:          { duration: 1.4, label: 'SYNCED',       status: 'DOC_READY' },
+  };
+  const phaseOrder = ['IDLE', 'DRAGGING', 'IMPACT', 'MATERIALIZING', 'HOLD'];
+  const cycleDuration = phaseOrder.reduce((s, p) => s + phases[p].duration, 0);
+
+  function getPhase(t) {
+    const ct = t % cycleDuration;
+    let acc = 0;
+    for (const p of phaseOrder) {
+      const d = phases[p].duration;
+      if (ct < acc + d) {
+        return { name: p, progress: (ct - acc) / d, cycleT: ct };
+      }
+      acc += d;
+    }
+    return { name: 'HOLD', progress: 1, cycleT: ct };
+  }
+
+  const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
+  const easeInCubic = (x) => x * x * x;
+  const easeInOutCubic = (x) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  const easeOutQuart = (x) => 1 - Math.pow(1 - x, 4);
+
+  const dropHint = document.getElementById('drop-hint');
+  const progressEl = document.getElementById('progress-fill');
+  const scanLabelEl = document.getElementById('scan-label');
+  const statusLeftEl = document.getElementById('status-left');
+  const fmtEl = document.getElementById('fmt-value');
+  const sizeEl = document.getElementById('size-value');
+
+  const fileFormats = ['PDF', 'DOCX', 'TXT', 'MD', 'CSV'];
+  let currentFormat = fileFormats[0];
+  let currentSize = 128;
+  let lastCycle = -1;
+
+  const clock = new THREE.Clock();
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+    const phase = getPhase(t);
+
+    const currentCycle = Math.floor(t / cycleDuration);
+    if (currentCycle !== lastCycle) {
+      lastCycle = currentCycle;
+      currentFormat = fileFormats[Math.floor(Math.random() * fileFormats.length)];
+      currentSize = (120 + Math.random() * 900).toFixed(2);
+    }
+
+    beamMat.uniforms.uTime.value = t;
+
+    // 輔助: 控制所有文件元素的 opacity
+    const setDocOpacity = (o) => {
+      paperMat.opacity = o;
+      edgeMat.opacity = o * 0.85;
+      shadowMat.opacity = o * shadowMat.userData.baseOpacity;
+      innerMat.opacity = o * innerMat.userData.baseOpacity;
+      cornerCrosses.forEach(c => {
+        c.mat.opacity = o * c.mat.userData.baseOpacity;
+      });
+    };
+
+    // ---------- IDLE ----------
+    if (phase.name === 'IDLE') {
+      dropHint.classList.remove('active', 'hidden');
+      setDocOpacity(0);
+      contentItems.forEach(ci => ci.mesh.material.opacity = 0);
+      setIconOpacity(0);
+      beamMat.uniforms.uOpacity.value = 0;
+      sweepMat.uniforms.uOpacity.value = 0;
+      sweepMarkerMat.opacity = 0;
+      burstMat.opacity = 0;
+      burstActive = false;
+
+      scanLabelEl.textContent = phases.IDLE.label;
+      statusLeftEl.textContent = phases.IDLE.status;
+      progressEl.style.width = '0%';
+      fmtEl.textContent = '---';
+      sizeEl.textContent = '0.00KB';
+    }
+
+    // ---------- DRAGGING ----------
+    else if (phase.name === 'DRAGGING') {
+      dropHint.classList.add('active');
+      dropHint.classList.remove('hidden');
+
+      const p = phase.progress;
+      const startX = -3.0, startY = 2.8, startZ = 1.8;
+      const endX = 0, endY = 0.3, endZ = 1.2;
+
+      let pathP;
+      if (p < 0.8) {
+        const sub = p / 0.8;
+        pathP = (1 - Math.pow(1 - sub, 2)) * 0.97;
+      } else {
+        const sub = (p - 0.8) / 0.2;
+        pathP = 0.97 + easeOutCubic(sub) * 0.03;
+      }
+
+      const posX = startX + (endX - startX) * pathP;
+      const posY = startY + (endY - startY) * pathP;
+      const posZ = startZ + (endZ - startZ) * pathP;
+
+      fileIconGroup.position.set(posX, posY, posZ);
+      fileIconGroup.rotation.x = -0.15;
+      fileIconGroup.rotation.y = 0.1;
+      fileIconGroup.rotation.z = 0;
+
+      let iconAlpha;
+      if (p < 0.1) iconAlpha = p / 0.1;
+      else if (p > 0.9) {
+        const releaseP = (p - 0.9) / 0.1;
+        iconAlpha = 1 - releaseP * 0.3 + Math.sin(releaseP * Math.PI * 3) * 0.15;
+      } else iconAlpha = 1;
+      setIconOpacity(Math.max(0, Math.min(1, iconAlpha)));
+
+      setDocOpacity(0);
+      contentItems.forEach(ci => ci.mesh.material.opacity = 0);
+      beamMat.uniforms.uOpacity.value = 0;
+      sweepMat.uniforms.uOpacity.value = 0;
+      sweepMarkerMat.opacity = 0;
+      burstMat.opacity = 0;
+
+      scanLabelEl.textContent = phases.DRAGGING.label;
+      statusLeftEl.textContent = phases.DRAGGING.status;
+      progressEl.style.width = (p * 15) + '%';
+      fmtEl.textContent = currentFormat;
+      sizeEl.textContent = (currentSize * p).toFixed(2) + 'KB';
+    }
+
+    // ---------- IMPACT ----------
+    else if (phase.name === 'IMPACT') {
+      dropHint.classList.add('hidden');
+      if (!burstActive) {
+        burstActive = true;
+        burstStartTime = t;
+        const pos = burst.geometry.attributes.position;
+        for (let i = 0; i < burstCount; i++) {
+          pos.array[i*3] = 0;
+          pos.array[i*3+1] = 0;
+          pos.array[i*3+2] = 0;
+        }
+        pos.needsUpdate = true;
+      }
+
+      setIconOpacity(0);
+
+      const bp = phase.progress;
+      const pos = burst.geometry.attributes.position;
+      for (let i = 0; i < burstCount; i++) {
+        const v = burstVel[i];
+        pos.array[i*3] = v.vx * bp * 0.7;
+        pos.array[i*3+1] = v.vy * bp * 0.7;
+        pos.array[i*3+2] = v.vz * bp * 0.7;
+      }
+      pos.needsUpdate = true;
+      burstMat.opacity = (1 - bp) * 0.75;
+      burstMat.size = 0.03 + bp * 0.02;
+
+      beamMat.uniforms.uOpacity.value = easeOutQuart(bp) * 1.0;
+
+      // 文件開始顯現
+      setDocOpacity(bp * 0.3);
+      contentItems.forEach(ci => ci.mesh.material.opacity = 0);
+
+      scanLabelEl.textContent = phases.IMPACT.label;
+      statusLeftEl.textContent = phases.IMPACT.status;
+      progressEl.style.width = (15 + bp * 10) + '%';
+    }
+
+    // ---------- MATERIALIZING ----------
+    else if (phase.name === 'MATERIALIZING') {
+      dropHint.classList.add('hidden');
+      setIconOpacity(0);
+      const p = phase.progress;
+      const eased = easeOutCubic(p);
+
+      beamMat.uniforms.uOpacity.value = Math.max(0, 1 - p * 1.3);
+
+      const sweepProgress = p;
+      const sweepY = (docH / 2) - sweepProgress * docH;
+      sweep.position.y = sweepY;
+      sweepMarker.position.y = sweepY;
+
+      let sweepAlpha;
+      if (p < 0.1) sweepAlpha = p / 0.1;
+      else if (p > 0.9) sweepAlpha = (1 - p) / 0.1;
+      else sweepAlpha = 1;
+      sweepMat.uniforms.uOpacity.value = sweepAlpha * 0.85;
+      sweepMarkerMat.opacity = sweepAlpha * 0.75;
+
+      // 紙張淡入
+      setDocOpacity(Math.min(1, p * 2));
+
+      // 內容依序顯現
+      contentItems.forEach(ci => {
+        const revealAt = ci.revealOrder;
+        const localP = (sweepProgress - revealAt) / 0.15;
+        const fade = Math.max(0, Math.min(1, localP));
+        ci.mesh.material.opacity = fade * ci.baseOpacity;
+      });
+
+      // 粒子殘影
+      if (burstActive && t - burstStartTime < 1.0) {
+        const bp = Math.min(1, (t - burstStartTime) / 1.0);
+        const pos = burst.geometry.attributes.position;
+        for (let i = 0; i < burstCount; i++) {
+          const v = burstVel[i];
+          pos.array[i*3] = v.vx * bp * 1.2;
+          pos.array[i*3+1] = v.vy * bp * 1.2 - bp * bp * 0.5;
+          pos.array[i*3+2] = v.vz * bp * 1.2;
+        }
+        pos.needsUpdate = true;
+        burstMat.opacity = Math.max(0, (1 - bp) * 0.55);
+      } else {
+        burstMat.opacity = 0;
+        burstActive = false;
+      }
+
+      scanLabelEl.textContent = phases.MATERIALIZING.label;
+      statusLeftEl.textContent = phases.MATERIALIZING.status;
+      progressEl.style.width = (25 + eased * 70) + '%';
+    }
+
+    // ---------- HOLD ----------
+    else if (phase.name === 'HOLD') {
+      dropHint.classList.add('hidden');
+      setIconOpacity(0);
+      setDocOpacity(1);
+      contentItems.forEach(ci => {
+        ci.mesh.material.opacity = ci.baseOpacity;
+      });
+      beamMat.uniforms.uOpacity.value = 0;
+      sweepMat.uniforms.uOpacity.value = 0;
+      sweepMarkerMat.opacity = 0;
+      burstMat.opacity = 0;
+
+      scanLabelEl.textContent = phases.HOLD.label;
+      statusLeftEl.textContent = phases.HOLD.status;
+      progressEl.style.width = '100%';
+    }
+
+    // 文件微微浮動
+    if (phase.name !== 'IDLE' && phase.name !== 'DRAGGING') {
+      docGroup.rotation.y = 0.15 + Math.sin(t * 0.6) * 0.04;
+      docGroup.position.x = Math.sin(t * 0.4) * 0.03;
+    } else {
+      docGroup.rotation.y = 0.15;
+      docGroup.position.x = 0;
+    }
+
+    // 環境粒子
+    const posAttr = particles.geometry.attributes.position;
+    const seedAttr = particles.geometry.attributes.seed;
+    for (let i = 0; i < particleCount; i++) {
+      const seed = seedAttr.array[i];
+      posAttr.array[i*3+1] += 0.002 + Math.sin(t + seed) * 0.0008;
+      posAttr.array[i*3] += Math.cos(t * 0.5 + seed) * 0.0015;
+      if (posAttr.array[i*3+1] > 2.2) {
+        posAttr.array[i*3+1] = -2.2;
+        posAttr.array[i*3] = (Math.random() - 0.5) * 4;
+      }
+    }
+    posAttr.needsUpdate = true;
+    pMat.opacity = 0.22 + Math.sin(t * 2) * 0.08;
+
+    renderer.render(scene, camera);
+  }
+
+  function setIconOpacity(o) {
+    fileIconGroup.traverse(obj => {
+      if (obj.isMesh || obj.isLine || obj.isLineSegments) {
+        if (obj.material) {
+          obj.material.transparent = true;
+          const base = obj.material.userData.baseOpacity ?? 1;
+          obj.material.opacity = o * base;
+        }
+      }
+    });
+  }
+
+  animate();
+</script>
+</body>
+</html>
