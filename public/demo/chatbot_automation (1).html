@@ -1298,16 +1298,30 @@
 
   // 為每則訊息設定訊息顯現並觸發工具
   function setMessagesOpacity(cycleP) {
+    const revealDur = 0.06;
+    const fadeOutStart = 0.94;
+    let globalFade = 1;
+    if (cycleP >= fadeOutStart) {
+      globalFade = Math.max(0, 1 - (cycleP - fadeOutStart) / (1 - fadeOutStart));
+    }
+
     messages.forEach(msg => {
       const revealStart = msg.spec.revealAt;
-      const revealDur = 0.06;
 
       msg.elements.forEach((el) => {
         const delay = el.delay ?? 0;
-        const elLocal = (cycleP - revealStart - delay) / revealDur;
-        const elFade = Math.max(0, Math.min(1, elLocal));
+        let elFade;
+        if (cycleP < revealStart + delay) {
+          elFade = 0;
+        } else {
+          const elLocal = (cycleP - revealStart - delay) / revealDur;
+          elFade = Math.max(0, Math.min(1, elLocal));
+        }
+        const finalOp = elFade * el.baseOpacity * globalFade;
         el.mesh.material.transparent = true;
-        el.mesh.material.opacity = elFade * el.baseOpacity;
+        el.mesh.material.opacity = finalOp;
+        // 完全透明時隱藏, 避免任何形式的殘影
+        el.mesh.visible = finalOp > 0.001;
       });
     });
   }
@@ -1324,6 +1338,14 @@
     if (cycleIdx !== lastCycleIndex) {
       lastCycleIndex = cycleIdx;
       triggeredThisCycle.clear();
+      // 強制重置所有訊息元素, 避免重播時殘留
+      messages.forEach(msg => {
+        msg.elements.forEach(el => {
+          el.mesh.material.transparent = true;
+          el.mesh.material.opacity = 0;
+          el.mesh.visible = false;
+        });
+      });
     }
 
     // 訊息顯現
